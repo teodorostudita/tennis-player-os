@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Patch/download artifacts
+*.zip
+__MACOSX/
+
+# Temporary files
+*.tmp
+*.bak
+*~
+*.log

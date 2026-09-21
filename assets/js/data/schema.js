@@ -1,0 +1,250 @@
+import { APP_VERSION } from '../version.js';
+
+export const STORAGE_KEY = 'tennisPlayerOS.state.v1';
+
+export const modules = [
+  { id: 'development', number: 1, name: 'Development', icon: '🎯', subtitle: 'Tecnica · Tattica · Sviluppo del gioco', color: 'var(--development)', description: 'Valutazioni per colpo/skill, progressi, video, obiettivi e piani di sviluppo tecnico-tattico. Gli aspetti mentali hanno ora un modulo dedicato.' },
+  { id: 'training', number: 2, name: 'Athletics', icon: '🏋️', subtitle: 'Preparazione atletica · Carico · Performance fisica', color: 'var(--training)', description: 'Preparazione fisica dell’atleta: forza, potenza, velocità, agilità, conditioning, mobilità, prevenzione e monitoraggio del carico atletico.' },
+  { id: 'drills', number: 3, name: 'Drills', icon: '🎾', subtitle: 'Esercizi · Pattern · Sessioni tennis', color: 'var(--drills)', description: 'Libreria degli esercizi tennis-specifici: obiettivo, setup, modalità, durata, intensità, varianti e organizzazione delle sessioni in campo.' },
+  { id: 'competition', number: 4, name: 'Competition', icon: '🏆', subtitle: 'Match · Risultati · Performance', color: 'var(--competition)', description: 'Risultati, statistiche, analisi match e debrief. La programmazione dei tornei vive nel Calendar e viene richiamata qui senza duplicazioni.' },
+  { id: 'opponents', number: 5, name: 'Opponents', icon: '👥', subtitle: 'Scouting · Analisi · Preparazione', color: 'var(--opponents)', description: 'Profili avversari, pattern, H2H, video, note e brief pre-match.' },
+  { id: 'equipment', number: 6, name: 'Equipment', icon: '🎾', subtitle: 'Racchette · Corde · Setup', color: 'var(--equipment)', description: 'Specifiche, corde e tensioni, scarpe, storico configurazioni e comfort.' },
+  { id: 'health', number: 7, name: 'Body & Health', icon: '♡', subtitle: 'Infortuni · Dolore · Monitoraggio', color: 'var(--health)', description: 'Storico problemi fisici, dolore, disponibilità, visite, protocolli e documentazione clinica.' },
+  { id: 'nutrition', number: 8, name: 'Nutrition & Recovery', icon: '☾', subtitle: 'Alimentazione · Sonno · Recupero', color: 'var(--nutrition)', description: 'Pasti e idratazione, sonno, fatigue, soreness, riposo e readiness nello stesso modulo di gestione quotidiana.' },
+  { id: 'mental', number: 9, name: 'Mental', icon: '🧠', subtitle: 'Routine · Focus · Gestione emotiva', color: 'var(--mental)', description: 'Mental training, routine pre-match, respirazione, visualizzazione mentale, cue, journaling e strategie di gestione della pressione.' },
+  { id: 'visual', number: 10, name: 'Visual', icon: '👁', subtitle: 'Percezione · Anticipazione · Training visivo', color: 'var(--visual)', description: 'Allenamento percettivo e visivo: profondità, traiettoria, spin, anticipazione, tracking e protocolli anche in VR.' },
+  { id: 'economics', number: 11, name: 'Economics', icon: '◉', subtitle: 'Costi · Budget · Sostenibilità', color: 'var(--economics)', description: 'Spese, budget stagionale, costo per torneo/match, sponsor e report.' },
+  { id: 'calendar', number: 12, name: 'Calendar', icon: '▣', subtitle: 'Programmazione · Logistica · Tornei', color: 'var(--calendar)', description: 'Planner settimanale, logistica familiare, tornei, scuola, visite, viaggi e altri impegni dell’atleta.' },
+];
+
+function localDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function dateForCurrentWeek(dayIndex) {
+  const now = new Date();
+  const jsDay = now.getDay() || 7;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  monday.setDate(monday.getDate() - jsDay + 1 + dayIndex);
+  return localDateKey(monday);
+}
+
+const demoPeople = [
+  { id: 'person-valerio', name: 'Valerio', relationship: 'Genitore' },
+  { id: 'person-letizia', name: 'Letizia', relationship: 'Genitore' },
+  { id: 'person-emanuela', name: 'Emanuela', relationship: 'Familiare' },
+];
+
+const demoEvents = [
+  { id:'demo-mon-school', seriesId:'', title:'Scuola', date:dateForCurrentWeek(0), category:'school', startTime:'08:00', endTime:'10:00', location:'Online', notes:'', companionId:'', responsibilities:{stay:''} },
+  { id:'demo-mon-tennis', seriesId:'', title:'Tennis – tecnica', date:dateForCurrentWeek(0), category:'tennis', startTime:'10:30', endTime:'12:00', location:'MD Vita', notes:'', companionId:'person-emanuela', responsibilities:{stay:'person-emanuela'} },
+  { id:'demo-tue-physical', seriesId:'', title:'Preparazione fisica', date:dateForCurrentWeek(1), category:'physical', startTime:'15:30', endTime:'17:00', location:'', notes:'', companionId:'person-valerio', responsibilities:{stay:'person-valerio'} },
+  { id:'demo-wed-tennis', seriesId:'', title:'Tennis – tattica + sparring', date:dateForCurrentWeek(2), category:'tennis', startTime:'17:00', endTime:'19:00', location:'', notes:'', companionId:'person-valerio', responsibilities:{stay:'person-valerio'} },
+  { id:'demo-fri-school', seriesId:'', title:'Scuola', date:dateForCurrentWeek(4), category:'school', startTime:'08:00', endTime:'10:30', location:'Online', notes:'', companionId:'', responsibilities:{stay:''} },
+  { id:'demo-fri-travel', seriesId:'', title:'Spostamento al circolo', date:dateForCurrentWeek(4), category:'travel', startTime:'10:30', endTime:'11:00', location:'', notes:'', companionId:'person-emanuela', responsibilities:{stay:'person-emanuela'} },
+  { id:'demo-fri-tennis', seriesId:'', title:'Tennis – privata', date:dateForCurrentWeek(4), category:'tennis', startTime:'11:30', endTime:'13:00', location:'MD Vita', notes:'', companionId:'person-emanuela', responsibilities:{stay:'person-emanuela'} },
+  { id:'demo-fri-recovery', seriesId:'', title:'Relax', date:dateForCurrentWeek(4), category:'recovery', startTime:'19:00', endTime:'20:00', location:'', notes:'', companionId:'', responsibilities:{stay:''} },
+];
+
+export const defaultState = {
+  meta: {
+    appVersion: APP_VERSION,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  athlete: {
+    id: crypto.randomUUID ? crypto.randomUUID() : 'athlete-001',
+    firstName: 'Irene',
+    lastName: '',
+    birthDate: '',
+    nationality: 'Italia',
+    handedness: 'Destra',
+    backhand: 'Due mani',
+    ranking: '',
+    club: '',
+    coach: '',
+    seasonGoal: '',
+    notes: '',
+  },
+  modules: {
+    development: [], training: [], drills: [], competition: [], opponents: [], equipment: [],
+    health: [], recovery: [], nutrition: [], mental: [], visual: [], economics: [], calendar: [],
+  },
+  planner: {
+    people: demoPeople,
+    events: demoEvents,
+    tournaments: [],
+    recurringSeries: [],
+    locationDefaults: {},
+  },
+  training: {
+    tests: [],
+    testResults: [],
+    weeklyProgram: {
+      title: 'Programma settimanale',
+      effectiveFrom: '',
+      effectiveTo: '',
+      notes: '',
+      sessions: [],
+    },
+    goals: [],
+  },
+
+  drills: {
+    library: [
+      {
+        id: 'demo-drill-serve-plus-one',
+        title: 'Serve +1 sul lato aperto',
+        category: 'serve',
+        focus: 'tactical',
+        objective: 'Creare spazio con il servizio e giocare la prima palla nella zona opposta.',
+        players: '2',
+        durationMin: 15,
+        intensity: 'medium',
+        equipment: 'Target / cinesini',
+        setup: 'Un giocatore serve; il partner risponde in modo controllato. Due target nelle zone di uscita.',
+        execution: 'Servizio con direzione prestabilita, risposta giocabile, +1 sulla zona aperta. Alternare i lati.',
+        scoring: '1 punto se la sequenza servizio +1 rispetta il pattern; 2 se il +1 produce palla corta o errore.',
+        constraints: 'Il punto si ferma dopo il +1 nella versione base.',
+        progression: 'Giocare il punto libero dopo il +1.',
+        regression: 'Feed controllato al posto della risposta.',
+        tags: ['serve+1', 'pattern', 'attacco'],
+        notes: '',
+        favorite: true,
+      },
+      {
+        id: 'demo-drill-cross-change',
+        title: 'Cross-court + cambio direzione',
+        category: 'baseline',
+        focus: 'decision',
+        objective: 'Consolidare la diagonale e riconoscere la palla adatta al cambio lungolinea.',
+        players: '2',
+        durationMin: 18,
+        intensity: 'medium',
+        equipment: 'Cinesini opzionali',
+        setup: 'Scambio in diagonale. Una zona-target segnala la profondità minima desiderata.',
+        execution: 'Minimo tre colpi cross prima che il giocatore designato possa cambiare lungolinea su palla favorevole.',
+        scoring: 'Punto bonus per cambio direzione eseguito su palla adeguata e con buona profondità.',
+        constraints: 'Nessun cambio prima del terzo colpo cross.',
+        progression: 'Punto libero dopo il cambio.',
+        regression: 'Cambio chiamato dal coach.',
+        tags: ['fondo', 'decisione', 'direzioni'],
+        notes: '',
+        favorite: false,
+      },
+      {
+        id: 'demo-drill-return-middle',
+        title: 'Risposta profonda al centro + prima palla',
+        category: 'return',
+        focus: 'consistency',
+        objective: 'Neutralizzare il servizio con una risposta profonda e organizzare la prima palla dello scambio.',
+        players: '2',
+        durationMin: 15,
+        intensity: 'high',
+        equipment: 'Target centrale profondo',
+        setup: 'Server a ritmo controllato; target profondo nella fascia centrale.',
+        execution: 'Risposta verso il target, quindi giocare la prima palla dello scambio con intenzione tattica definita.',
+        scoring: '1 punto per risposta profonda; secondo punto se la palla successiva mantiene o migliora la posizione.',
+        constraints: 'Prime serie solo su seconde di servizio.',
+        progression: 'Alternare prima e seconda senza preavviso.',
+        regression: 'Servizio ridotto o feed dalla riga di servizio.',
+        tags: ['risposta', 'neutralizzazione', 'prima-palla'],
+        notes: '',
+        favorite: false,
+      },
+    ],
+    sessions: [],
+    measurements: {
+      protocols: [
+        {
+          id: 'demo-measure-serve-6-targets',
+          title: 'Precisione servizio — 6 target',
+          category: 'serve',
+          description: '10 prime di servizio per ciascun target. Registra quante palle arrivano al target, quante restano in campo ma fuori target e quante finiscono fuori o a rete.',
+          attemptsPerItem: 10,
+          outcomes: {
+            target: 'Al target',
+            secondary: 'Dentro ma fuori target',
+            fail: 'Fuori / rete',
+          },
+          items: [
+            { id: 'serve-measure-deuce-t', group: 'Da destra', label: 'T' },
+            { id: 'serve-measure-deuce-body', group: 'Da destra', label: 'Body' },
+            { id: 'serve-measure-deuce-wide', group: 'Da destra', label: 'Slice out' },
+            { id: 'serve-measure-ad-wide', group: 'Da sinistra', label: 'A uscire' },
+            { id: 'serve-measure-ad-body', group: 'Da sinistra', label: 'Body' },
+            { id: 'serve-measure-ad-t', group: 'Da sinistra', label: 'Slice T' },
+          ],
+          notes: '',
+        },
+      ],
+      records: [],
+    },
+  },
+
+
+  nutrition: {
+    planner: {
+      entries: [],
+    },
+    templates: [],
+    guidance: {
+      general: '',
+      trainingDay: '',
+      matchDay: '',
+      recoveryDay: '',
+      hydration: '',
+    },
+    sleepLogs: [],
+    recoveryLogs: [],
+  },
+
+  economics: {
+    currency: 'EUR',
+    trainingAreas: [
+      { id: 'econ-area-md-vita', name: 'MD Vita', category: 'tennis', pricingModel: 'monthly', referenceAmount: '', active: true, notes: '' },
+      { id: 'econ-area-esteri', name: 'Esteri', category: 'tennis', pricingModel: 'session', referenceAmount: '', active: true, notes: '' },
+      { id: 'econ-area-athletic', name: 'Preparazione atletica', category: 'physical', pricingModel: 'monthly', referenceAmount: '', active: true, notes: '' },
+    ],
+    entries: [],
+    budgets: [],
+  },
+  equipment: {
+    primaryRacketId: 'demo-racket-vcore26',
+    primaryShoeId: '',
+    rackets: [
+      {
+        id: 'demo-racket-vcore26',
+        brand: 'Yonex',
+        model: 'VCORE 26',
+        label: 'R1',
+        lengthIn: 26,
+        weightG: 250,
+        balanceMm: 325,
+        swingweight: '',
+        stringPattern: '16×18',
+        gripSize: 'L3',
+        status: 'active',
+        customization: '+3 g a ore 3 e +3 g a ore 9',
+        notes: '',
+      },
+    ],
+    stringJobs: [
+      {
+        id: 'demo-string-element',
+        racketId: 'demo-racket-vcore26',
+        date: '',
+        stringName: 'Luxilon Element',
+        gaugeMm: '',
+        mainsKg: 21,
+        crossesKg: 21,
+        stringer: '',
+        hoursUsed: '',
+        preStretch: '',
+        status: 'installed',
+        notes: 'Setup corrente.',
+      },
+    ],
+    shoes: [],
+  },
+};

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1f3a" />
+  <title>Tennis Player OS</title>
+  <link rel="stylesheet" href="./assets/css/styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <div class="main-shell">
+      <header class="topbar">
+        <button id="mobile-menu-button" class="icon-button mobile-only" aria-label="Apri menu">☰</button>
+        <div>
+          <div class="eyebrow">Tennis Player OS</div>
+          <h1 id="page-title">Dashboard</h1>
+        </div>
+        <div class="topbar-actions">
+          <span id="save-indicator" class="save-indicator">Salvato in locale</span>
+          <button id="reset-demo" class="button button-ghost" type="button">Reset demo</button>
+        </div>
+      </header>
+
+      <main id="main-content" class="main-content" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <script type="module" src="./assets/js/app.js"></script>
+</body>
+</html>
