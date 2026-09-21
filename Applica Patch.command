@@ -15,6 +15,7 @@ cleanup() {
     rm -rf "$TMP_DIR"
   fi
 }
+
 trap cleanup EXIT
 
 pause_and_exit() {
@@ -22,6 +23,22 @@ pause_and_exit() {
   echo
   read -r -p "Premi Invio per chiudere..." _
   exit "$code"
+}
+
+looks_like_tpos_patch() {
+  local dir="$1"
+
+  [ -d "$dir/assets" ] ||
+  [ -d "$dir/supabase" ] ||
+  [ -d "$dir/.github" ] ||
+  [ -f "$dir/index.html" ] ||
+  [ -f "$dir/server.py" ] ||
+  [ -f "$dir/Avvia Tennis Player OS.command" ] ||
+  [ -f "$dir/Applica Patch.command" ] ||
+  [ -f "$dir/Pubblica Tennis Player OS.command" ] ||
+  [ -f "$dir/README.md" ] ||
+  [ -f "$dir/GITHUB_SETUP.md" ] ||
+  [ -f "$dir/.gitignore" ]
 }
 
 echo "=========================================="
@@ -87,17 +104,14 @@ shopt -u dotglob nullglob
 
 if [ "${#entries[@]}" -eq 1 ] && [ -d "${entries[0]}" ]; then
   candidate="${entries[0]}"
-  # Entra nella cartella wrapper solo se sembra contenere una patch.
-  if [ -d "$candidate/assets" ] || [ -f "$candidate/index.html" ] || [ -f "$candidate/server.py" ]; then
+  if looks_like_tpos_patch "$candidate"; then
     SOURCE_DIR="$candidate"
   fi
 fi
 
 # Controllo minimo per evitare di copiare per sbaglio una cartella qualsiasi.
-if [ ! -d "$SOURCE_DIR/assets" ] && \
-   [ ! -f "$SOURCE_DIR/index.html" ] && \
-   [ ! -f "$SOURCE_DIR/server.py" ] && \
-   [ ! -f "$SOURCE_DIR/Avvia Tennis Player OS.command" ]; then
+# Sono riconosciute anche patch infrastrutturali contenenti soltanto supabase/ o .github/.
+if ! looks_like_tpos_patch "$SOURCE_DIR"; then
   echo "ERRORE: la sorgente non sembra una patch di Tennis Player OS."
   echo "Cartella rilevata:"
   echo "  $SOURCE_DIR"
@@ -126,6 +140,7 @@ COUNT="$(printf "%s\n" "$FILE_LIST" | awk 'NF{c++} END{print c+0}')"
 echo
 echo "Totale: $COUNT file"
 echo
+
 read -r -p "Applicare la patch? [Invio = sì / n = annulla] " answer
 
 case "${answer:-}" in
@@ -151,7 +166,8 @@ echo "Applicazione in corso..."
 # Ripristina l'eseguibilità dei launcher se presenti.
 for launcher in \
   "$APP_DIR/Avvia Tennis Player OS.command" \
-  "$APP_DIR/Applica Patch.command"
+  "$APP_DIR/Applica Patch.command" \
+  "$APP_DIR/Pubblica Tennis Player OS.command"
 do
   if [ -f "$launcher" ]; then
     chmod +x "$launcher" 2>/dev/null || true
