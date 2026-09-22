@@ -95,12 +95,16 @@ export async function createAthlete({
   return athlete;
 }
 
-export async function syncSelectedAthleteToLocalStore(store, cloudAthlete) {
+export async function syncSelectedAthleteToLocalStore(store, cloudAthlete, userId) {
   if (!cloudAthlete?.id) {
     throw new Error('Nessun atleta selezionato.');
   }
 
-  store.selectAthleteStorage(cloudAthlete.id);
+  if (!userId) {
+    throw new Error('Account autenticato non disponibile.');
+  }
+
+  store.selectAthleteStorage(userId, cloudAthlete.id);
 
   store.update(state => {
     state.athlete = {

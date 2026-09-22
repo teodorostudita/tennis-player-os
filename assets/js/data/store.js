@@ -64,6 +64,21 @@ function athleteStorageKey(athleteId) {
   return `${STORAGE_KEY}.athlete.${athleteId}`;
 }
 
+function accountAthleteStorageKey(userId, athleteId) {
+  return `${STORAGE_KEY}.user.${userId}.athlete.${athleteId}`;
+}
+
+
+function stateForLocalPersistence(state) {
+  const localState = clone(state);
+
+  // Calendar is cloud-backed. Keep it in memory for the running app, but do
+  // not persist the reconstructed recurring occurrences in localStorage.
+  localState.planner = clone(defaultState.planner);
+
+  return localState;
+}
+
 class Store {
   constructor(provider = dataProvider) {
     this.provider = provider;
@@ -174,40 +189,62 @@ class Store {
     }
   }
 
-  selectAthleteStorage(athleteId) {
-    if (!athleteId || typeof this.provider.setKey !== 'function') return;
+  selectAthleteStorage(userId, athleteId) {
+    if (
+      !userId
+      || !athleteId
+      || typeof this.provider.setKey !== 'function'
+    ) return;
 
-    const targetKey = athleteStorageKey(athleteId);
+    const targetKey = accountAthleteStorageKey(userId, athleteId);
+    const previousAthleteKey = athleteStorageKey(athleteId);
 
     if (!this.provider.hasState(targetKey)) {
-      const currentKey = this.provider.key;
-      const currentState = this.state;
+      // Migrate the athlete-only cache introduced by v0.17.x into an
+      // account+athlete cache. This prevents two different login accounts
+      // using the same browser from sharing still-local module data.
+      if (this.provider.hasState(previousAthleteKey)) {
+        const previousState = this.provider.loadStateFromKey(previousAthleteKey);
 
-      // First transition from the legacy single-athlete key.
-      //
-      // Calendar is already cloud-backed, and the legacy local state can contain
-      // thousands of reconstructed recurring occurrences. Copying that whole
-      // planner into a second localStorage key can exceed the browser quota.
-      //
-      // Preserve only the still-local modules; Calendar will be reloaded from
-      // Supabase immediately after the athlete is selected.
-      if (
-        currentKey === STORAGE_KEY
-        && currentState?.athlete?.id === athleteId
-      ) {
-        const migratedState = clone(currentState);
+        if (previousState) {
+          const migratedState = stateForLocalPersistence(previousState);
 
-        migratedState.planner = clone(defaultState.planner);
-        migratedState.meta = {
-          ...migratedState.meta,
-          athleteStorageMigratedAt: new Date().toISOString(),
-        };
+          // Free the old large athlete-only cache before writing the new
+          // account+athlete cache. If the write unexpectedly fails, restore
+          // the old value so no still-local module data is lost.
+          localStorage.removeItem(previousAthleteKey);
 
-        this.provider.saveStateToKey(targetKey, migratedState);
+          try {
+            this.provider.saveStateToKey(targetKey, migratedState);
+          } catch (error) {
+            try {
+              this.provider.saveStateToKey(previousAthleteKey, previousState);
+            } catch (restoreError) {
+              console.error('Impossibile ripristinare la cache locale precedente.', restoreError);
+            }
+            throw error;
+          }
+        }
+      } else {
+        const currentKey = this.provider.key;
+        const currentState = this.state;
 
-        // The athlete-specific copy is now safely written. Remove the obsolete
-        // single-athlete blob so it no longer consumes localStorage quota.
-        localStorage.removeItem(STORAGE_KEY);
+        // Legacy single-athlete migration. Calendar is cloud-backed, so do not
+        // duplicate its reconstructed occurrences into localStorage.
+        if (
+          currentKey === STORAGE_KEY
+          && currentState?.athlete?.id === athleteId
+        ) {
+          const migratedState = stateForLocalPersistence(currentState);
+
+          migratedState.meta = {
+            ...migratedState.meta,
+            athleteStorageMigratedAt: new Date().toISOString(),
+          };
+
+          this.provider.saveStateToKey(targetKey, migratedState);
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
     }
 
@@ -230,7 +267,7 @@ class Store {
   }
 
   persist() {
-    this.provider.saveState(this.state);
+    this.provider.saveState(stateForLocalPersistence(this.state));
   }
 
   getPersistenceInfo() {

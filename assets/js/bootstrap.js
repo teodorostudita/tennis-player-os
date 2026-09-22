@@ -160,7 +160,11 @@ if (session) {
       athletes = await loadAccessibleAthletes();
     }
 
-    await syncSelectedAthleteToLocalStore(store, cloudAthlete);
+    await syncSelectedAthleteToLocalStore(
+      store,
+      cloudAthlete,
+      session.user.id,
+    );
 
     if (isCalendarMigrationRequested()) {
       const result = await migrateLocalCalendarToCloud({
