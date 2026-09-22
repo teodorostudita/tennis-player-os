@@ -370,3 +370,102 @@
     justify-content: flex-start;
   }
 }
+
+/* v0.18.2 — robust viewport scrolling for access management */
+.access-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 24px);
+}
+
+.access-dialog-head {
+  flex: 0 0 auto;
+}
+
+.access-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.access-members-panel,
+.access-editor-panel {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.access-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -4px -8px;
+  padding: 12px 4px 8px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), #fff 28%);
+}
+
+@media (max-width: 900px) {
+  .access-dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .access-members-panel,
+  .access-editor-panel {
+    overflow: visible;
+  }
+}
+
+/* v0.18.4 — inaccessible modules remain visible but locked */
+.nav-item.tpos-route-locked {
+  cursor: not-allowed;
+  opacity: .42;
+  filter: grayscale(1);
+}
+
+.nav-item.tpos-route-locked:hover {
+  background: transparent;
+}
+
+.module-card.tpos-module-locked {
+  position: relative;
+  cursor: default;
+  filter: grayscale(.9);
+  opacity: .52;
+}
+
+.module-card.tpos-module-locked .module-link {
+  cursor: not-allowed;
+}
+
+.module-card.tpos-module-locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(245, 247, 250, .24);
+  pointer-events: none;
+}
+
+.tpos-module-lock-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  border: 1px solid rgba(82, 97, 119, .22);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, .9);
+  color: #6f7d8f;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.tpos-route-locked[aria-disabled="true"] {
+  cursor: not-allowed;
+}

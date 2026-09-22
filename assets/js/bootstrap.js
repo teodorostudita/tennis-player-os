@@ -1,5 +1,6 @@
 import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js';
 import { canReadModule, canWriteModule, loadCurrentAccess } from './cloud/access.js';
+import { startPermissionGuard } from './cloud/permissionGuard.js';
 import { mountAccessManagementControl } from './components/accessManagement.js';
 import {
   loadAccessibleAthletes,
@@ -212,6 +213,7 @@ if (session) {
       mountAccessManagementControl({
         athleteId: cloudAthlete.id,
       });
+      startPermissionGuard();
 
       if (canReadModule('calendar') && canWriteModule('calendar')) {
         startCalendarCloudSync({
