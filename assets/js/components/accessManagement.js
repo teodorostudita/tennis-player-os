@@ -3,6 +3,7 @@ import {
   createOrUpdateAthleteAccess,
   getCurrentAccess,
   loadAthleteAccessDirectory,
+  removeAthleteUser,
 } from '../cloud/access.js';
 
 function escapeHtml(value = '') {
@@ -209,11 +210,27 @@ function renderShell(gate) {
               </div>
             </div>
 
+            <div id="access-remove-confirm" class="access-remove-confirm" hidden>
+              <strong>Rimuovere questo utente?</strong>
+              <p>
+                L’accesso a questo atleta verrà eliminato. Se l’account non è associato
+                ad altri atleti, verrà eliminato completamente e l’indirizzo email potrà
+                essere riutilizzato per un nuovo account.
+              </p>
+              <div class="access-remove-confirm-actions">
+                <button class="button button-ghost" type="button" id="access-remove-cancel">Annulla</button>
+                <button class="button button-danger" type="button" id="access-remove-confirm-button">Conferma rimozione</button>
+              </div>
+            </div>
+
             <div id="access-message" class="auth-message" role="status" aria-live="polite"></div>
 
-            <div class="access-form-actions">
-              <button class="button button-ghost" type="button" id="access-reset-form" hidden>Annulla modifica</button>
-              <button class="button button-primary" type="submit" id="access-submit">Crea utente</button>
+            <div class="access-form-actions access-form-actions-split">
+              <button class="button button-danger-ghost" type="button" id="access-remove-user" hidden>Rimuovi utente</button>
+              <div class="access-form-actions-main">
+                <button class="button button-ghost" type="button" id="access-reset-form" hidden>Annulla modifica</button>
+                <button class="button button-primary" type="submit" id="access-submit">Crea utente</button>
+              </div>
             </div>
           </form>
         </aside>
@@ -249,11 +266,15 @@ function updateEditorMode(gate, member = null) {
   const passwordBlock = gate.querySelector('#access-password-block');
   const newUserButton = gate.querySelector('#access-new-user');
   const resetButton = gate.querySelector('#access-reset-form');
+  const removeButton = gate.querySelector('#access-remove-user');
+  const removeConfirm = gate.querySelector('#access-remove-confirm');
   const submit = gate.querySelector('#access-submit');
 
   if (passwordBlock) passwordBlock.hidden = editing;
   if (newUserButton) newUserButton.hidden = !editing;
   if (resetButton) resetButton.hidden = !editing;
+  if (removeButton) removeButton.hidden = !editing;
+  if (removeConfirm) removeConfirm.hidden = true;
 
   for (const name of ['temporaryPassword', 'temporaryPasswordConfirm']) {
     const input = form?.elements?.[name];
@@ -362,6 +383,59 @@ export function openAccessManagement({ athleteId }) {
 
   gate.querySelector('#access-reset-form')?.addEventListener('click', () => {
     applyMemberToForm(gate, null);
+  });
+
+  gate.querySelector('#access-remove-user')?.addEventListener('click', () => {
+    setMessage(gate, '');
+    const confirm = gate.querySelector('#access-remove-confirm');
+    if (confirm) confirm.hidden = false;
+  });
+
+  gate.querySelector('#access-remove-cancel')?.addEventListener('click', () => {
+    const confirm = gate.querySelector('#access-remove-confirm');
+    if (confirm) confirm.hidden = true;
+  });
+
+  gate.querySelector('#access-remove-confirm-button')?.addEventListener('click', async () => {
+    const form = gate.querySelector('#access-form');
+    const userId = String(form?.elements?.userId?.value || '');
+    const confirmButton = gate.querySelector('#access-remove-confirm-button');
+    const removeButton = gate.querySelector('#access-remove-user');
+
+    if (!userId) return;
+
+    setMessage(gate, '');
+    confirmButton.disabled = true;
+    if (removeButton) removeButton.disabled = true;
+    confirmButton.textContent = 'Rimozione…';
+
+    try {
+      const result = await removeAthleteUser({
+        athleteId,
+        userId,
+      });
+
+      await refreshMembers(gate, athleteId);
+      applyMemberToForm(gate, null);
+
+      setMessage(
+        gate,
+        result?.accountDeleted
+          ? 'Utente eliminato completamente. L’indirizzo email può essere riutilizzato.'
+          : 'Accesso rimosso da questo atleta. L’account è stato conservato perché è associato ad altri atleti.',
+        'success',
+      );
+    } catch (error) {
+      setMessage(
+        gate,
+        error?.message || 'Impossibile rimuovere l’utente.',
+        'error',
+      );
+    } finally {
+      confirmButton.disabled = false;
+      confirmButton.textContent = 'Conferma rimozione';
+      if (removeButton) removeButton.disabled = false;
+    }
   });
 
   gate.querySelector('#access-form')?.elements.role?.addEventListener('change', () => {

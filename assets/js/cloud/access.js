@@ -198,5 +198,48 @@ export async function createOrUpdateAthleteAccess({
   return data;
 }
 
+
+export async function removeAthleteUser({
+  athleteId,
+  userId,
+}) {
+  if (!currentAccess.isOwner || currentAccess.athleteId !== athleteId) {
+    throw new Error('Solo il proprietario dell’atleta può rimuovere utenti.');
+  }
+
+  if (!userId) {
+    throw new Error('Utente non specificato.');
+  }
+
+  const { data, error } = await supabase.functions.invoke('remove-user', {
+    body: {
+      athleteId,
+      userId,
+    },
+  });
+
+  if (error) {
+    let message = error.message || 'Errore durante la rimozione dell’utente.';
+
+    try {
+      const context = error.context;
+      if (context && typeof context.json === 'function') {
+        const payload = await context.json();
+        if (payload?.error) message = payload.error;
+      }
+    } catch {
+      // Keep the original message.
+    }
+
+    throw new Error(message);
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
 // Compatibility for any code still importing the old function name.
 export const inviteOrUpdateAthleteAccess = createOrUpdateAthleteAccess;

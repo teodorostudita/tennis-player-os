@@ -469,3 +469,51 @@
 .tpos-route-locked[aria-disabled="true"] {
   cursor: not-allowed;
 }
+
+
+/* v0.20.1 — explicit user removal flow */
+.access-form-actions-split {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.access-form-actions-main,
+.access-remove-confirm-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.access-remove-confirm {
+  border: 1px solid rgba(160, 54, 54, .28);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(176, 54, 54, .06);
+  color: #6e3030;
+}
+
+.access-remove-confirm strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.access-remove-confirm p {
+  margin: 0 0 10px;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .access-form-actions-split {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .access-form-actions-main,
+  .access-remove-confirm-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
