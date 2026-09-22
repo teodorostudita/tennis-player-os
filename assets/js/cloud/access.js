@@ -152,10 +152,11 @@ export async function loadAthleteAccessDirectory(athleteId) {
   }));
 }
 
-export async function inviteOrUpdateAthleteAccess({
+export async function createOrUpdateAthleteAccess({
   athleteId,
   email,
   displayName = '',
+  temporaryPassword = '',
   role = 'member',
   permissions = [],
 }) {
@@ -163,18 +164,19 @@ export async function inviteOrUpdateAthleteAccess({
     throw new Error('Solo il proprietario dell’atleta può gestire gli accessi.');
   }
 
-  const { data, error } = await supabase.functions.invoke('invite-user', {
+  const { data, error } = await supabase.functions.invoke('create-user', {
     body: {
       athleteId,
       email,
       displayName,
+      temporaryPassword,
       role,
       permissions,
     },
   });
 
   if (error) {
-    let message = error.message || 'Errore durante la gestione dell’accesso.';
+    let message = error.message || 'Errore durante la gestione dell’utente.';
 
     try {
       const context = error.context;
@@ -195,3 +197,6 @@ export async function inviteOrUpdateAthleteAccess({
 
   return data;
 }
+
+// Compatibility for any code still importing the old function name.
+export const inviteOrUpdateAthleteAccess = createOrUpdateAthleteAccess;

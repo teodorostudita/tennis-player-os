@@ -1,7 +1,7 @@
 import { modules } from '../data/schema.js';
 import {
+  createOrUpdateAthleteAccess,
   getCurrentAccess,
-  inviteOrUpdateAthleteAccess,
   loadAthleteAccessDirectory,
 } from '../cloud/access.js';
 
@@ -121,7 +121,7 @@ function renderShell(gate) {
               <h3>Utenti autorizzati</h3>
               <p>Owner, amministratori e collaboratori.</p>
             </div>
-            <button class="button button-primary" type="button" id="access-new-user">+ Nuovo accesso</button>
+            <button class="button button-primary" type="button" id="access-new-user" hidden>+ Nuovo utente</button>
           </div>
           <div id="access-members-list" class="access-members-list">
             <div class="access-loading">Caricamento utenti…</div>
@@ -131,8 +131,8 @@ function renderShell(gate) {
         <aside class="access-editor-panel">
           <div class="access-section-head">
             <div>
-              <h3 id="access-editor-title">Nuovo accesso</h3>
-              <p id="access-editor-subtitle">Invita un nuovo utente o collega un account esistente.</p>
+              <h3 id="access-editor-title">Nuovo utente</h3>
+              <p id="access-editor-subtitle">Crea un nuovo account o assegna un account esistente a questo atleta.</p>
             </div>
           </div>
 
@@ -140,7 +140,7 @@ function renderShell(gate) {
             <input type="hidden" name="userId" />
 
             <label class="access-field">
-              <span>Email</span>
+              <span>Email / login</span>
               <input name="email" type="email" autocomplete="off" required placeholder="nome@example.com" />
             </label>
 
@@ -148,6 +148,36 @@ function renderShell(gate) {
               <span>Nome visualizzato</span>
               <input name="displayName" autocomplete="off" placeholder="es. Coach Mario" />
             </label>
+
+            <div id="access-password-block">
+              <label class="access-field">
+                <span>Password temporanea</span>
+                <input
+                  name="temporaryPassword"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  placeholder="Minimo 8 caratteri"
+                />
+              </label>
+
+              <label class="access-field">
+                <span>Ripeti password temporanea</span>
+                <input
+                  name="temporaryPasswordConfirm"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  placeholder="Ripeti la password"
+                />
+              </label>
+
+              <div class="access-info">
+                Se l’account non esiste ancora, questa sarà la password del primo accesso.
+                L’utente sarà obbligato a cambiarla subito. Se l’email appartiene già a
+                un account esistente, la sua password non viene modificata.
+              </div>
+            </div>
 
             <label class="access-field">
               <span>Ruolo</span>
@@ -158,7 +188,8 @@ function renderShell(gate) {
             </label>
 
             <div id="access-admin-note" class="access-info" hidden>
-              Un Admin può leggere e modificare tutti i moduli dell’atleta, ma non può gestire utenti e privilegi.
+              Un Admin può leggere e modificare tutti i moduli dell’atleta e può creare nuovi atleti.
+              Non può gestire utenti e privilegi dell’atleta.
             </div>
 
             <div id="access-permissions-block">
@@ -181,8 +212,8 @@ function renderShell(gate) {
             <div id="access-message" class="auth-message" role="status" aria-live="polite"></div>
 
             <div class="access-form-actions">
-              <button class="button button-ghost" type="button" id="access-reset-form">Annulla modifica</button>
-              <button class="button button-primary" type="submit" id="access-submit">Invita / salva accesso</button>
+              <button class="button button-ghost" type="button" id="access-reset-form" hidden>Annulla modifica</button>
+              <button class="button button-primary" type="submit" id="access-submit">Crea utente</button>
             </div>
           </form>
         </aside>
@@ -212,6 +243,30 @@ function collectPermissions(form) {
   });
 }
 
+function updateEditorMode(gate, member = null) {
+  const editing = Boolean(member?.userId);
+  const form = gate.querySelector('#access-form');
+  const passwordBlock = gate.querySelector('#access-password-block');
+  const newUserButton = gate.querySelector('#access-new-user');
+  const resetButton = gate.querySelector('#access-reset-form');
+  const submit = gate.querySelector('#access-submit');
+
+  if (passwordBlock) passwordBlock.hidden = editing;
+  if (newUserButton) newUserButton.hidden = !editing;
+  if (resetButton) resetButton.hidden = !editing;
+
+  for (const name of ['temporaryPassword', 'temporaryPasswordConfirm']) {
+    const input = form?.elements?.[name];
+    if (!input) continue;
+    input.disabled = editing;
+    input.value = '';
+  }
+
+  if (submit) {
+    submit.textContent = editing ? 'Salva modifiche' : 'Crea utente';
+  }
+}
+
 function applyMemberToForm(gate, member = null) {
   const form = gate.querySelector('#access-form');
   if (!form) return;
@@ -224,11 +279,11 @@ function applyMemberToForm(gate, member = null) {
   form.elements.role.value = member?.role === 'admin' ? 'admin' : 'member';
 
   gate.querySelector('#access-editor-title').textContent =
-    member ? 'Modifica accesso' : 'Nuovo accesso';
+    member ? 'Modifica utente' : 'Nuovo utente';
   gate.querySelector('#access-editor-subtitle').textContent =
     member
       ? 'Aggiorna ruolo e privilegi dell’account selezionato.'
-      : 'Invita un nuovo utente o collega un account esistente.';
+      : 'Crea un nuovo account o assegna un account esistente a questo atleta.';
 
   for (const module of modules) {
     const select = form.elements[`permission-${module.id}`];
@@ -236,6 +291,7 @@ function applyMemberToForm(gate, member = null) {
     select.value = permissionValue(member?.permissions?.[module.id] || {});
   }
 
+  updateEditorMode(gate, member);
   updateRoleUI(gate);
   setMessage(gate, '');
 }
@@ -331,41 +387,62 @@ export function openAccessManagement({ athleteId }) {
     const form = event.currentTarget;
     const submit = gate.querySelector('#access-submit');
     const data = new FormData(form);
+    const editing = Boolean(String(data.get('userId') || ''));
     const role = String(data.get('role') || 'member');
     const email = String(data.get('email') || '').trim();
     const displayName = String(data.get('displayName') || '').trim();
+    const temporaryPassword = editing
+      ? ''
+      : String(data.get('temporaryPassword') || '');
+    const temporaryPasswordConfirm = editing
+      ? ''
+      : String(data.get('temporaryPasswordConfirm') || '');
+
+    if (!editing && (temporaryPassword || temporaryPasswordConfirm)) {
+      if (temporaryPassword.length < 8) {
+        setMessage(gate, 'La password temporanea deve contenere almeno 8 caratteri.', 'error');
+        return;
+      }
+
+      if (temporaryPassword !== temporaryPasswordConfirm) {
+        setMessage(gate, 'Le due password temporanee non coincidono.', 'error');
+        return;
+      }
+    }
 
     submit.disabled = true;
     submit.textContent = 'Salvataggio…';
 
     try {
-      const result = await inviteOrUpdateAthleteAccess({
+      const result = await createOrUpdateAthleteAccess({
         athleteId,
         email,
         displayName,
+        temporaryPassword,
         role,
         permissions: role === 'member' ? collectPermissions(form) : [],
       });
 
-      setMessage(
-        gate,
-        result?.invitationSent
-          ? 'Invito inviato e privilegi assegnati.'
-          : 'Accesso e privilegi aggiornati.',
-        'success',
-      );
-
       await refreshMembers(gate, athleteId);
       applyMemberToForm(gate, null);
+
+      setMessage(
+        gate,
+        result?.accountCreated
+          ? 'Utente creato. Potrà entrare subito con la password temporanea e dovrà cambiarla al primo accesso.'
+          : 'Account esistente collegato e privilegi aggiornati.',
+        'success',
+      );
     } catch (error) {
       setMessage(
         gate,
-        error?.message || 'Impossibile salvare l’accesso.',
+        error?.message || 'Impossibile salvare l’utente.',
         'error',
       );
     } finally {
       submit.disabled = false;
-      submit.textContent = 'Invita / salva accesso';
+      const editingNow = Boolean(form.elements.userId.value);
+      submit.textContent = editingNow ? 'Salva modifiche' : 'Crea utente';
     }
   });
 
