@@ -1,5 +1,6 @@
 import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js';
 import { canReadModule, canWriteModule, loadCurrentAccess } from './cloud/access.js';
+import { canCreateAthletes, loadCurrentAccountAccess } from './cloud/accountAccess.js';
 import { startPermissionGuard } from './cloud/permissionGuard.js';
 import { mountAccessManagementControl } from './components/accessManagement.js';
 import {
@@ -163,17 +164,31 @@ const session = await requireAuthenticatedSession();
 
 if (session) {
   try {
+    await loadCurrentAccountAccess();
+
     let athletes = await loadAccessibleAthletes();
+
+    if (!athletes.length && !canCreateAthletes()) {
+      showStartupError(
+        'Nessun atleta è attualmente assegnato a questo account.',
+      );
+    } else {
     let cloudAthlete = resolveSelectedAthlete(athletes);
 
-    if (!cloudAthlete) {
-      cloudAthlete = await showAthletePicker({
-        athletes,
-        currentAthleteId: '',
-      });
-      setSelectedAthleteId(cloudAthlete.id);
-      athletes = await loadAccessibleAthletes();
-    }
+      if (!cloudAthlete) {
+        cloudAthlete = await showAthletePicker({
+          athletes,
+          currentAthleteId: '',
+          canCreateAthletes: canCreateAthletes(),
+        });
+
+        if (!cloudAthlete) {
+          throw new Error('Nessun atleta selezionato.');
+        }
+
+        setSelectedAthleteId(cloudAthlete.id);
+        athletes = await loadAccessibleAthletes();
+      }
 
     await loadCurrentAccess(cloudAthlete.id);
 
@@ -209,6 +224,8 @@ if (session) {
       mountAuthControls(session.user);
       mountAthleteControls({
         currentAthlete: cloudAthlete,
+        athleteCount: athletes.length,
+        canCreateAthletes: canCreateAthletes(),
       });
       mountAccessManagementControl({
         athleteId: cloudAthlete.id,
@@ -227,6 +244,7 @@ if (session) {
       } else {
         setCalendarCloudStatus({ status: 'unavailable' });
       }
+    }
     }
   } catch (error) {
     console.error('Cloud startup failed:', error);

@@ -4,6 +4,7 @@ let authGate = null;
 
 const RECOVERY_PARAM = 'tpos_recovery';
 const INVITE_PARAM = 'tpos_invite';
+const INVITE_EMAIL_PARAM = 'tpos_invite_email';
 
 function ensureAuthGate() {
   if (authGate?.isConnected) return authGate;
@@ -175,6 +176,7 @@ function cleanAuthActionUrl() {
 
   url.searchParams.delete(RECOVERY_PARAM);
   url.searchParams.delete(INVITE_PARAM);
+  url.searchParams.delete(INVITE_EMAIL_PARAM);
   url.searchParams.delete('code');
   url.searchParams.delete('error');
   url.searchParams.delete('error_code');
@@ -220,17 +222,71 @@ async function requestPasswordReset(email) {
   }
 }
 
-async function resolveAuthActionSession() {
+function normalizedEmail(value = '') {
+  return String(value || '').trim().toLowerCase();
+}
+
+function expectedInviteEmail() {
   try {
-    const { data, error } = await supabase.auth.getSession();
+    return normalizedEmail(
+      new URL(window.location.href).searchParams.get(INVITE_EMAIL_PARAM) || '',
+    );
+  } catch {
+    return '';
+  }
+}
+
+function sessionMatchesExpectedEmail(session, expectedEmail = '') {
+  if (!session) return false;
+  if (!expectedEmail) return true;
+  return normalizedEmail(session.user?.email) === expectedEmail;
+}
+
+async function resolveSessionFromCurrentUrl() {
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get('code');
+
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
-      console.error('Auth action getSession failed:', error);
+      console.error('Auth code exchange failed:', error);
+    } else if (data?.session) {
+      return data.session;
     }
+  }
 
-    if (data?.session) return data.session;
+  const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+  const accessToken = hash.get('access_token');
+  const refreshToken = hash.get('refresh_token');
+
+  if (accessToken && refreshToken) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error) {
+      console.error('Auth URL session failed:', error);
+    } else if (data?.session) {
+      return data.session;
+    }
+  }
+
+  return null;
+}
+
+async function resolveAuthActionSession({
+  expectedEmail = '',
+} = {}) {
+  try {
+    const urlSession = await resolveSessionFromCurrentUrl();
+
+    if (sessionMatchesExpectedEmail(urlSession, expectedEmail)) {
+      return urlSession;
+    }
   } catch (error) {
-    console.error('Auth action getSession failed:', error);
+    console.error('Auth URL resolution failed:', error);
   }
 
   return new Promise(resolve => {
@@ -238,6 +294,8 @@ async function resolveAuthActionSession() {
 
     const finish = (session) => {
       if (settled) return;
+      if (!sessionMatchesExpectedEmail(session, expectedEmail)) return;
+
       settled = true;
       subscription?.unsubscribe();
       window.clearTimeout(timer);
@@ -257,7 +315,28 @@ async function resolveAuthActionSession() {
       }
     });
 
-    const timer = window.setTimeout(() => finish(null), 5000);
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Auth action getSession failed:', error);
+        }
+
+        if (sessionMatchesExpectedEmail(data?.session, expectedEmail)) {
+          finish(data.session);
+          return;
+        }
+      } catch (error) {
+        console.error('Auth action getSession failed:', error);
+      }
+
+      if (!settled) {
+        settled = true;
+        subscription?.unsubscribe();
+        resolve(null);
+      }
+    }, 5000);
   });
 }
 
@@ -408,7 +487,9 @@ async function waitForLogin(initialMessage = '') {
 
 export async function requireAuthenticatedSession() {
   if (isInviteReturn()) {
-    const inviteSession = await resolveAuthActionSession();
+    const inviteSession = await resolveAuthActionSession({
+      expectedEmail: expectedInviteEmail(),
+    });
 
     if (inviteSession) {
       return completePasswordAction(inviteSession, { mode: 'invite' });

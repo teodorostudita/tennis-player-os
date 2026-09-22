@@ -117,7 +117,11 @@ export async function syncSelectedAthleteToLocalStore(store, cloudAthlete, userI
   return cloudAthlete;
 }
 
-function pickerMarkup(athletes, currentAthleteId = '') {
+function pickerMarkup(
+  athletes,
+  currentAthleteId = '',
+  canCreateAthletes = false,
+) {
   const athleteCards = athletes.length
     ? athletes.map(athlete => `
       <button
@@ -135,17 +139,8 @@ function pickerMarkup(athletes, currentAthleteId = '') {
     `).join('')
     : '<p class="auth-intro">Non ci sono ancora atleti associati a questo account.</p>';
 
-  return `
-    <section class="auth-card athlete-picker-card-shell" aria-labelledby="athlete-picker-title">
-      <div class="auth-brand-mark" aria-hidden="true">🎾</div>
-      <div class="auth-kicker">Tennis Player OS</div>
-      <h1 id="athlete-picker-title">Scegli atleta</h1>
-      <p class="auth-intro">Ogni atleta ha dati, Calendar e permessi separati.</p>
-
-      <div class="athlete-picker-list">
-        ${athleteCards}
-      </div>
-
+  const createMarkup = canCreateAthletes
+    ? `
       <div class="athlete-picker-divider"><span>oppure</span></div>
 
       <form id="create-athlete-form" class="auth-form">
@@ -168,6 +163,25 @@ function pickerMarkup(athletes, currentAthleteId = '') {
           <button class="auth-submit" type="submit">Crea atleta</button>
         </div>
       </form>
+    `
+    : '';
+
+  return `
+    <section class="auth-card athlete-picker-card-shell" aria-labelledby="athlete-picker-title">
+      <div class="auth-brand-mark" aria-hidden="true">🎾</div>
+      <div class="auth-kicker">Tennis Player OS</div>
+      <h1 id="athlete-picker-title">Scegli atleta</h1>
+      <p class="auth-intro">
+        ${canCreateAthletes
+          ? 'Ogni atleta ha dati, Calendar e permessi separati.'
+          : 'Puoi scegliere solo tra gli atleti assegnati al tuo account.'}
+      </p>
+
+      <div class="athlete-picker-list">
+        ${athleteCards}
+      </div>
+
+      ${createMarkup}
     </section>
   `;
 }
@@ -175,10 +189,15 @@ function pickerMarkup(athletes, currentAthleteId = '') {
 export function showAthletePicker({
   athletes = [],
   currentAthleteId = '',
+  canCreateAthletes = false,
 } = {}) {
   const gate = document.createElement('div');
   gate.className = 'auth-gate athlete-picker-gate';
-  gate.innerHTML = pickerMarkup(athletes, currentAthleteId);
+  gate.innerHTML = pickerMarkup(
+    athletes,
+    currentAthleteId,
+    canCreateAthletes,
+  );
   document.body.appendChild(gate);
 
   return new Promise(resolve => {
@@ -201,6 +220,8 @@ export function showAthletePicker({
     });
 
     const form = gate.querySelector('#create-athlete-form');
+    if (!form) return;
+
     const message = gate.querySelector('#athlete-picker-message');
     const submit = form.querySelector('button[type="submit"]');
 
@@ -231,9 +252,13 @@ export function showAthletePicker({
 export function mountAthleteControls({
   currentAthlete,
   loadAthletes = loadAccessibleAthletes,
+  athleteCount = 1,
+  canCreateAthletes = false,
 } = {}) {
   const actions = document.querySelector('.topbar-actions');
   if (!actions || actions.querySelector('[data-athlete-controls]')) return;
+
+  const canSwitch = athleteCount > 1 || canCreateAthletes;
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -242,9 +267,19 @@ export function mountAthleteControls({
   button.innerHTML = `
     <span class="athlete-switch-label">Atleta</span>
     <span class="athlete-switch-name">${escapeHtml(athleteLabel(currentAthlete))}</span>
-    <span class="athlete-switch-chevron" aria-hidden="true">⌄</span>
+    ${canSwitch ? '<span class="athlete-switch-chevron" aria-hidden="true">⌄</span>' : ''}
   `;
-  button.title = 'Cambia o crea atleta';
+
+  if (!canSwitch) {
+    button.disabled = true;
+    button.title = 'Atleta assegnato a questo account';
+    actions.prepend(button);
+    return;
+  }
+
+  button.title = canCreateAthletes
+    ? 'Cambia o crea atleta'
+    : 'Cambia atleta';
 
   button.addEventListener('click', async () => {
     button.disabled = true;
@@ -254,6 +289,7 @@ export function mountAthleteControls({
       const selected = await showAthletePicker({
         athletes,
         currentAthleteId: currentAthlete?.id || '',
+        canCreateAthletes,
       });
 
       if (selected?.id && selected.id !== currentAthlete?.id) {

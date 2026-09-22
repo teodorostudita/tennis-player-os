@@ -5,7 +5,12 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const APP_URL = 'https://tennis.polidorionline.it';
-const INVITE_REDIRECT_URL = `${APP_URL}/?tpos_invite=1`;
+function inviteRedirectUrl(email: string) {
+  const url = new URL(APP_URL);
+  url.searchParams.set('tpos_invite', '1');
+  url.searchParams.set('tpos_invite_email', email);
+  return url.toString();
+}
 
 const ALLOWED_ORIGINS = new Set([
   APP_URL,
@@ -228,7 +233,7 @@ Deno.serve(async req => {
     if (!targetUser) {
       const { data: inviteData, error: inviteError } =
         await adminClient.auth.admin.inviteUserByEmail(email, {
-          redirectTo: INVITE_REDIRECT_URL,
+          redirectTo: inviteRedirectUrl(email),
           data: displayName ? { full_name: displayName } : {},
         });
 
@@ -250,6 +255,45 @@ Deno.serve(async req => {
     }
 
     try {
+      const { data: accountRoleRow, error: accountRoleReadError } =
+        await adminClient
+          .from('account_access')
+          .select('role, can_create_athletes')
+          .eq('user_id', targetUser.id)
+          .maybeSingle();
+
+      if (accountRoleReadError) throw accountRoleReadError;
+
+      // Athlete admin implies an account that may create athletes. A later
+      // athlete-level change back to member does NOT silently demote a global
+      // admin, because that user may administer other athletes.
+      if (role === 'admin' && accountRoleRow?.role !== 'owner') {
+        const { error: accountRoleUpdateError } = await adminClient
+          .from('account_access')
+          .upsert(
+            {
+              user_id: targetUser.id,
+              role: 'admin',
+              can_create_athletes: true,
+            },
+            {
+              onConflict: 'user_id',
+            },
+          );
+
+        if (accountRoleUpdateError) throw accountRoleUpdateError;
+      } else if (!accountRoleRow) {
+        const { error: accountRoleInsertError } = await adminClient
+          .from('account_access')
+          .insert({
+            user_id: targetUser.id,
+            role: 'member',
+            can_create_athletes: false,
+          });
+
+        if (accountRoleInsertError) throw accountRoleInsertError;
+      }
+
       const { error: membershipError } = await adminClient
         .from('athlete_members')
         .upsert(
