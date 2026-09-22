@@ -1,4 +1,6 @@
 import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js';
+import { canReadModule, canWriteModule, loadCurrentAccess } from './cloud/access.js';
+import { mountAccessManagementControl } from './components/accessManagement.js';
 import {
   loadAccessibleAthletes,
   mountAthleteControls,
@@ -127,6 +129,18 @@ function setCalendarCloudStatus({ status, message = '' }) {
     return;
   }
 
+  if (status === 'readonly') {
+    saveIndicator.textContent = 'Calendar cloud · sola lettura';
+    saveIndicator.title = 'Questo account può leggere il Calendar ma non modificarlo.';
+    return;
+  }
+
+  if (status === 'unavailable') {
+    saveIndicator.textContent = 'Calendar non autorizzato';
+    saveIndicator.title = 'Questo account non ha accesso al modulo Calendar.';
+    return;
+  }
+
   saveIndicator.textContent = 'Calendar cloud ✓';
   saveIndicator.title = 'Calendar letto e salvato su Supabase. Gli altri moduli restano locali per singolo atleta.';
 }
@@ -160,6 +174,8 @@ if (session) {
       athletes = await loadAccessibleAthletes();
     }
 
+    await loadCurrentAccess(cloudAthlete.id);
+
     await syncSelectedAthleteToLocalStore(
       store,
       cloudAthlete,
@@ -179,23 +195,36 @@ if (session) {
       });
       showCalendarVerificationResult(result);
     } else {
-      const cloudPlanner = await loadCalendarIntoLocalStore({
-        store,
-        athleteId: cloudAthlete.id,
-      });
+      let cloudPlanner = store.getState().planner;
+
+      if (canReadModule('calendar')) {
+        cloudPlanner = await loadCalendarIntoLocalStore({
+          store,
+          athleteId: cloudAthlete.id,
+        });
+      }
 
       await import('./app.js');
       mountAuthControls(session.user);
       mountAthleteControls({
         currentAthlete: cloudAthlete,
       });
-
-      startCalendarCloudSync({
-        store,
+      mountAccessManagementControl({
         athleteId: cloudAthlete.id,
-        initialPlanner: cloudPlanner,
-        onStatus: setCalendarCloudStatus,
       });
+
+      if (canReadModule('calendar') && canWriteModule('calendar')) {
+        startCalendarCloudSync({
+          store,
+          athleteId: cloudAthlete.id,
+          initialPlanner: cloudPlanner,
+          onStatus: setCalendarCloudStatus,
+        });
+      } else if (canReadModule('calendar')) {
+        setCalendarCloudStatus({ status: 'readonly' });
+      } else {
+        setCalendarCloudStatus({ status: 'unavailable' });
+      }
     }
   } catch (error) {
     console.error('Cloud startup failed:', error);

@@ -1,0 +1,372 @@
+/* Users & access management */
+.access-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(7, 22, 44, .72);
+  backdrop-filter: blur(5px);
+}
+
+.access-dialog {
+  width: min(1120px, 100%);
+  max-height: min(860px, calc(100vh - 40px));
+  overflow: hidden;
+  border-radius: 22px;
+  background: #f7f9fc;
+  box-shadow: 0 26px 90px rgba(0, 0, 0, .34);
+}
+
+.access-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid #e1e7ef;
+  background: white;
+}
+
+.access-dialog-head h2 {
+  margin: 4px 0 5px;
+  color: #0b1f3a;
+  font-size: 1.6rem;
+}
+
+.access-dialog-head p,
+.access-section-head p {
+  margin: 0;
+  color: #77859a;
+  font-size: .82rem;
+}
+
+.access-dialog-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, .92fr);
+  min-height: 520px;
+  max-height: calc(100vh - 160px);
+}
+
+.access-members-panel,
+.access-editor-panel {
+  min-width: 0;
+  overflow: auto;
+  padding: 22px 24px 28px;
+}
+
+.access-members-panel {
+  border-right: 1px solid #e1e7ef;
+}
+
+.access-editor-panel {
+  background: white;
+}
+
+.access-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.access-section-head h3 {
+  margin: 0 0 4px;
+  color: #17233b;
+}
+
+.access-members-list {
+  display: grid;
+  gap: 10px;
+}
+
+.access-member-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #dce3ec;
+  border-radius: 13px;
+  background: white;
+}
+
+.access-member-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #0b1f3a;
+  color: white;
+  font-weight: 900;
+}
+
+.access-member-copy {
+  min-width: 0;
+}
+
+.access-member-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: #17233b;
+  font-weight: 850;
+}
+
+.access-member-email,
+.access-member-summary {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #7b889a;
+  font-size: .74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-member-summary {
+  color: #59697e;
+}
+
+.access-role-badge,
+.access-status-badge {
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: .61rem;
+  font-weight: 900;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.access-role-badge {
+  background: #edf2f7;
+  color: #526177;
+}
+
+.access-role-badge.role-owner {
+  background: #e7effa;
+  color: #254f7c;
+}
+
+.access-role-badge.role-admin {
+  background: #eef5ec;
+  color: #3c6b3e;
+}
+
+.access-status-badge {
+  background: #fff1e8;
+  color: #9a5528;
+}
+
+.access-owner-lock {
+  color: #8793a5;
+  font-size: .72rem;
+  font-weight: 750;
+}
+
+.access-form {
+  display: grid;
+  gap: 14px;
+}
+
+.access-field {
+  display: grid;
+  gap: 6px;
+}
+
+.access-field > span {
+  color: #526177;
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.access-field input,
+.access-field select,
+.access-permission-row select {
+  width: 100%;
+  border: 1px solid #d4dce8;
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #fbfcfe;
+  color: #17233b;
+}
+
+.access-field input:focus,
+.access-field select:focus,
+.access-permission-row select:focus {
+  border-color: #7397bd;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(115, 151, 189, .15);
+}
+
+.access-field input[readonly] {
+  background: #f0f3f7;
+  color: #6e7b8d;
+}
+
+.access-info {
+  border: 1px solid #d8e4f1;
+  border-radius: 11px;
+  padding: 11px 12px;
+  background: #f3f7fb;
+  color: #49617b;
+  font-size: .77rem;
+  line-height: 1.45;
+}
+
+.access-permissions-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 9px;
+}
+
+.access-permissions-head > div:first-child {
+  display: grid;
+  gap: 2px;
+  color: #283a54;
+}
+
+.access-permissions-head small {
+  color: #8290a2;
+}
+
+.access-permission-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.access-permission-shortcuts .auth-text-button {
+  font-size: .68rem;
+}
+
+.access-permission-rows {
+  display: grid;
+  max-height: 310px;
+  overflow: auto;
+  border: 1px solid #e0e6ee;
+  border-radius: 12px;
+}
+
+.access-permission-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 165px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.access-permission-row:last-child {
+  border-bottom: 0;
+}
+
+.access-module-copy {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.access-module-copy > span:last-child {
+  min-width: 0;
+  display: grid;
+}
+
+.access-module-copy strong,
+.access-module-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-module-copy strong {
+  color: #253852;
+  font-size: .78rem;
+}
+
+.access-module-copy small {
+  color: #8a96a7;
+  font-size: .66rem;
+}
+
+.access-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 4px;
+}
+
+.access-loading,
+.access-empty {
+  padding: 18px;
+  color: #7d8a9d;
+  text-align: center;
+}
+
+.access-topbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .access-gate {
+    padding: 10px;
+  }
+
+  .access-dialog {
+    max-height: calc(100vh - 20px);
+  }
+
+  .access-dialog-body {
+    grid-template-columns: 1fr;
+    overflow: auto;
+    max-height: calc(100vh - 115px);
+  }
+
+  .access-members-panel,
+  .access-editor-panel {
+    overflow: visible;
+  }
+
+  .access-members-panel {
+    border-right: 0;
+    border-bottom: 1px solid #e1e7ef;
+  }
+
+  .access-topbar-button span:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .access-dialog-head,
+  .access-members-panel,
+  .access-editor-panel {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .access-permission-row {
+    grid-template-columns: 1fr;
+  }
+
+  .access-permissions-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .access-permission-shortcuts {
+    justify-content: flex-start;
+  }
+}

@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient.js';
 let authGate = null;
 
 const RECOVERY_PARAM = 'tpos_recovery';
+const INVITE_PARAM = 'tpos_invite';
 
 function ensureAuthGate() {
   if (authGate?.isConnected) return authGate;
@@ -67,20 +68,26 @@ function renderLoginGate() {
   return gate;
 }
 
-function renderRecoveryGate() {
+function renderPasswordGate({
+  mode = 'recovery',
+} = {}) {
+  const isInvite = mode === 'invite';
   const gate = ensureAuthGate();
+
   gate.innerHTML = `
     <section class="auth-card" aria-labelledby="auth-title">
-      <div class="auth-brand-mark" aria-hidden="true">🔐</div>
+      <div class="auth-brand-mark" aria-hidden="true">${isInvite ? '✓' : '🔐'}</div>
       <div class="auth-kicker">Tennis Player OS</div>
-      <h1 id="auth-title">Nuova password</h1>
+      <h1 id="auth-title">${isInvite ? 'Attiva il tuo account' : 'Nuova password'}</h1>
       <p class="auth-intro">
-        Il link di recupero è stato verificato. Scegli ora la nuova password.
+        ${isInvite
+          ? 'Il tuo invito è stato verificato. Scegli una password per completare l’accesso.'
+          : 'Il link di recupero è stato verificato. Scegli ora la nuova password.'}
       </p>
 
-      <form id="auth-recovery-form" class="auth-form">
+      <form id="auth-password-form" class="auth-form">
         <label>
-          <span>Nuova password</span>
+          <span>${isInvite ? 'Scegli password' : 'Nuova password'}</span>
           <input
             id="auth-new-password"
             name="password"
@@ -106,11 +113,12 @@ function renderRecoveryGate() {
         <div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
 
         <button id="auth-submit" class="auth-submit" type="submit">
-          Salva nuova password
+          ${isInvite ? 'Attiva account' : 'Salva nuova password'}
         </button>
       </form>
     </section>
   `;
+
   return gate;
 }
 
@@ -134,25 +142,39 @@ function setAuthBusy(isBusy, busyLabel = 'Operazione in corso…', idleLabel = '
   if (forgot) forgot.disabled = isBusy;
 }
 
-function isRecoveryReturn() {
+function hasReturnParam(param) {
   try {
-    return new URL(window.location.href).searchParams.get(RECOVERY_PARAM) === '1';
+    return new URL(window.location.href).searchParams.get(param) === '1';
   } catch {
     return false;
   }
 }
 
-function recoveryRedirectUrl() {
+function isRecoveryReturn() {
+  return hasReturnParam(RECOVERY_PARAM);
+}
+
+function isInviteReturn() {
+  return hasReturnParam(INVITE_PARAM);
+}
+
+function redirectUrlFor(param) {
   const url = new URL(window.location.href);
   url.search = '';
   url.hash = '';
-  url.searchParams.set(RECOVERY_PARAM, '1');
+  url.searchParams.set(param, '1');
   return url.toString();
 }
 
-function cleanRecoveryUrl() {
+function recoveryRedirectUrl() {
+  return redirectUrlFor(RECOVERY_PARAM);
+}
+
+function cleanAuthActionUrl() {
   const url = new URL(window.location.href);
+
   url.searchParams.delete(RECOVERY_PARAM);
+  url.searchParams.delete(INVITE_PARAM);
   url.searchParams.delete('code');
   url.searchParams.delete('error');
   url.searchParams.delete('error_code');
@@ -198,17 +220,17 @@ async function requestPasswordReset(email) {
   }
 }
 
-async function resolveRecoverySession() {
+async function resolveAuthActionSession() {
   try {
     const { data, error } = await supabase.auth.getSession();
 
     if (error) {
-      console.error('Recovery getSession failed:', error);
+      console.error('Auth action getSession failed:', error);
     }
 
     if (data?.session) return data.session;
   } catch (error) {
-    console.error('Recovery getSession failed:', error);
+    console.error('Auth action getSession failed:', error);
   }
 
   return new Promise(resolve => {
@@ -223,7 +245,14 @@ async function resolveRecoverySession() {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') && session) {
+      if (
+        (
+          event === 'PASSWORD_RECOVERY'
+          || event === 'SIGNED_IN'
+          || event === 'INITIAL_SESSION'
+        )
+        && session
+      ) {
         finish(session);
       }
     });
@@ -232,10 +261,14 @@ async function resolveRecoverySession() {
   });
 }
 
-async function completePasswordRecovery(session) {
-  const gate = renderRecoveryGate();
-  const form = gate.querySelector('#auth-recovery-form');
+async function completePasswordAction(session, {
+  mode = 'recovery',
+} = {}) {
+  const isInvite = mode === 'invite';
+  const gate = renderPasswordGate({ mode });
+  const form = gate.querySelector('#auth-password-form');
   const firstPassword = gate.querySelector('#auth-new-password');
+  const idleLabel = isInvite ? 'Attiva account' : 'Salva nuova password';
 
   requestAnimationFrame(() => firstPassword?.focus());
 
@@ -258,19 +291,34 @@ async function completePasswordRecovery(session) {
         return;
       }
 
-      setAuthBusy(true, 'Salvataggio…', 'Salva nuova password');
+      setAuthBusy(
+        true,
+        isInvite ? 'Attivazione…' : 'Salvataggio…',
+        idleLabel,
+      );
 
       try {
         const { data, error } = await supabase.auth.updateUser({ password });
 
         if (error) {
           console.error('Password update failed:', error);
-          setAuthMessage('Non è stato possibile aggiornare la password.', 'error');
+          setAuthMessage(
+            isInvite
+              ? 'Non è stato possibile attivare l’account.'
+              : 'Non è stato possibile aggiornare la password.',
+            'error',
+          );
           return;
         }
 
-        setAuthMessage('Password aggiornata correttamente.', 'success');
-        cleanRecoveryUrl();
+        setAuthMessage(
+          isInvite
+            ? 'Account attivato correttamente.'
+            : 'Password aggiornata correttamente.',
+          'success',
+        );
+
+        cleanAuthActionUrl();
 
         window.setTimeout(() => {
           gate.remove();
@@ -279,9 +327,18 @@ async function completePasswordRecovery(session) {
         }, 500);
       } catch (error) {
         console.error('Password update failed:', error);
-        setAuthMessage('Non è stato possibile aggiornare la password.', 'error');
+        setAuthMessage(
+          isInvite
+            ? 'Non è stato possibile attivare l’account.'
+            : 'Non è stato possibile aggiornare la password.',
+          'error',
+        );
       } finally {
-        setAuthBusy(false, 'Salvataggio…', 'Salva nuova password');
+        setAuthBusy(
+          false,
+          isInvite ? 'Attivazione…' : 'Salvataggio…',
+          idleLabel,
+        );
       }
     });
   });
@@ -350,14 +407,27 @@ async function waitForLogin(initialMessage = '') {
 }
 
 export async function requireAuthenticatedSession() {
-  if (isRecoveryReturn()) {
-    const recoverySession = await resolveRecoverySession();
+  if (isInviteReturn()) {
+    const inviteSession = await resolveAuthActionSession();
 
-    if (recoverySession) {
-      return completePasswordRecovery(recoverySession);
+    if (inviteSession) {
+      return completePasswordAction(inviteSession, { mode: 'invite' });
     }
 
-    cleanRecoveryUrl();
+    cleanAuthActionUrl();
+    return waitForLogin(
+      'Il link di invito non è più valido o è scaduto. Chiedi un nuovo invito.',
+    );
+  }
+
+  if (isRecoveryReturn()) {
+    const recoverySession = await resolveAuthActionSession();
+
+    if (recoverySession) {
+      return completePasswordAction(recoverySession, { mode: 'recovery' });
+    }
+
+    cleanAuthActionUrl();
     return waitForLogin(
       'Il link di recupero non è più valido o è scaduto. Richiedi una nuova email.',
     );
