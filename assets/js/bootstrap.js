@@ -1,5 +1,12 @@
 import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js';
-import { syncCurrentAthleteToLocalStore } from './cloud/athlete.js';
+import {
+  loadAccessibleAthletes,
+  mountAthleteControls,
+  resolveSelectedAthlete,
+  setSelectedAthleteId,
+  showAthletePicker,
+  syncSelectedAthleteToLocalStore,
+} from './cloud/athlete.js';
 import {
   cleanCalendarMigrationUrl,
   isCalendarMigrationRequested,
@@ -44,18 +51,15 @@ function showCalendarMigrationResult(result) {
         <p class="auth-intro">
           La copia è terminata. I dati locali non sono stati cancellati.
         </p>
-
         <div class="auth-message success">
           Persone: ${escapeHtml(cloud.people ?? local.people ?? 0)} ·
           Serie: ${escapeHtml(cloud.recurringSeries ?? local.recurringSeries ?? 0)} ·
           Attività: ${escapeHtml(cloud.events ?? local.events ?? 0)} ·
           Tornei: ${escapeHtml(cloud.tournaments ?? local.tournaments ?? 0)}
         </div>
-
         <p class="auth-footnote">
           I dati locali restano disponibili come copia di sicurezza sul dispositivo.
         </p>
-
         <a class="auth-submit" href="${escapeAttr(cleanUrl)}">Apri l'app locale</a>
       </section>
     </main>
@@ -96,14 +100,11 @@ function showCalendarVerificationResult(result) {
             ? 'La copia Supabase corrisponde ai dati locali.'
             : 'La verifica non modifica nulla. Alcuni dati locali e cloud non coincidono.'}
         </p>
-
         ${rows}
         ${mismatchDetails}
-
         <p class="auth-footnote">
           Nessun dato è stato modificato durante questa verifica.
         </p>
-
         <a class="auth-submit" href="${escapeAttr(cleanUrl)}">Apri l'app locale</a>
       </section>
     </main>
@@ -127,7 +128,7 @@ function setCalendarCloudStatus({ status, message = '' }) {
   }
 
   saveIndicator.textContent = 'Calendar cloud ✓';
-  saveIndicator.title = 'Calendar letto e salvato su Supabase. Gli altri moduli restano locali.';
+  saveIndicator.title = 'Calendar letto e salvato su Supabase. Gli altri moduli restano locali per singolo atleta.';
 }
 
 function escapeHtml(value = '') {
@@ -147,7 +148,19 @@ const session = await requireAuthenticatedSession();
 
 if (session) {
   try {
-    const cloudAthlete = await syncCurrentAthleteToLocalStore(store);
+    let athletes = await loadAccessibleAthletes();
+    let cloudAthlete = resolveSelectedAthlete(athletes);
+
+    if (!cloudAthlete) {
+      cloudAthlete = await showAthletePicker({
+        athletes,
+        currentAthleteId: '',
+      });
+      setSelectedAthleteId(cloudAthlete.id);
+      athletes = await loadAccessibleAthletes();
+    }
+
+    await syncSelectedAthleteToLocalStore(store, cloudAthlete);
 
     if (isCalendarMigrationRequested()) {
       const result = await migrateLocalCalendarToCloud({
@@ -169,6 +182,9 @@ if (session) {
 
       await import('./app.js');
       mountAuthControls(session.user);
+      mountAthleteControls({
+        currentAthlete: cloudAthlete,
+      });
 
       startCalendarCloudSync({
         store,

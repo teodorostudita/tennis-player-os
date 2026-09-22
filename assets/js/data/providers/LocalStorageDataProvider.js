@@ -1,9 +1,9 @@
 import { DataProvider } from './DataProvider.js';
 
 /**
- * Current structured-data backend.
- * Keeps exactly the same localStorage key used by the legacy Store so existing
- * installations migrate transparently: no export/import is required.
+ * Local structured-data backend.
+ * The provider starts on the legacy key and can switch to an athlete-specific
+ * key once the authenticated athlete has been selected.
  */
 export class LocalStorageDataProvider extends DataProvider {
   constructor({ key }) {
@@ -16,14 +16,31 @@ export class LocalStorageDataProvider extends DataProvider {
     this.key = key;
   }
 
-  loadState() {
-    const raw = localStorage.getItem(this.key);
+  setKey(key) {
+    if (!key) throw new Error('LocalStorageDataProvider requires a storage key.');
+    this.key = key;
+  }
+
+  hasState(key = this.key) {
+    return localStorage.getItem(key) != null;
+  }
+
+  loadStateFromKey(key) {
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     return JSON.parse(raw);
   }
 
+  saveStateToKey(key, state) {
+    localStorage.setItem(key, JSON.stringify(state));
+  }
+
+  loadState() {
+    return this.loadStateFromKey(this.key);
+  }
+
   saveState(state) {
-    localStorage.setItem(this.key, JSON.stringify(state));
+    this.saveStateToKey(this.key, state);
   }
 
   clearState() {

@@ -1,4 +1,4 @@
-import { defaultState } from './schema.js';
+import { defaultState, STORAGE_KEY } from './schema.js';
 import { dataProvider } from './providers/provider.js';
 
 function clone(value) {
@@ -17,7 +17,6 @@ function normalizePlannerEvent(event = {}) {
     responsibilities: { stay: companionId },
   };
 }
-
 
 function addMinutesToTime(time, minutes = 30) {
   const match = /^(\d{1,2}):(\d{2})$/.exec(String(time || ''));
@@ -59,6 +58,10 @@ function normalizeRecurringSeries(series = {}) {
     intervalWeeks: Math.max(1, Math.min(52, Number(series.intervalWeeks) || 1)),
     template,
   };
+}
+
+function athleteStorageKey(athleteId) {
+  return `${STORAGE_KEY}.athlete.${athleteId}`;
 }
 
 class Store {
@@ -122,7 +125,6 @@ class Store {
           },
           goals: Array.isArray(parsedTraining.goals) ? parsedTraining.goals : clone(defaultState.training.goals),
         },
-
         drills: {
           ...clone(defaultState.drills),
           ...parsedDrills,
@@ -135,15 +137,12 @@ class Store {
             records: Array.isArray(parsedDrills.measurements?.records) ? parsedDrills.measurements.records : clone(defaultState.drills.measurements.records),
           },
         },
-
-
         nutrition: {
           ...clone(defaultState.nutrition),
           ...parsedNutrition,
           planner: {
             ...clone(defaultState.nutrition.planner),
             ...(parsedNutrition.planner || {}),
-            // Il calendario alimentare legacy viene migrato in planner.events.
             entries: [],
           },
           templates: Array.isArray(parsedNutrition.templates) ? parsedNutrition.templates : clone(defaultState.nutrition.templates),
@@ -154,7 +153,6 @@ class Store {
           sleepLogs: Array.isArray(parsedNutrition.sleepLogs) ? parsedNutrition.sleepLogs : clone(defaultState.nutrition.sleepLogs),
           recoveryLogs: Array.isArray(parsedNutrition.recoveryLogs) ? parsedNutrition.recoveryLogs : clone(defaultState.nutrition.recoveryLogs),
         },
-
         economics: {
           ...clone(defaultState.economics),
           ...parsedEconomics,
@@ -174,6 +172,48 @@ class Store {
       console.warn('Impossibile leggere i dati dal provider. Uso lo stato iniziale.', error);
       return clone(defaultState);
     }
+  }
+
+  selectAthleteStorage(athleteId) {
+    if (!athleteId || typeof this.provider.setKey !== 'function') return;
+
+    const targetKey = athleteStorageKey(athleteId);
+
+    if (!this.provider.hasState(targetKey)) {
+      const currentKey = this.provider.key;
+      const currentState = this.state;
+
+      // First transition from the legacy single-athlete key.
+      //
+      // Calendar is already cloud-backed, and the legacy local state can contain
+      // thousands of reconstructed recurring occurrences. Copying that whole
+      // planner into a second localStorage key can exceed the browser quota.
+      //
+      // Preserve only the still-local modules; Calendar will be reloaded from
+      // Supabase immediately after the athlete is selected.
+      if (
+        currentKey === STORAGE_KEY
+        && currentState?.athlete?.id === athleteId
+      ) {
+        const migratedState = clone(currentState);
+
+        migratedState.planner = clone(defaultState.planner);
+        migratedState.meta = {
+          ...migratedState.meta,
+          athleteStorageMigratedAt: new Date().toISOString(),
+        };
+
+        this.provider.saveStateToKey(targetKey, migratedState);
+
+        // The athlete-specific copy is now safely written. Remove the obsolete
+        // single-athlete blob so it no longer consumes localStorage quota.
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    this.provider.setKey(targetKey);
+    this.state = this.load();
+    this.emit();
   }
 
   getState() {
