@@ -8,6 +8,8 @@ import {
 import {
   cleanCalendarVerificationUrl,
   isCalendarVerificationRequested,
+  loadCalendarIntoLocalStore,
+  startCalendarCloudSync,
   verifyLocalCalendarAgainstCloud,
 } from './cloud/calendarCloud.js';
 import { store } from './data/store.js';
@@ -21,7 +23,7 @@ function showStartupError(message) {
         <h1 id="startup-error-title">Impossibile aprire l'atleta</h1>
         <p class="auth-intro">${escapeHtml(message)}</p>
         <p class="auth-footnote">
-          L'accesso è riuscito, ma il profilo atleta non è disponibile dal database.
+          L'accesso è riuscito, ma i dati cloud necessari non sono disponibili.
         </p>
       </section>
     </main>
@@ -51,8 +53,7 @@ function showCalendarMigrationResult(result) {
         </div>
 
         <p class="auth-footnote">
-          Per ora l'app continua ancora a usare i dati locali. Nel prossimo passaggio
-          confronteremo la copia cloud e solo dopo attiveremo il Calendar condiviso.
+          I dati locali restano disponibili come copia di sicurezza sul dispositivo.
         </p>
 
         <a class="auth-submit" href="${escapeAttr(cleanUrl)}">Apri l'app locale</a>
@@ -92,7 +93,7 @@ function showCalendarVerificationResult(result) {
         </h1>
         <p class="auth-intro">
           ${result.ok
-            ? 'La copia Supabase corrisponde ai dati locali, inclusi i payload completi delle attività.'
+            ? 'La copia Supabase corrisponde ai dati locali.'
             : 'La verifica non modifica nulla. Alcuni dati locali e cloud non coincidono.'}
         </p>
 
@@ -107,6 +108,26 @@ function showCalendarVerificationResult(result) {
       </section>
     </main>
   `;
+}
+
+function setCalendarCloudStatus({ status, message = '' }) {
+  const saveIndicator = document.querySelector('#save-indicator');
+  if (!saveIndicator) return;
+
+  if (status === 'syncing') {
+    saveIndicator.textContent = 'Calendar → cloud…';
+    saveIndicator.title = 'Sincronizzazione del Calendar con Supabase in corso.';
+    return;
+  }
+
+  if (status === 'error') {
+    saveIndicator.textContent = 'Errore Calendar cloud';
+    saveIndicator.title = message || 'Il Calendar locale non è sincronizzato con Supabase.';
+    return;
+  }
+
+  saveIndicator.textContent = 'Calendar cloud ✓';
+  saveIndicator.title = 'Calendar letto e salvato su Supabase. Gli altri moduli restano locali.';
 }
 
 function escapeHtml(value = '') {
@@ -141,14 +162,20 @@ if (session) {
       });
       showCalendarVerificationResult(result);
     } else {
+      const cloudPlanner = await loadCalendarIntoLocalStore({
+        store,
+        athleteId: cloudAthlete.id,
+      });
+
       await import('./app.js');
       mountAuthControls(session.user);
 
-      const saveIndicator = document.querySelector('#save-indicator');
-      if (saveIndicator) {
-        saveIndicator.textContent = 'Identità cloud · dati locali';
-        saveIndicator.title = 'Profilo atleta letto da Supabase; moduli ancora salvati in locale.';
-      }
+      startCalendarCloudSync({
+        store,
+        athleteId: cloudAthlete.id,
+        initialPlanner: cloudPlanner,
+        onStatus: setCalendarCloudStatus,
+      });
     }
   } catch (error) {
     console.error('Cloud startup failed:', error);
