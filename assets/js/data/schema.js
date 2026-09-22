@@ -17,35 +17,6 @@ export const modules = [
   { id: 'calendar', number: 12, name: 'Calendar', icon: '▣', subtitle: 'Programmazione · Logistica · Tornei', color: 'var(--calendar)', description: 'Planner settimanale, logistica familiare, tornei, scuola, visite, viaggi e altri impegni dell’atleta.' },
 ];
 
-function localDateKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-}
-
-function dateForCurrentWeek(dayIndex) {
-  const now = new Date();
-  const jsDay = now.getDay() || 7;
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  monday.setDate(monday.getDate() - jsDay + 1 + dayIndex);
-  return localDateKey(monday);
-}
-
-const demoPeople = [
-  { id: 'person-valerio', name: 'Valerio', relationship: 'Genitore' },
-  { id: 'person-letizia', name: 'Letizia', relationship: 'Genitore' },
-  { id: 'person-emanuela', name: 'Emanuela', relationship: 'Familiare' },
-];
-
-const demoEvents = [
-  { id:'demo-mon-school', seriesId:'', title:'Scuola', date:dateForCurrentWeek(0), category:'school', startTime:'08:00', endTime:'10:00', location:'Online', notes:'', companionId:'', responsibilities:{stay:''} },
-  { id:'demo-mon-tennis', seriesId:'', title:'Tennis – tecnica', date:dateForCurrentWeek(0), category:'tennis', startTime:'10:30', endTime:'12:00', location:'MD Vita', notes:'', companionId:'person-emanuela', responsibilities:{stay:'person-emanuela'} },
-  { id:'demo-tue-physical', seriesId:'', title:'Preparazione fisica', date:dateForCurrentWeek(1), category:'physical', startTime:'15:30', endTime:'17:00', location:'', notes:'', companionId:'person-valerio', responsibilities:{stay:'person-valerio'} },
-  { id:'demo-wed-tennis', seriesId:'', title:'Tennis – tattica + sparring', date:dateForCurrentWeek(2), category:'tennis', startTime:'17:00', endTime:'19:00', location:'', notes:'', companionId:'person-valerio', responsibilities:{stay:'person-valerio'} },
-  { id:'demo-fri-school', seriesId:'', title:'Scuola', date:dateForCurrentWeek(4), category:'school', startTime:'08:00', endTime:'10:30', location:'Online', notes:'', companionId:'', responsibilities:{stay:''} },
-  { id:'demo-fri-travel', seriesId:'', title:'Spostamento al circolo', date:dateForCurrentWeek(4), category:'travel', startTime:'10:30', endTime:'11:00', location:'', notes:'', companionId:'person-emanuela', responsibilities:{stay:'person-emanuela'} },
-  { id:'demo-fri-tennis', seriesId:'', title:'Tennis – privata', date:dateForCurrentWeek(4), category:'tennis', startTime:'11:30', endTime:'13:00', location:'MD Vita', notes:'', companionId:'person-emanuela', responsibilities:{stay:'person-emanuela'} },
-  { id:'demo-fri-recovery', seriesId:'', title:'Relax', date:dateForCurrentWeek(4), category:'recovery', startTime:'19:00', endTime:'20:00', location:'', notes:'', companionId:'', responsibilities:{stay:''} },
-];
-
 export const defaultState = {
   meta: {
     appVersion: APP_VERSION,
@@ -54,12 +25,12 @@ export const defaultState = {
   },
   athlete: {
     id: crypto.randomUUID ? crypto.randomUUID() : 'athlete-001',
-    firstName: 'Irene',
+    firstName: 'Atleta',
     lastName: '',
     birthDate: '',
-    nationality: 'Italia',
-    handedness: 'Destra',
-    backhand: 'Due mani',
+    nationality: '',
+    handedness: '',
+    backhand: '',
     ranking: '',
     club: '',
     coach: '',
@@ -71,8 +42,8 @@ export const defaultState = {
     health: [], recovery: [], nutrition: [], mental: [], visual: [], economics: [], calendar: [],
   },
   planner: {
-    people: demoPeople,
-    events: demoEvents,
+    people: [],
+    events: [],
     tournaments: [],
     recurringSeries: [],
     locationDefaults: {},
@@ -182,7 +153,6 @@ export const defaultState = {
     },
   },
 
-
   nutrition: {
     planner: {
       entries: [],
@@ -201,50 +171,16 @@ export const defaultState = {
 
   economics: {
     currency: 'EUR',
-    trainingAreas: [
-      { id: 'econ-area-md-vita', name: 'MD Vita', category: 'tennis', pricingModel: 'monthly', referenceAmount: '', active: true, notes: '' },
-      { id: 'econ-area-esteri', name: 'Esteri', category: 'tennis', pricingModel: 'session', referenceAmount: '', active: true, notes: '' },
-      { id: 'econ-area-athletic', name: 'Preparazione atletica', category: 'physical', pricingModel: 'monthly', referenceAmount: '', active: true, notes: '' },
-    ],
+    trainingAreas: [],
     entries: [],
     budgets: [],
   },
+
   equipment: {
-    primaryRacketId: 'demo-racket-vcore26',
+    primaryRacketId: '',
     primaryShoeId: '',
-    rackets: [
-      {
-        id: 'demo-racket-vcore26',
-        brand: 'Yonex',
-        model: 'VCORE 26',
-        label: 'R1',
-        lengthIn: 26,
-        weightG: 250,
-        balanceMm: 325,
-        swingweight: '',
-        stringPattern: '16×18',
-        gripSize: 'L3',
-        status: 'active',
-        customization: '+3 g a ore 3 e +3 g a ore 9',
-        notes: '',
-      },
-    ],
-    stringJobs: [
-      {
-        id: 'demo-string-element',
-        racketId: 'demo-racket-vcore26',
-        date: '',
-        stringName: 'Luxilon Element',
-        gaugeMm: '',
-        mainsKg: 21,
-        crossesKg: 21,
-        stringer: '',
-        hoursUsed: '',
-        preStretch: '',
-        status: 'installed',
-        notes: 'Setup corrente.',
-      },
-    ],
+    rackets: [],
+    stringJobs: [],
     shoes: [],
   },
 };
