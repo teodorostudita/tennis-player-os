@@ -11,6 +11,8 @@ import {
   setSelectedAthleteId,
   showAthletePicker,
   syncSelectedAthleteToLocalStore,
+  migrateAthleteProfileToCloudIfNeeded,
+  startAthleteProfileCloudSync,
 } from './cloud/athlete.js';
 import {
   cleanCalendarMigrationUrl,
@@ -28,6 +30,10 @@ import {
   loadTrainingIntoLocalStore,
   startTrainingCloudSync,
 } from './cloud/trainingCloud.js';
+import {
+  loadEquipmentIntoLocalStore,
+  startEquipmentCloudSync,
+} from './cloud/equipmentCloud.js';
 import { store } from './data/store.js';
 
 function showStartupError(message) {
@@ -239,6 +245,12 @@ if (session) {
         session.user.id,
       );
 
+      cloudAthlete = await migrateAthleteProfileToCloudIfNeeded({
+        store,
+        cloudAthlete,
+        allowWrite: getCurrentAccess().isAdmin,
+      });
+
       if (isCalendarMigrationRequested()) {
         const result = await migrateLocalCalendarToCloud({
           store,
@@ -269,6 +281,16 @@ if (session) {
           });
         }
 
+        let equipmentLoadResult = null;
+
+        if (canReadModule('equipment')) {
+          equipmentLoadResult = await loadEquipmentIntoLocalStore({
+            store,
+            athleteId: cloudAthlete.id,
+            allowWrite: canWriteModule('equipment'),
+          });
+        }
+
         await import('./app.js');
         mountAuthControls(session.user);
         mountAthleteControls({
@@ -280,6 +302,24 @@ if (session) {
           athleteId: cloudAthlete.id,
         });
         startPermissionGuard();
+
+        if (getCurrentAccess().isAdmin) {
+          startAthleteProfileCloudSync({
+            store,
+            athleteId: cloudAthlete.id,
+          });
+        }
+
+        if (
+          canReadModule('equipment')
+          && canWriteModule('equipment')
+          && !equipmentLoadResult?.cloudError
+        ) {
+          startEquipmentCloudSync({
+            store,
+            athleteId: cloudAthlete.id,
+          });
+        }
 
         if (canReadModule('calendar') && canWriteModule('calendar')) {
           startCalendarCloudSync({
