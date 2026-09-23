@@ -42,8 +42,22 @@ function permissionValue(permission = {}) {
 }
 
 function permissionSummary(member) {
-  if (member.role === 'owner') return 'Controllo completo e gestione accessi';
-  if (member.role === 'admin') return 'Accesso completo a tutti i moduli';
+  const athleteCount = Number(member.athleteCount || 0);
+  const athleteLabel = athleteCount === 1
+    ? '1 atleta assegnato'
+    : `${athleteCount} atleti assegnati`;
+
+  if (!member.currentAssigned) {
+    return athleteLabel;
+  }
+
+  if (member.currentRole === 'owner') {
+    return `${athleteLabel} · Controllo completo sull’atleta attivo`;
+  }
+
+  if (member.currentRole === 'admin') {
+    return `${athleteLabel} · Accesso completo all’atleta attivo`;
+  }
 
   let read = 0;
   let write = 0;
@@ -53,11 +67,12 @@ function permissionSummary(member) {
     else if (permission.canRead) read += 1;
   }
 
-  if (!read && !write) return 'Nessun modulo autorizzato';
+  const parts = [athleteLabel];
 
-  const parts = [];
   if (write) parts.push(`${write} scrittura`);
   if (read) parts.push(`${read} sola lettura`);
+  if (!read && !write) parts.push('nessun modulo sull’atleta attivo');
+
   return parts.join(' · ');
 }
 
@@ -87,7 +102,7 @@ function permissionRows(member = null) {
 
 function memberCards(members) {
   if (!members.length) {
-    return '<p class="access-empty">Nessun utente associato.</p>';
+    return '<p class="access-empty">Nessun utente configurato.</p>';
   }
 
   return members.map(member => {
@@ -107,7 +122,7 @@ function memberCards(members) {
           <div class="access-member-summary">${escapeHtml(permissionSummary(member))}</div>
         </div>
         <div class="access-member-actions">
-          ${member.role === 'owner'
+          ${member.hasOwnerRole
             ? '<span class="access-owner-lock">Protetto</span>'
             : `<button class="button button-ghost" type="button" data-edit-member="${escapeAttr(member.userId)}">Modifica</button>`}
         </div>
@@ -123,7 +138,7 @@ function renderShell(gate) {
         <div>
           <div class="auth-kicker">Tennis Player OS</div>
           <h2 id="access-title">Utenti &amp; Accessi</h2>
-          <p>Account autorizzati e privilegi per l’atleta attivo.</p>
+          <p>Utenti del workspace e assegnazioni agli atleti.</p>
         </div>
         <button class="dialog-close access-close" type="button" aria-label="Chiudi">×</button>
       </header>
@@ -439,7 +454,7 @@ function updateEditorMode(gate, member = null) {
   if (passwordBlock) passwordBlock.hidden = editing;
   if (newUserButton) newUserButton.hidden = !editing;
   if (resetButton) resetButton.hidden = !editing;
-  if (removeButton) removeButton.hidden = !editing;
+  if (removeButton) removeButton.hidden = !editing || !member?.currentAssigned;
   if (removeConfirm) removeConfirm.hidden = true;
 
   for (const name of ['temporaryPassword', 'temporaryPasswordConfirm']) {
@@ -468,13 +483,13 @@ async function applyMemberToForm(gate, member = null, currentAthleteId = '') {
   form.elements.userId.value = member?.userId || '';
   form.elements.login.value = member?.login || member?.email || '';
   form.elements.login.readOnly = Boolean(member?.userId);
-  form.elements.role.value = member?.role === 'admin' ? 'admin' : 'member';
+  form.elements.role.value = member?.currentRole === 'admin' ? 'admin' : 'member';
 
   gate.querySelector('#access-editor-title').textContent =
     member ? 'Modifica utente' : 'Nuovo utente';
   gate.querySelector('#access-editor-subtitle').textContent =
     member
-      ? 'Aggiorna atleti visibili, ruolo e privilegi dell’account selezionato.'
+      ? 'Aggiorna gli atleti visibili. Ruolo e privilegi mostrati sotto si riferiscono all’atleta attivo.'
       : 'Crea un account e scegli a quali atleti può accedere.';
 
   for (const module of modules) {

@@ -115,12 +115,12 @@ export async function loadAthleteAccessDirectory(athleteId) {
   }
 
   const { data: members, error: membersError } = await supabase.rpc(
-    'get_athlete_member_directory',
-    { p_athlete_id: athleteId },
+    'get_owner_user_directory',
+    { p_current_athlete_id: athleteId },
   );
 
   if (membersError) {
-    throw new Error(`Impossibile leggere gli utenti dell’atleta: ${membersError.message}`);
+    throw new Error(`Impossibile leggere gli utenti: ${membersError.message}`);
   }
 
   const { data: permissions, error: permissionsError } = await supabase
@@ -147,9 +147,14 @@ export async function loadAthleteAccessDirectory(athleteId) {
     email: member.email || '',
     login: loginFromEmail(member.email || ''),
     displayName: member.display_name || '',
-    role: member.role || 'member',
-    status: member.status || 'active',
-    createdAt: member.created_at || '',
+    role: member.strongest_role || member.active_athlete_role || 'member',
+    currentRole: member.active_athlete_role || '',
+    currentStatus: member.active_athlete_status || '',
+    currentAssigned: Boolean(member.active_athlete_assigned),
+    status: member.active_athlete_status || 'active',
+    athleteCount: Number(member.athlete_count || 0),
+    hasOwnerRole: Boolean(member.has_owner_role),
+    createdAt: member.first_created_at || '',
     permissions: byUser.get(member.user_id) || {},
   }));
 }
