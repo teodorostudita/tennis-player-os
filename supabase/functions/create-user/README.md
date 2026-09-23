@@ -1,11 +1,17 @@
 # create-user
 
-Owner-only Edge Function used by Tennis Player OS to create or link users to an athlete.
+Owner-only Edge Function used by Tennis Player OS to create or link an account
+without requiring an invitation email.
 
-New accounts use a username rather than requiring a personal email address. The function
-maps each username to an internal Supabase Auth address under
-`@users.tennis.polidorionline.it`, creates the account with a temporary password, marks the
-email as confirmed, and requires a password change on first login.
+New accounts may use a normal Tennis Player OS username. The function maps that
+username to an internal technical Supabase Auth email under
+`users.tennis.polidorionline.it`, confirms it server-side, and sets the supplied
+temporary password. The user must replace that password at first login.
 
-Legacy accounts that already use a real email remain supported and can continue to sign in
-with that email.
+The caller can assign the account to one athlete, several selected athletes, or
+all athletes selected in the frontend. The function independently verifies that
+the caller is an active Owner of every requested athlete before writing any
+membership. The same athlete-level role and module permissions are applied to
+all selected athletes.
+
+Existing legacy email accounts remain supported.

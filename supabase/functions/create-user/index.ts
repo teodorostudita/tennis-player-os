@@ -7,6 +7,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '
 const APP_URL = 'https://tennis.polidorionline.it';
 const TECHNICAL_LOGIN_DOMAIN = 'users.tennis.polidorionline.it';
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,39}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const ALLOWED_ORIGINS = new Set([
   APP_URL,
@@ -37,9 +38,9 @@ type PermissionInput = {
 
 type RequestBody = {
   athleteId?: string;
+  athleteIds?: string[];
   login?: string;
   email?: string;
-  displayName?: string;
   temporaryPassword?: string;
   role?: 'admin' | 'member';
   permissions?: PermissionInput[];
@@ -113,6 +114,37 @@ function resolveLogin(value: unknown) {
   };
 }
 
+function normalizeAthleteIds(
+  athleteIds: unknown,
+  fallbackAthleteId: unknown,
+) {
+  const requested = Array.isArray(athleteIds)
+    ? athleteIds
+    : [];
+
+  const rawIds = requested.length
+    ? requested
+    : [fallbackAthleteId];
+
+  const unique = [...new Set(
+    rawIds
+      .map(value => String(value ?? '').trim())
+      .filter(Boolean),
+  )];
+
+  if (!unique.length) {
+    throw new Error('Seleziona almeno un atleta.');
+  }
+
+  for (const athleteId of unique) {
+    if (!UUID_RE.test(athleteId)) {
+      throw new Error('Identificativo atleta non valido.');
+    }
+  }
+
+  return unique;
+}
+
 function normalizePermissions(input: PermissionInput[] | undefined) {
   const byModule = new Map<string, {
     module_key: string;
@@ -166,7 +198,7 @@ async function findUserByEmail(
     page += 1;
   }
 
-  throw new Error('Troppi account da scandire: impossibile completare la ricerca email.');
+  throw new Error('Troppi account da scandire: impossibile completare la ricerca del nome utente.');
 }
 
 Deno.serve(async req => {
@@ -205,18 +237,13 @@ Deno.serve(async req => {
 
   try {
     const body = await req.json() as RequestBody;
-    const athleteId = String(body.athleteId ?? '').trim();
+    const athleteIds = normalizeAthleteIds(body.athleteIds, body.athleteId);
     const resolvedLogin = resolveLogin(body.login ?? body.email);
     const login = resolvedLogin.login;
     const email = resolvedLogin.email;
-    const displayName = String(body.displayName ?? '').trim();
     const temporaryPassword = String(body.temporaryPassword ?? '');
     const role = body.role === 'admin' ? 'admin' : 'member';
     const permissions = normalizePermissions(body.permissions);
-
-    if (!athleteId) {
-      return json({ error: 'Atleta non specificato.' }, 400, origin);
-    }
 
     const callerClient = createClient(
       SUPABASE_URL,
@@ -241,21 +268,6 @@ Deno.serve(async req => {
       return json({ error: 'Sessione non valida.' }, 401, origin);
     }
 
-    const { data: isOwner, error: ownerError } = await callerClient.rpc(
-      'is_athlete_owner',
-      { p_athlete_id: athleteId },
-    );
-
-    if (ownerError) throw ownerError;
-
-    if (!isOwner) {
-      return json(
-        { error: 'Solo il proprietario dell’atleta può gestire gli utenti.' },
-        403,
-        origin,
-      );
-    }
-
     const adminClient = createClient(
       SUPABASE_URL,
       SUPABASE_SERVICE_ROLE_KEY,
@@ -266,6 +278,31 @@ Deno.serve(async req => {
         },
       },
     );
+
+    // Security boundary: every selected athlete must be actively owned by
+    // the caller. The browser cannot grant access to arbitrary athlete IDs.
+    const { data: callerOwnerships, error: ownershipError } =
+      await adminClient
+        .from('athlete_members')
+        .select('athlete_id')
+        .eq('user_id', callerData.user.id)
+        .eq('role', 'owner')
+        .eq('status', 'active')
+        .in('athlete_id', athleteIds);
+
+    if (ownershipError) throw ownershipError;
+
+    const ownedIds = new Set(
+      (callerOwnerships ?? []).map(row => String(row.athlete_id)),
+    );
+
+    if (athleteIds.some(athleteId => !ownedIds.has(athleteId))) {
+      return json(
+        { error: 'Puoi assegnare utenti solo ad atleti di cui sei Owner.' },
+        403,
+        origin,
+      );
+    }
 
     let targetUser = await findUserByEmail(adminClient, email);
     const accountCreated = !targetUser;
@@ -288,7 +325,7 @@ Deno.serve(async req => {
           password: temporaryPassword,
           email_confirm: true,
           user_metadata: {
-            ...(displayName ? { full_name: displayName } : {}),
+            full_name: login,
             ...(resolvedLogin.technical ? { tpos_username: login } : {}),
           },
         });
@@ -302,31 +339,21 @@ Deno.serve(async req => {
       newlyCreatedUserId = targetUser.id;
     }
 
-    const { data: existingMembership, error: membershipReadError } =
+    const { data: existingMemberships, error: membershipReadError } =
       await adminClient
         .from('athlete_members')
-        .select('role')
-        .eq('athlete_id', athleteId)
+        .select('athlete_id, role')
         .eq('user_id', targetUser.id)
-        .maybeSingle();
+        .in('athlete_id', athleteIds);
 
     if (membershipReadError) throw membershipReadError;
 
-    if (existingMembership?.role === 'owner') {
+    if ((existingMemberships ?? []).some(row => row.role === 'owner')) {
       return json(
-        { error: 'L’owner dell’atleta è protetto e non può essere modificato da questo form.' },
+        { error: 'L’Owner di un atleta è protetto e non può essere modificato da questo form.' },
         400,
         origin,
       );
-    }
-
-    if (displayName) {
-      const { error: profileError } = await adminClient
-        .from('profiles')
-        .update({ display_name: displayName })
-        .eq('id', targetUser.id);
-
-      if (profileError) throw profileError;
     }
 
     const { data: accountRoleRow, error: accountRoleReadError } =
@@ -385,13 +412,13 @@ Deno.serve(async req => {
     const { error: membershipError } = await adminClient
       .from('athlete_members')
       .upsert(
-        {
+        athleteIds.map(athleteId => ({
           athlete_id: athleteId,
-          user_id: targetUser.id,
+          user_id: targetUser!.id,
           role,
           status: 'active',
           created_by: callerData.user.id,
-        },
+        })),
         {
           onConflict: 'athlete_id,user_id',
         },
@@ -402,24 +429,26 @@ Deno.serve(async req => {
     const { error: clearPermissionsError } = await adminClient
       .from('module_permissions')
       .delete()
-      .eq('athlete_id', athleteId)
-      .eq('user_id', targetUser.id);
+      .eq('user_id', targetUser.id)
+      .in('athlete_id', athleteIds);
 
     if (clearPermissionsError) throw clearPermissionsError;
 
     if (role === 'member' && permissions.length) {
+      const permissionRows = athleteIds.flatMap(athleteId =>
+        permissions.map(permission => ({
+          athlete_id: athleteId,
+          user_id: targetUser!.id,
+          module_key: permission.module_key,
+          can_read: permission.can_read,
+          can_write: permission.can_write,
+          created_by: callerData.user.id,
+        }))
+      );
+
       const { error: permissionError } = await adminClient
         .from('module_permissions')
-        .insert(
-          permissions.map(permission => ({
-            athlete_id: athleteId,
-            user_id: targetUser!.id,
-            module_key: permission.module_key,
-            can_read: permission.can_read,
-            can_write: permission.can_write,
-            created_by: callerData.user.id,
-          })),
-        );
+        .insert(permissionRows);
 
       if (permissionError) throw permissionError;
     }
@@ -433,6 +462,8 @@ Deno.serve(async req => {
         role,
         accountCreated,
         passwordChangeRequired: accountCreated,
+        athleteCount: athleteIds.length,
+        athleteIds,
         permissionCount: role === 'member' ? permissions.length : 0,
       },
       200,

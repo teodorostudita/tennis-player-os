@@ -5,6 +5,7 @@ import {
   loadAthleteAccessDirectory,
   removeAthleteUser,
 } from '../cloud/access.js';
+import { loadAccessibleAthletes } from '../cloud/athlete.js';
 import { normalizeUsername } from '../cloud/loginIdentity.js';
 
 function escapeHtml(value = '') {
@@ -24,6 +25,13 @@ function roleLabel(role) {
   if (role === 'owner') return 'Owner';
   if (role === 'admin') return 'Admin';
   return 'Member';
+}
+
+function athleteLabel(athlete = {}) {
+  return [
+    athlete.firstName,
+    athlete.lastName,
+  ].filter(Boolean).join(' ') || athlete.cloudDisplayName || 'Atleta';
 }
 
 function permissionValue(permission = {}) {
@@ -81,27 +89,30 @@ function memberCards(members) {
     return '<p class="access-empty">Nessun utente associato.</p>';
   }
 
-  return members.map(member => `
-    <article class="access-member-card">
-      <div class="access-member-avatar" aria-hidden="true">
-        ${escapeHtml((member.displayName || member.login || member.email || 'U').trim().charAt(0).toUpperCase())}
-      </div>
-      <div class="access-member-copy">
-        <div class="access-member-name">
-          ${escapeHtml(member.displayName || member.login || member.email || 'Utente')}
-          <span class="access-role-badge role-${escapeAttr(member.role)}">${escapeHtml(roleLabel(member.role))}</span>
-          ${member.status !== 'active' ? '<span class="access-status-badge">Sospeso</span>' : ''}
+  return members.map(member => {
+    const login = member.login || member.email || 'Utente';
+
+    return `
+      <article class="access-member-card">
+        <div class="access-member-avatar" aria-hidden="true">
+          ${escapeHtml(login.trim().charAt(0).toUpperCase())}
         </div>
-        <div class="access-member-email">${escapeHtml(member.login || member.email)}</div>
-        <div class="access-member-summary">${escapeHtml(permissionSummary(member))}</div>
-      </div>
-      <div class="access-member-actions">
-        ${member.role === 'owner'
-          ? '<span class="access-owner-lock">Protetto</span>'
-          : `<button class="button button-ghost" type="button" data-edit-member="${escapeAttr(member.userId)}">Modifica</button>`}
-      </div>
-    </article>
-  `).join('');
+        <div class="access-member-copy">
+          <div class="access-member-name">
+            ${escapeHtml(login)}
+            <span class="access-role-badge role-${escapeAttr(member.role)}">${escapeHtml(roleLabel(member.role))}</span>
+            ${member.status !== 'active' ? '<span class="access-status-badge">Sospeso</span>' : ''}
+          </div>
+          <div class="access-member-summary">${escapeHtml(permissionSummary(member))}</div>
+        </div>
+        <div class="access-member-actions">
+          ${member.role === 'owner'
+            ? '<span class="access-owner-lock">Protetto</span>'
+            : `<button class="button button-ghost" type="button" data-edit-member="${escapeAttr(member.userId)}">Modifica</button>`}
+        </div>
+      </article>
+    `;
+  }).join('');
 }
 
 function renderShell(gate) {
@@ -134,17 +145,12 @@ function renderShell(gate) {
           <div class="access-section-head">
             <div>
               <h3 id="access-editor-title">Nuovo utente</h3>
-              <p id="access-editor-subtitle">Crea un nuovo account o assegna un account esistente a questo atleta.</p>
+              <p id="access-editor-subtitle">Crea un account e scegli a quali atleti può accedere.</p>
             </div>
           </div>
 
           <form id="access-form" class="access-form">
             <input type="hidden" name="userId" />
-
-            <label class="access-field">
-              <span>Nome visualizzato</span>
-              <input name="displayName" autocomplete="off" placeholder="es. Coach Mario" />
-            </label>
 
             <label class="access-field">
               <span>Nome utente</span>
@@ -190,6 +196,30 @@ function renderShell(gate) {
               </div>
             </div>
 
+            <div id="access-athletes-block">
+              <div class="access-permissions-head">
+                <div>
+                  <strong>Atleti assegnati</strong>
+                  <small>Seleziona uno, più atleti oppure tutti.</small>
+                </div>
+              </div>
+
+              <label class="access-info">
+                <input id="access-all-athletes" type="checkbox" />
+                <strong>Tutti gli atleti</strong>
+                <span> — seleziona tutti gli atleti attualmente disponibili.</span>
+              </label>
+
+              <div id="access-athlete-rows" class="access-permission-rows">
+                <div class="access-loading">Caricamento atleti…</div>
+              </div>
+
+              <div class="access-info">
+                Il ruolo e i privilegi per modulo impostati sotto verranno applicati
+                nello stesso modo a tutti gli atleti selezionati.
+              </div>
+            </div>
+
             <label class="access-field">
               <span>Ruolo</span>
               <select name="role">
@@ -199,8 +229,8 @@ function renderShell(gate) {
             </label>
 
             <div id="access-admin-note" class="access-info" hidden>
-              Un Admin può leggere e modificare tutti i moduli dell’atleta e può creare nuovi atleti.
-              Non può gestire utenti e privilegi dell’atleta.
+              Un Admin può leggere e modificare tutti i moduli degli atleti assegnati e può creare nuovi atleti.
+              Non può gestire utenti e privilegi degli atleti.
             </div>
 
             <div id="access-permissions-block">
@@ -223,7 +253,7 @@ function renderShell(gate) {
             <div id="access-remove-confirm" class="access-remove-confirm" hidden>
               <strong>Rimuovere questo utente?</strong>
               <p>
-                L’accesso a questo atleta verrà eliminato. Se l’account non è associato
+                L’accesso all’atleta corrente verrà eliminato. Se l’account non è associato
                 ad altri atleti, verrà eliminato completamente e il nome utente potrà
                 essere riutilizzato per un nuovo account.
               </p>
@@ -270,10 +300,72 @@ function collectPermissions(form) {
   });
 }
 
+function collectAthleteIds(gate) {
+  return [...gate.querySelectorAll('input[name="athleteIds"]:checked')]
+    .map(input => String(input.value || ''))
+    .filter(Boolean);
+}
+
+function updateAllAthletesState(gate) {
+  const allToggle = gate.querySelector('#access-all-athletes');
+  const boxes = [...gate.querySelectorAll('input[name="athleteIds"]')];
+
+  if (!allToggle || !boxes.length) return;
+
+  const selected = boxes.filter(box => box.checked).length;
+  allToggle.checked = selected === boxes.length;
+  allToggle.indeterminate = selected > 0 && selected < boxes.length;
+}
+
+async function loadAthleteChoices(gate, currentAthleteId) {
+  const container = gate.querySelector('#access-athlete-rows');
+
+  try {
+    const athletes = await loadAccessibleAthletes();
+
+    if (!athletes.length) {
+      container.innerHTML = '<div class="access-empty">Nessun atleta disponibile.</div>';
+      return;
+    }
+
+    container.innerHTML = athletes.map(athlete => `
+      <label class="access-permission-row">
+        <div class="access-module-copy">
+          <span class="access-module-icon">🎾</span>
+          <span>
+            <strong>${escapeHtml(athleteLabel(athlete))}</strong>
+            <small>${athlete.id === currentAthleteId ? 'Atleta attivo' : 'Atleta disponibile'}</small>
+          </span>
+        </div>
+        <input
+          type="checkbox"
+          name="athleteIds"
+          value="${escapeAttr(athlete.id)}"
+          ${athlete.id === currentAthleteId ? 'checked' : ''}
+          aria-label="Assegna ${escapeAttr(athleteLabel(athlete))}"
+        />
+      </label>
+    `).join('');
+
+    container.querySelectorAll('input[name="athleteIds"]').forEach(input => {
+      input.addEventListener('change', () => updateAllAthletesState(gate));
+    });
+
+    updateAllAthletesState(gate);
+  } catch (error) {
+    container.innerHTML = `
+      <div class="auth-message error">
+        ${escapeHtml(error?.message || 'Impossibile leggere gli atleti.')}
+      </div>
+    `;
+  }
+}
+
 function updateEditorMode(gate, member = null) {
   const editing = Boolean(member?.userId);
   const form = gate.querySelector('#access-form');
   const passwordBlock = gate.querySelector('#access-password-block');
+  const athletesBlock = gate.querySelector('#access-athletes-block');
   const newUserButton = gate.querySelector('#access-new-user');
   const resetButton = gate.querySelector('#access-reset-form');
   const removeButton = gate.querySelector('#access-remove-user');
@@ -281,6 +373,7 @@ function updateEditorMode(gate, member = null) {
   const submit = gate.querySelector('#access-submit');
 
   if (passwordBlock) passwordBlock.hidden = editing;
+  if (athletesBlock) athletesBlock.hidden = editing;
   if (newUserButton) newUserButton.hidden = !editing;
   if (resetButton) resetButton.hidden = !editing;
   if (removeButton) removeButton.hidden = !editing;
@@ -298,7 +391,7 @@ function updateEditorMode(gate, member = null) {
   }
 }
 
-function applyMemberToForm(gate, member = null) {
+function applyMemberToForm(gate, member = null, currentAthleteId = '') {
   const form = gate.querySelector('#access-form');
   if (!form) return;
 
@@ -306,20 +399,26 @@ function applyMemberToForm(gate, member = null) {
   form.elements.userId.value = member?.userId || '';
   form.elements.login.value = member?.login || member?.email || '';
   form.elements.login.readOnly = Boolean(member?.userId);
-  form.elements.displayName.value = member?.displayName || '';
   form.elements.role.value = member?.role === 'admin' ? 'admin' : 'member';
 
   gate.querySelector('#access-editor-title').textContent =
     member ? 'Modifica utente' : 'Nuovo utente';
   gate.querySelector('#access-editor-subtitle').textContent =
     member
-      ? 'Aggiorna ruolo e privilegi dell’account selezionato.'
-      : 'Crea un nuovo account o assegna un account esistente a questo atleta.';
+      ? 'Aggiorna ruolo e privilegi per l’atleta corrente.'
+      : 'Crea un account e scegli a quali atleti può accedere.';
 
   for (const module of modules) {
     const select = form.elements[`permission-${module.id}`];
     if (!select) continue;
     select.value = permissionValue(member?.permissions?.[module.id] || {});
+  }
+
+  if (!member) {
+    gate.querySelectorAll('input[name="athleteIds"]').forEach(input => {
+      input.checked = input.value === currentAthleteId;
+    });
+    updateAllAthletesState(gate);
   }
 
   updateEditorMode(gate, member);
@@ -349,7 +448,7 @@ async function refreshMembers(gate, athleteId) {
       button.addEventListener('click', () => {
         const member = members.find(item => item.userId === button.dataset.editMember);
         if (!member) return;
-        applyMemberToForm(gate, member);
+        applyMemberToForm(gate, member, athleteId);
         gate.querySelector('.access-editor-panel')?.scrollIntoView({
           behavior: 'smooth',
           block: 'start',
@@ -388,11 +487,19 @@ export function openAccessManagement({ athleteId }) {
   });
 
   gate.querySelector('#access-new-user')?.addEventListener('click', () => {
-    applyMemberToForm(gate, null);
+    applyMemberToForm(gate, null, athleteId);
   });
 
   gate.querySelector('#access-reset-form')?.addEventListener('click', () => {
-    applyMemberToForm(gate, null);
+    applyMemberToForm(gate, null, athleteId);
+  });
+
+  gate.querySelector('#access-all-athletes')?.addEventListener('change', event => {
+    const checked = Boolean(event.currentTarget.checked);
+    gate.querySelectorAll('input[name="athleteIds"]').forEach(input => {
+      input.checked = checked;
+    });
+    updateAllAthletesState(gate);
   });
 
   gate.querySelector('#access-remove-user')?.addEventListener('click', () => {
@@ -426,13 +533,13 @@ export function openAccessManagement({ athleteId }) {
       });
 
       await refreshMembers(gate, athleteId);
-      applyMemberToForm(gate, null);
+      applyMemberToForm(gate, null, athleteId);
 
       setMessage(
         gate,
         result?.accountDeleted
           ? 'Utente eliminato completamente. Il nome utente può essere riutilizzato.'
-          : 'Accesso rimosso da questo atleta. L’account è stato conservato perché è associato ad altri atleti.',
+          : 'Accesso rimosso dall’atleta corrente. L’account è stato conservato perché è associato ad altri atleti.',
         'success',
       );
     } catch (error) {
@@ -474,7 +581,7 @@ export function openAccessManagement({ athleteId }) {
     const editing = Boolean(String(data.get('userId') || ''));
     const role = String(data.get('role') || 'member');
     const login = String(data.get('login') || '').trim();
-    const displayName = String(data.get('displayName') || '').trim();
+    const athleteIds = editing ? [athleteId] : collectAthleteIds(gate);
     const temporaryPassword = editing
       ? ''
       : String(data.get('temporaryPassword') || '');
@@ -489,6 +596,11 @@ export function openAccessManagement({ athleteId }) {
         setMessage(gate, error?.message || 'Nome utente non valido.', 'error');
         return;
       }
+    }
+
+    if (!editing && athleteIds.length === 0) {
+      setMessage(gate, 'Seleziona almeno un atleta da assegnare all’utente.', 'error');
+      return;
     }
 
     if (!editing && (temporaryPassword || temporaryPasswordConfirm)) {
@@ -509,21 +621,27 @@ export function openAccessManagement({ athleteId }) {
     try {
       const result = await createOrUpdateAthleteAccess({
         athleteId,
+        athleteIds,
         login,
-        displayName,
         temporaryPassword,
         role,
         permissions: role === 'member' ? collectPermissions(form) : [],
       });
 
       await refreshMembers(gate, athleteId);
-      applyMemberToForm(gate, null);
+      applyMemberToForm(gate, null, athleteId);
+
+      const assignmentText = result?.athleteCount === 1
+        ? '1 atleta'
+        : `${result?.athleteCount || athleteIds.length} atleti`;
 
       setMessage(
         gate,
         result?.accountCreated
-          ? 'Utente creato. Potrà entrare subito con la password temporanea e dovrà cambiarla al primo accesso.'
-          : 'Account esistente collegato e privilegi aggiornati.',
+          ? `Utente creato e assegnato a ${assignmentText}. Potrà entrare subito con la password temporanea e dovrà cambiarla al primo accesso.`
+          : editing
+            ? 'Ruolo e privilegi aggiornati per l’atleta corrente.'
+            : `Account esistente assegnato a ${assignmentText} e privilegi aggiornati.`,
         'success',
       );
     } catch (error) {
@@ -539,7 +657,8 @@ export function openAccessManagement({ athleteId }) {
     }
   });
 
-  applyMemberToForm(gate, null);
+  applyMemberToForm(gate, null, athleteId);
+  void loadAthleteChoices(gate, athleteId);
   void refreshMembers(gate, athleteId);
 }
 

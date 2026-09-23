@@ -156,9 +156,9 @@ export async function loadAthleteAccessDirectory(athleteId) {
 
 export async function createOrUpdateAthleteAccess({
   athleteId,
+  athleteIds = [],
   login = '',
   email = '',
-  displayName = '',
   temporaryPassword = '',
   role = 'member',
   permissions = [],
@@ -170,8 +170,8 @@ export async function createOrUpdateAthleteAccess({
   const { data, error } = await supabase.functions.invoke('create-user', {
     body: {
       athleteId,
+      athleteIds,
       login: login || email,
-      displayName,
       temporaryPassword,
       role,
       permissions,
@@ -200,7 +200,6 @@ export async function createOrUpdateAthleteAccess({
 
   return data;
 }
-
 
 export async function removeAthleteUser({
   athleteId,
