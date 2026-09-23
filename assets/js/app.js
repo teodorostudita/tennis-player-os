@@ -275,7 +275,7 @@ resetButton.addEventListener('click', async () => {
   render();
 });
 store.subscribe(() => {
-  saveIndicator.textContent = 'Salvato in locale';
+  saveIndicator.textContent = 'Salvato';
   const route = getRoute();
   if (route === 'dashboard') renderDashboard();
   else if (route === 'calendar' || route === 'training') queueMicrotask(render);

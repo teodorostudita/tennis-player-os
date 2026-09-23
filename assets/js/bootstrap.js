@@ -24,6 +24,10 @@ import {
   startCalendarCloudSync,
   verifyLocalCalendarAgainstCloud,
 } from './cloud/calendarCloud.js';
+import {
+  loadTrainingIntoLocalStore,
+  startTrainingCloudSync,
+} from './cloud/trainingCloud.js';
 import { store } from './data/store.js';
 
 function showStartupError(message) {
@@ -145,7 +149,42 @@ function setCalendarCloudStatus({ status, message = '' }) {
   }
 
   saveIndicator.textContent = 'Calendar cloud ✓';
-  saveIndicator.title = 'Calendar letto e salvato su Supabase. Gli altri moduli restano locali per singolo atleta.';
+  saveIndicator.title = 'Calendar letto e salvato su Supabase.';
+}
+
+function setTrainingCloudStatus({ status, message = '' }) {
+  const saveIndicator = document.querySelector('#save-indicator');
+  if (!saveIndicator) return;
+
+  const route = location.hash.replace(/^#\/?/, '') || 'dashboard';
+  if (route !== 'training') return;
+
+  if (status === 'syncing') {
+    saveIndicator.textContent = 'Athletics → cloud…';
+    saveIndicator.title = 'Sincronizzazione di Athletics con Supabase in corso.';
+    return;
+  }
+
+  if (status === 'error') {
+    saveIndicator.textContent = 'Athletics · cache locale';
+    saveIndicator.title = message || 'I dati restano nella cache locale e verranno risincronizzati.';
+    return;
+  }
+
+  if (status === 'readonly') {
+    saveIndicator.textContent = 'Athletics cloud · sola lettura';
+    saveIndicator.title = 'Questo account può leggere Athletics ma non modificarlo.';
+    return;
+  }
+
+  if (status === 'unavailable') {
+    saveIndicator.textContent = 'Athletics non autorizzato';
+    saveIndicator.title = 'Questo account non ha accesso al modulo Athletics.';
+    return;
+  }
+
+  saveIndicator.textContent = 'Athletics cloud ✓';
+  saveIndicator.title = 'Athletics letto e salvato su Supabase; la copia locale resta come cache.';
 }
 
 function escapeHtml(value = '') {
@@ -222,6 +261,14 @@ if (session) {
           });
         }
 
+        if (canReadModule('training')) {
+          await loadTrainingIntoLocalStore({
+            store,
+            athleteId: cloudAthlete.id,
+            allowWrite: canWriteModule('training'),
+          });
+        }
+
         await import('./app.js');
         mountAuthControls(session.user);
         mountAthleteControls({
@@ -246,6 +293,31 @@ if (session) {
         } else {
           setCalendarCloudStatus({ status: 'unavailable' });
         }
+
+        if (canReadModule('training') && canWriteModule('training')) {
+          startTrainingCloudSync({
+            store,
+            athleteId: cloudAthlete.id,
+            onStatus: setTrainingCloudStatus,
+          });
+        } else if (canReadModule('training')) {
+          setTrainingCloudStatus({ status: 'readonly' });
+        } else {
+          setTrainingCloudStatus({ status: 'unavailable' });
+        }
+
+        window.addEventListener('hashchange', () => {
+          const route = location.hash.replace(/^#\/?/, '') || 'dashboard';
+          if (route === 'training') {
+            if (canReadModule('training') && canWriteModule('training')) {
+              setTrainingCloudStatus({ status: 'synced' });
+            } else if (canReadModule('training')) {
+              setTrainingCloudStatus({ status: 'readonly' });
+            } else {
+              setTrainingCloudStatus({ status: 'unavailable' });
+            }
+          }
+        });
       }
     }
   } catch (error) {
