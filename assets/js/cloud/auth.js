@@ -1,4 +1,9 @@
 import { supabase } from './supabaseClient.js';
+import {
+  emailFromLogin,
+  isTechnicalLoginEmail,
+  loginFromEmail,
+} from './loginIdentity.js';
 
 let authGate = null;
 
@@ -28,13 +33,14 @@ function renderLoginGate() {
 
       <form id="auth-login-form" class="auth-form">
         <label>
-          <span>Email</span>
+          <span>Nome utente o email</span>
           <input
-            id="auth-email"
-            name="email"
-            type="email"
+            id="auth-login"
+            name="login"
+            type="text"
             autocomplete="username"
-            inputmode="email"
+            autocapitalize="none"
+            spellcheck="false"
             required
           />
         </label>
@@ -63,6 +69,7 @@ function renderLoginGate() {
 
       <p class="auth-footnote">
         Gli account vengono abilitati dall'amministratore di Tennis Player OS.
+        Per gli account con nome utente non è necessario fornire un indirizzo email personale.
       </p>
     </section>
   `;
@@ -188,19 +195,36 @@ function cleanAuthActionUrl() {
   window.history.replaceState({}, document.title, clean);
 }
 
-async function requestPasswordReset(email) {
-  const normalizedEmail = String(email || '').trim();
+async function requestPasswordReset(login) {
+  const normalizedLogin = String(login || '').trim();
 
-  if (!normalizedEmail) {
-    setAuthMessage('Inserisci prima il tuo indirizzo email.', 'error');
-    document.querySelector('#auth-email')?.focus();
+  if (!normalizedLogin) {
+    setAuthMessage('Inserisci prima il tuo nome utente o indirizzo email.', 'error');
+    document.querySelector('#auth-login')?.focus();
+    return;
+  }
+
+  let resetEmail = '';
+
+  try {
+    resetEmail = emailFromLogin(normalizedLogin);
+  } catch (error) {
+    setAuthMessage(error?.message || 'Nome utente non valido.', 'error');
+    return;
+  }
+
+  if (!normalizedLogin.includes('@') || isTechnicalLoginEmail(resetEmail)) {
+    setAuthMessage(
+      'Per gli account con nome utente, il recupero della password viene gestito dall’amministratore.',
+      'error',
+    );
     return;
   }
 
   setAuthBusy(true, 'Invio email…', 'Accedi');
 
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
       redirectTo: recoveryRedirectUrl(),
     });
 
@@ -426,17 +450,17 @@ async function completePasswordAction(session, {
 async function waitForLogin(initialMessage = '') {
   const gate = renderLoginGate();
   const form = gate.querySelector('#auth-login-form');
-  const emailInput = gate.querySelector('#auth-email');
+  const loginInput = gate.querySelector('#auth-login');
   const forgotButton = gate.querySelector('#auth-forgot');
 
   if (initialMessage) {
     setAuthMessage(initialMessage, 'error');
   }
 
-  requestAnimationFrame(() => emailInput?.focus());
+  requestAnimationFrame(() => loginInput?.focus());
 
   forgotButton.addEventListener('click', () => {
-    void requestPasswordReset(emailInput.value);
+    void requestPasswordReset(loginInput.value);
   });
 
   return new Promise(resolve => {
@@ -447,8 +471,16 @@ async function waitForLogin(initialMessage = '') {
       // IMPORTANT: read form values BEFORE disabling the inputs.
       // Disabled controls are excluded from FormData.
       const formData = new FormData(form);
-      const email = String(formData.get('email') || '').trim();
+      const login = String(formData.get('login') || '').trim();
       const password = String(formData.get('password') || '');
+      let email = '';
+
+      try {
+        email = emailFromLogin(login);
+      } catch (error) {
+        setAuthMessage(error?.message || 'Nome utente non valido.', 'error');
+        return;
+      }
 
       setAuthBusy(true, 'Accesso in corso…', 'Accedi');
 
@@ -460,7 +492,7 @@ async function waitForLogin(initialMessage = '') {
 
         if (error) {
           console.error('Supabase login failed:', error);
-          setAuthMessage('Email o password non corrette.', 'error');
+          setAuthMessage('Nome utente/email o password non corretti.', 'error');
           return;
         }
 
@@ -541,8 +573,9 @@ export function mountAuthControls(user) {
 
   const label = document.createElement('span');
   label.className = 'auth-user';
-  label.title = user?.email || 'Utente autenticato';
-  label.textContent = user?.email || 'Account';
+  const loginLabel = loginFromEmail(user?.email || '');
+  label.title = loginLabel || 'Utente autenticato';
+  label.textContent = loginLabel || 'Account';
 
   const logout = document.createElement('button');
   logout.type = 'button';

@@ -5,6 +5,7 @@ import {
   loadAthleteAccessDirectory,
   removeAthleteUser,
 } from '../cloud/access.js';
+import { normalizeUsername } from '../cloud/loginIdentity.js';
 
 function escapeHtml(value = '') {
   return String(value)
@@ -83,15 +84,15 @@ function memberCards(members) {
   return members.map(member => `
     <article class="access-member-card">
       <div class="access-member-avatar" aria-hidden="true">
-        ${escapeHtml((member.displayName || member.email || 'U').trim().charAt(0).toUpperCase())}
+        ${escapeHtml((member.displayName || member.login || member.email || 'U').trim().charAt(0).toUpperCase())}
       </div>
       <div class="access-member-copy">
         <div class="access-member-name">
-          ${escapeHtml(member.displayName || member.email || 'Utente')}
+          ${escapeHtml(member.displayName || member.login || member.email || 'Utente')}
           <span class="access-role-badge role-${escapeAttr(member.role)}">${escapeHtml(roleLabel(member.role))}</span>
           ${member.status !== 'active' ? '<span class="access-status-badge">Sospeso</span>' : ''}
         </div>
-        <div class="access-member-email">${escapeHtml(member.email)}</div>
+        <div class="access-member-email">${escapeHtml(member.login || member.email)}</div>
         <div class="access-member-summary">${escapeHtml(permissionSummary(member))}</div>
       </div>
       <div class="access-member-actions">
@@ -141,13 +142,22 @@ function renderShell(gate) {
             <input type="hidden" name="userId" />
 
             <label class="access-field">
-              <span>Email / login</span>
-              <input name="email" type="email" autocomplete="off" required placeholder="nome@example.com" />
+              <span>Nome visualizzato</span>
+              <input name="displayName" autocomplete="off" placeholder="es. Coach Mario" />
             </label>
 
             <label class="access-field">
-              <span>Nome visualizzato</span>
-              <input name="displayName" autocomplete="off" placeholder="es. Coach Mario" />
+              <span>Nome utente</span>
+              <input
+                name="login"
+                type="text"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                required
+                placeholder="es. mario.rossi"
+              />
+              <small>3–40 caratteri: lettere, numeri, punto, trattino o underscore. Gli account legacy con email restano compatibili.</small>
             </label>
 
             <div id="access-password-block">
@@ -175,8 +185,8 @@ function renderShell(gate) {
 
               <div class="access-info">
                 Se l’account non esiste ancora, questa sarà la password del primo accesso.
-                L’utente sarà obbligato a cambiarla subito. Se l’email appartiene già a
-                un account esistente, la sua password non viene modificata.
+                L’utente sarà obbligato a cambiarla subito. Se il nome utente appartiene già
+                a un account esistente, la sua password non viene modificata.
               </div>
             </div>
 
@@ -214,7 +224,7 @@ function renderShell(gate) {
               <strong>Rimuovere questo utente?</strong>
               <p>
                 L’accesso a questo atleta verrà eliminato. Se l’account non è associato
-                ad altri atleti, verrà eliminato completamente e l’indirizzo email potrà
+                ad altri atleti, verrà eliminato completamente e il nome utente potrà
                 essere riutilizzato per un nuovo account.
               </p>
               <div class="access-remove-confirm-actions">
@@ -294,8 +304,8 @@ function applyMemberToForm(gate, member = null) {
 
   form.reset();
   form.elements.userId.value = member?.userId || '';
-  form.elements.email.value = member?.email || '';
-  form.elements.email.readOnly = Boolean(member?.userId);
+  form.elements.login.value = member?.login || member?.email || '';
+  form.elements.login.readOnly = Boolean(member?.userId);
   form.elements.displayName.value = member?.displayName || '';
   form.elements.role.value = member?.role === 'admin' ? 'admin' : 'member';
 
@@ -421,7 +431,7 @@ export function openAccessManagement({ athleteId }) {
       setMessage(
         gate,
         result?.accountDeleted
-          ? 'Utente eliminato completamente. L’indirizzo email può essere riutilizzato.'
+          ? 'Utente eliminato completamente. Il nome utente può essere riutilizzato.'
           : 'Accesso rimosso da questo atleta. L’account è stato conservato perché è associato ad altri atleti.',
         'success',
       );
@@ -463,7 +473,7 @@ export function openAccessManagement({ athleteId }) {
     const data = new FormData(form);
     const editing = Boolean(String(data.get('userId') || ''));
     const role = String(data.get('role') || 'member');
-    const email = String(data.get('email') || '').trim();
+    const login = String(data.get('login') || '').trim();
     const displayName = String(data.get('displayName') || '').trim();
     const temporaryPassword = editing
       ? ''
@@ -471,6 +481,15 @@ export function openAccessManagement({ athleteId }) {
     const temporaryPasswordConfirm = editing
       ? ''
       : String(data.get('temporaryPasswordConfirm') || '');
+
+    if (!editing && !login.includes('@')) {
+      try {
+        normalizeUsername(login);
+      } catch (error) {
+        setMessage(gate, error?.message || 'Nome utente non valido.', 'error');
+        return;
+      }
+    }
 
     if (!editing && (temporaryPassword || temporaryPasswordConfirm)) {
       if (temporaryPassword.length < 8) {
@@ -490,7 +509,7 @@ export function openAccessManagement({ athleteId }) {
     try {
       const result = await createOrUpdateAthleteAccess({
         athleteId,
-        email,
+        login,
         displayName,
         temporaryPassword,
         role,

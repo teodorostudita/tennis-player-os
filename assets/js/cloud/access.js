@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { loginFromEmail } from './loginIdentity.js';
 
 const MODULE_KEYS = [
   'development',
@@ -144,6 +145,7 @@ export async function loadAthleteAccessDirectory(athleteId) {
   return (members || []).map(member => ({
     userId: member.user_id,
     email: member.email || '',
+    login: loginFromEmail(member.email || ''),
     displayName: member.display_name || '',
     role: member.role || 'member',
     status: member.status || 'active',
@@ -154,7 +156,8 @@ export async function loadAthleteAccessDirectory(athleteId) {
 
 export async function createOrUpdateAthleteAccess({
   athleteId,
-  email,
+  login = '',
+  email = '',
   displayName = '',
   temporaryPassword = '',
   role = 'member',
@@ -167,7 +170,7 @@ export async function createOrUpdateAthleteAccess({
   const { data, error } = await supabase.functions.invoke('create-user', {
     body: {
       athleteId,
-      email,
+      login: login || email,
       displayName,
       temporaryPassword,
       role,

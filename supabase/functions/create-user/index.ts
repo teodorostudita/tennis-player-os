@@ -5,6 +5,8 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const APP_URL = 'https://tennis.polidorionline.it';
+const TECHNICAL_LOGIN_DOMAIN = 'users.tennis.polidorionline.it';
+const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,39}$/;
 
 const ALLOWED_ORIGINS = new Set([
   APP_URL,
@@ -35,6 +37,7 @@ type PermissionInput = {
 
 type RequestBody = {
   athleteId?: string;
+  login?: string;
   email?: string;
   displayName?: string;
   temporaryPassword?: string;
@@ -71,6 +74,43 @@ function json(
 
 function normalizeEmail(value: unknown) {
   return String(value ?? '').trim().toLowerCase();
+}
+
+function normalizeUsername(value: unknown) {
+  const username = String(value ?? '').trim().toLowerCase();
+
+  if (!USERNAME_RE.test(username)) {
+    throw new Error(
+      'Il nome utente deve avere 3–40 caratteri e può contenere solo lettere, numeri, punto, trattino e underscore.',
+    );
+  }
+
+  return username;
+}
+
+function resolveLogin(value: unknown) {
+  const login = String(value ?? '').trim().toLowerCase();
+
+  if (!login) {
+    throw new Error('Nome utente non specificato.');
+  }
+
+  if (login.includes('@')) {
+    const email = normalizeEmail(login);
+    return {
+      login: email,
+      email,
+      technical: false,
+    };
+  }
+
+  const username = normalizeUsername(login);
+
+  return {
+    login: username,
+    email: `${username}@${TECHNICAL_LOGIN_DOMAIN}`,
+    technical: true,
+  };
 }
 
 function normalizePermissions(input: PermissionInput[] | undefined) {
@@ -166,7 +206,9 @@ Deno.serve(async req => {
   try {
     const body = await req.json() as RequestBody;
     const athleteId = String(body.athleteId ?? '').trim();
-    const email = normalizeEmail(body.email);
+    const resolvedLogin = resolveLogin(body.login ?? body.email);
+    const login = resolvedLogin.login;
+    const email = resolvedLogin.email;
     const displayName = String(body.displayName ?? '').trim();
     const temporaryPassword = String(body.temporaryPassword ?? '');
     const role = body.role === 'admin' ? 'admin' : 'member';
@@ -174,10 +216,6 @@ Deno.serve(async req => {
 
     if (!athleteId) {
       return json({ error: 'Atleta non specificato.' }, 400, origin);
-    }
-
-    if (!email || !email.includes('@')) {
-      return json({ error: 'Indirizzo email non valido.' }, 400, origin);
     }
 
     const callerClient = createClient(
@@ -249,9 +287,10 @@ Deno.serve(async req => {
           email,
           password: temporaryPassword,
           email_confirm: true,
-          user_metadata: displayName
-            ? { full_name: displayName }
-            : {},
+          user_metadata: {
+            ...(displayName ? { full_name: displayName } : {}),
+            ...(resolvedLogin.technical ? { tpos_username: login } : {}),
+          },
         });
 
       if (createError) throw createError;
@@ -389,6 +428,7 @@ Deno.serve(async req => {
       {
         ok: true,
         userId: targetUser.id,
+        login,
         email,
         role,
         accountCreated,
