@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '0.25.3',
+    date: '2026-09-23',
+    title: 'Equipment: identificazione telai e ore corde',
+    details: [
+      'In Incordature la racchetta viene selezionata tramite ID del singolo telaio, non tramite modello.',
+      'L’ID racchetta diventa esplicito e obbligatorio nella scheda del telaio.',
+      '“Ore di utilizzo” delle corde rinominato in “Ore di utilizzo previste”.',
+      'Corretto il numero visibile di Equipment dopo il riordino dei moduli.',
+    ],
+  },
+  {
     version: '0.25.2',
     date: '2026-09-23',
     title: 'Equipment nel cloud',
