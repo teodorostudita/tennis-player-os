@@ -1,0 +1,73 @@
+/* Athletics — reusable test protocol library */
+
+.training-test-library-import {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #dce5ef;
+  border-radius: 13px;
+  background: #f7f9fc;
+  display: grid;
+  gap: 11px;
+}
+
+.training-test-library-import[hidden] {
+  display: none;
+}
+
+.training-test-library-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.training-test-library-copy strong {
+  color: var(--navy-900);
+  font-size: .86rem;
+}
+
+.training-test-library-copy span {
+  color: var(--muted);
+  font-size: .74rem;
+  line-height: 1.45;
+}
+
+.training-test-library-controls {
+  display: grid;
+  grid-template-columns: minmax(160px, .8fr) minmax(220px, 1.4fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.training-test-library-controls input,
+.training-test-library-controls select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+  background: white;
+  color: var(--text);
+  padding: 10px 11px;
+}
+
+.training-test-library-status {
+  min-height: 1em;
+  color: var(--muted);
+  font-size: .71rem;
+}
+
+.training-test-library-status.success {
+  color: #39704b;
+}
+
+.training-test-library-status.error {
+  color: #a13f48;
+}
+
+@media (max-width: 760px) {
+  .training-test-library-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .training-test-library-controls .button {
+    width: 100%;
+  }
+}
