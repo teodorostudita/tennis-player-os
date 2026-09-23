@@ -3,6 +3,7 @@ import {
   createOrUpdateAthleteAccess,
   getCurrentAccess,
   loadAthleteAccessDirectory,
+  loadUserAthleteAssignments,
   removeAthleteUser,
 } from '../cloud/access.js';
 import { loadAccessibleAthletes } from '../cloud/athlete.js';
@@ -214,7 +215,7 @@ function renderShell(gate) {
                 <div class="access-loading">Caricamento atleti…</div>
               </div>
 
-              <div class="access-info">
+              <div id="access-athletes-note" class="access-info">
                 Il ruolo e i privilegi per modulo impostati sotto verranno applicati
                 nello stesso modo a tutti gli atleti selezionati.
               </div>
@@ -317,24 +318,84 @@ function updateAllAthletesState(gate) {
   allToggle.indeterminate = selected > 0 && selected < boxes.length;
 }
 
+function resetAthleteChoiceNotes(gate, currentAthleteId) {
+  gate.querySelectorAll('[data-athlete-choice]').forEach(row => {
+    const input = row.querySelector('input[name="athleteIds"]');
+    const note = row.querySelector('[data-athlete-note]');
+    if (!input) return;
+
+    input.disabled = false;
+    input.checked = input.value === currentAthleteId;
+
+    if (note) {
+      note.textContent = input.value === currentAthleteId
+        ? 'Atleta attivo'
+        : 'Atleta disponibile';
+    }
+  });
+
+  updateAllAthletesState(gate);
+}
+
+async function applyAthleteAssignments(gate, member, currentAthleteId) {
+  if (!member?.userId) {
+    resetAthleteChoiceNotes(gate, currentAthleteId);
+    return;
+  }
+
+  const assignments = await loadUserAthleteAssignments(member.userId);
+  const byAthlete = new Map(
+    assignments.map(item => [item.athleteId, item]),
+  );
+
+  gate.querySelectorAll('[data-athlete-choice]').forEach(row => {
+    const input = row.querySelector('input[name="athleteIds"]');
+    const note = row.querySelector('[data-athlete-note]');
+    if (!input) return;
+
+    const assignment = byAthlete.get(input.value);
+    const protectedOwner = assignment?.role === 'owner';
+
+    input.checked = Boolean(assignment);
+    input.disabled = protectedOwner;
+
+    if (!note) return;
+
+    if (protectedOwner) {
+      note.textContent = 'Owner — assegnazione protetta';
+    } else if (assignment) {
+      note.textContent = input.value === currentAthleteId
+        ? 'Atleta attivo · già assegnato'
+        : 'Già assegnato';
+    } else {
+      note.textContent = input.value === currentAthleteId
+        ? 'Atleta attivo'
+        : 'Atleta disponibile';
+    }
+  });
+
+  updateAllAthletesState(gate);
+}
+
 async function loadAthleteChoices(gate, currentAthleteId) {
   const container = gate.querySelector('#access-athlete-rows');
 
   try {
     const athletes = await loadAccessibleAthletes();
+    gate.__tposAthletes = athletes;
 
     if (!athletes.length) {
       container.innerHTML = '<div class="access-empty">Nessun atleta disponibile.</div>';
-      return;
+      return athletes;
     }
 
     container.innerHTML = athletes.map(athlete => `
-      <label class="access-permission-row">
+      <label class="access-permission-row" data-athlete-choice="${escapeAttr(athlete.id)}">
         <div class="access-module-copy">
           <span class="access-module-icon">🎾</span>
           <span>
             <strong>${escapeHtml(athleteLabel(athlete))}</strong>
-            <small>${athlete.id === currentAthleteId ? 'Atleta attivo' : 'Atleta disponibile'}</small>
+            <small data-athlete-note>${athlete.id === currentAthleteId ? 'Atleta attivo' : 'Atleta disponibile'}</small>
           </span>
         </div>
         <input
@@ -352,12 +413,15 @@ async function loadAthleteChoices(gate, currentAthleteId) {
     });
 
     updateAllAthletesState(gate);
+    return athletes;
   } catch (error) {
+    gate.__tposAthletes = [];
     container.innerHTML = `
       <div class="auth-message error">
         ${escapeHtml(error?.message || 'Impossibile leggere gli atleti.')}
       </div>
     `;
+    return [];
   }
 }
 
@@ -365,15 +429,14 @@ function updateEditorMode(gate, member = null) {
   const editing = Boolean(member?.userId);
   const form = gate.querySelector('#access-form');
   const passwordBlock = gate.querySelector('#access-password-block');
-  const athletesBlock = gate.querySelector('#access-athletes-block');
   const newUserButton = gate.querySelector('#access-new-user');
   const resetButton = gate.querySelector('#access-reset-form');
   const removeButton = gate.querySelector('#access-remove-user');
   const removeConfirm = gate.querySelector('#access-remove-confirm');
   const submit = gate.querySelector('#access-submit');
+  const athletesNote = gate.querySelector('#access-athletes-note');
 
   if (passwordBlock) passwordBlock.hidden = editing;
-  if (athletesBlock) athletesBlock.hidden = editing;
   if (newUserButton) newUserButton.hidden = !editing;
   if (resetButton) resetButton.hidden = !editing;
   if (removeButton) removeButton.hidden = !editing;
@@ -386,12 +449,18 @@ function updateEditorMode(gate, member = null) {
     input.value = '';
   }
 
+  if (athletesNote) {
+    athletesNote.textContent = editing
+      ? 'Puoi aggiungere o rimuovere atleti. Gli atleti già assegnati mantengono il proprio ruolo e i propri permessi; le impostazioni sotto aggiornano l’atleta attivo e vengono applicate ai nuovi atleti aggiunti.'
+      : 'Il ruolo e i privilegi per modulo impostati sotto verranno applicati nello stesso modo a tutti gli atleti selezionati.';
+  }
+
   if (submit) {
     submit.textContent = editing ? 'Salva modifiche' : 'Crea utente';
   }
 }
 
-function applyMemberToForm(gate, member = null, currentAthleteId = '') {
+async function applyMemberToForm(gate, member = null, currentAthleteId = '') {
   const form = gate.querySelector('#access-form');
   if (!form) return;
 
@@ -405,7 +474,7 @@ function applyMemberToForm(gate, member = null, currentAthleteId = '') {
     member ? 'Modifica utente' : 'Nuovo utente';
   gate.querySelector('#access-editor-subtitle').textContent =
     member
-      ? 'Aggiorna ruolo e privilegi per l’atleta corrente.'
+      ? 'Aggiorna atleti visibili, ruolo e privilegi dell’account selezionato.'
       : 'Crea un account e scegli a quali atleti può accedere.';
 
   for (const module of modules) {
@@ -414,16 +483,22 @@ function applyMemberToForm(gate, member = null, currentAthleteId = '') {
     select.value = permissionValue(member?.permissions?.[module.id] || {});
   }
 
-  if (!member) {
-    gate.querySelectorAll('input[name="athleteIds"]').forEach(input => {
-      input.checked = input.value === currentAthleteId;
-    });
-    updateAllAthletesState(gate);
+  try {
+    await applyAthleteAssignments(gate, member, currentAthleteId);
+  } catch (error) {
+    setMessage(
+      gate,
+      error?.message || 'Impossibile leggere gli atleti assegnati.',
+      'error',
+    );
   }
 
   updateEditorMode(gate, member);
   updateRoleUI(gate);
-  setMessage(gate, '');
+
+  if (!gate.querySelector('#access-message')?.classList.contains('error')) {
+    setMessage(gate, '');
+  }
 }
 
 function updateRoleUI(gate) {
@@ -436,7 +511,11 @@ function updateRoleUI(gate) {
   if (note) note.hidden = !isAdmin;
 }
 
-async function refreshMembers(gate, athleteId) {
+async function refreshMembers(
+  gate,
+  athleteId,
+  athleteChoicesPromise = Promise.resolve(),
+) {
   const list = gate.querySelector('#access-members-list');
   list.innerHTML = '<div class="access-loading">Caricamento utenti…</div>';
 
@@ -445,10 +524,13 @@ async function refreshMembers(gate, athleteId) {
     list.innerHTML = memberCards(members);
 
     list.querySelectorAll('[data-edit-member]').forEach(button => {
-      button.addEventListener('click', () => {
+      button.addEventListener('click', async () => {
         const member = members.find(item => item.userId === button.dataset.editMember);
         if (!member) return;
-        applyMemberToForm(gate, member, athleteId);
+
+        await athleteChoicesPromise;
+        await applyMemberToForm(gate, member, athleteId);
+
         gate.querySelector('.access-editor-panel')?.scrollIntoView({
           behavior: 'smooth',
           block: 'start',
@@ -476,29 +558,35 @@ export function openAccessManagement({ athleteId }) {
   const gate = document.createElement('div');
   gate.className = 'access-gate';
   gate.dataset.accessManagement = 'true';
+  gate.__tposAthletes = [];
   renderShell(gate);
   document.body.appendChild(gate);
 
   const close = () => gate.remove();
+  const athleteChoicesPromise = loadAthleteChoices(gate, athleteId);
 
   gate.querySelector('.access-close')?.addEventListener('click', close);
   gate.addEventListener('click', event => {
     if (event.target === gate) close();
   });
 
-  gate.querySelector('#access-new-user')?.addEventListener('click', () => {
-    applyMemberToForm(gate, null, athleteId);
+  gate.querySelector('#access-new-user')?.addEventListener('click', async () => {
+    await athleteChoicesPromise;
+    await applyMemberToForm(gate, null, athleteId);
   });
 
-  gate.querySelector('#access-reset-form')?.addEventListener('click', () => {
-    applyMemberToForm(gate, null, athleteId);
+  gate.querySelector('#access-reset-form')?.addEventListener('click', async () => {
+    await athleteChoicesPromise;
+    await applyMemberToForm(gate, null, athleteId);
   });
 
   gate.querySelector('#access-all-athletes')?.addEventListener('change', event => {
     const checked = Boolean(event.currentTarget.checked);
+
     gate.querySelectorAll('input[name="athleteIds"]').forEach(input => {
-      input.checked = checked;
+      if (!input.disabled) input.checked = checked;
     });
+
     updateAllAthletesState(gate);
   });
 
@@ -532,8 +620,8 @@ export function openAccessManagement({ athleteId }) {
         userId,
       });
 
-      await refreshMembers(gate, athleteId);
-      applyMemberToForm(gate, null, athleteId);
+      await refreshMembers(gate, athleteId, athleteChoicesPromise);
+      await applyMemberToForm(gate, null, athleteId);
 
       setMessage(
         gate,
@@ -578,10 +666,12 @@ export function openAccessManagement({ athleteId }) {
     const form = event.currentTarget;
     const submit = gate.querySelector('#access-submit');
     const data = new FormData(form);
-    const editing = Boolean(String(data.get('userId') || ''));
+    const userId = String(data.get('userId') || '');
+    const editing = Boolean(userId);
     const role = String(data.get('role') || 'member');
     const login = String(data.get('login') || '').trim();
-    const athleteIds = editing ? [athleteId] : collectAthleteIds(gate);
+    const athleteIds = collectAthleteIds(gate);
+    const managedAthleteIds = (gate.__tposAthletes || []).map(athlete => athlete.id);
     const temporaryPassword = editing
       ? ''
       : String(data.get('temporaryPassword') || '');
@@ -598,7 +688,7 @@ export function openAccessManagement({ athleteId }) {
       }
     }
 
-    if (!editing && athleteIds.length === 0) {
+    if (athleteIds.length === 0) {
       setMessage(gate, 'Seleziona almeno un atleta da assegnare all’utente.', 'error');
       return;
     }
@@ -622,14 +712,17 @@ export function openAccessManagement({ athleteId }) {
       const result = await createOrUpdateAthleteAccess({
         athleteId,
         athleteIds,
+        managedAthleteIds,
+        userId,
+        syncAssignments: editing,
         login,
         temporaryPassword,
         role,
         permissions: role === 'member' ? collectPermissions(form) : [],
       });
 
-      await refreshMembers(gate, athleteId);
-      applyMemberToForm(gate, null, athleteId);
+      await refreshMembers(gate, athleteId, athleteChoicesPromise);
+      await applyMemberToForm(gate, null, athleteId);
 
       const assignmentText = result?.athleteCount === 1
         ? '1 atleta'
@@ -640,7 +733,7 @@ export function openAccessManagement({ athleteId }) {
         result?.accountCreated
           ? `Utente creato e assegnato a ${assignmentText}. Potrà entrare subito con la password temporanea e dovrà cambiarla al primo accesso.`
           : editing
-            ? 'Ruolo e privilegi aggiornati per l’atleta corrente.'
+            ? `Assegnazioni aggiornate: l’utente può accedere a ${assignmentText}.`
             : `Account esistente assegnato a ${assignmentText} e privilegi aggiornati.`,
         'success',
       );
@@ -657,9 +750,8 @@ export function openAccessManagement({ athleteId }) {
     }
   });
 
-  applyMemberToForm(gate, null, athleteId);
-  void loadAthleteChoices(gate, athleteId);
-  void refreshMembers(gate, athleteId);
+  void athleteChoicesPromise.then(() => applyMemberToForm(gate, null, athleteId));
+  void refreshMembers(gate, athleteId, athleteChoicesPromise);
 }
 
 export function mountAccessManagementControl({ athleteId }) {

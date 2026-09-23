@@ -39,6 +39,9 @@ type PermissionInput = {
 type RequestBody = {
   athleteId?: string;
   athleteIds?: string[];
+  managedAthleteIds?: string[];
+  userId?: string;
+  syncAssignments?: boolean;
   login?: string;
   email?: string;
   temporaryPassword?: string;
@@ -114,31 +117,26 @@ function resolveLogin(value: unknown) {
   };
 }
 
-function normalizeAthleteIds(
-  athleteIds: unknown,
-  fallbackAthleteId: unknown,
+function normalizeIdList(
+  values: unknown,
+  fallback: unknown = '',
+  label = 'atleta',
 ) {
-  const requested = Array.isArray(athleteIds)
-    ? athleteIds
-    : [];
-
-  const rawIds = requested.length
-    ? requested
-    : [fallbackAthleteId];
+  const source = Array.isArray(values) && values.length
+    ? values
+    : fallback
+      ? [fallback]
+      : [];
 
   const unique = [...new Set(
-    rawIds
+    source
       .map(value => String(value ?? '').trim())
       .filter(Boolean),
   )];
 
-  if (!unique.length) {
-    throw new Error('Seleziona almeno un atleta.');
-  }
-
-  for (const athleteId of unique) {
-    if (!UUID_RE.test(athleteId)) {
-      throw new Error('Identificativo atleta non valido.');
+  for (const id of unique) {
+    if (!UUID_RE.test(id)) {
+      throw new Error(`Identificativo ${label} non valido.`);
     }
   }
 
@@ -237,13 +235,62 @@ Deno.serve(async req => {
 
   try {
     const body = await req.json() as RequestBody;
-    const athleteIds = normalizeAthleteIds(body.athleteIds, body.athleteId);
+    const sourceAthleteId = String(body.athleteId ?? '').trim();
+    const athleteIds = normalizeIdList(
+      body.athleteIds,
+      sourceAthleteId,
+      'atleta',
+    );
+    const managedAthleteIds = normalizeIdList(
+      body.managedAthleteIds,
+      '',
+      'atleta',
+    );
+    const requestedUserId = String(body.userId ?? '').trim();
+    const syncAssignments = Boolean(body.syncAssignments);
     const resolvedLogin = resolveLogin(body.login ?? body.email);
     const login = resolvedLogin.login;
     const email = resolvedLogin.email;
     const temporaryPassword = String(body.temporaryPassword ?? '');
     const role = body.role === 'admin' ? 'admin' : 'member';
     const permissions = normalizePermissions(body.permissions);
+
+    if (!sourceAthleteId || !UUID_RE.test(sourceAthleteId)) {
+      return json({ error: 'Atleta attivo non valido.' }, 400, origin);
+    }
+
+    if (!athleteIds.length) {
+      return json({ error: 'Seleziona almeno un atleta.' }, 400, origin);
+    }
+
+    if (syncAssignments && !requestedUserId) {
+      return json({ error: 'Utente da modificare non specificato.' }, 400, origin);
+    }
+
+    if (syncAssignments && !UUID_RE.test(requestedUserId)) {
+      return json({ error: 'Identificativo utente non valido.' }, 400, origin);
+    }
+
+    const managedScope = syncAssignments
+      ? [...new Set([
+          ...managedAthleteIds,
+          ...athleteIds,
+          sourceAthleteId,
+        ])]
+      : athleteIds;
+
+    if (syncAssignments && managedAthleteIds.length) {
+      const managedSet = new Set(managedAthleteIds);
+      const outsideManaged = athleteIds.some(id => !managedSet.has(id));
+
+      if (outsideManaged) {
+        return json(
+          { error: 'La selezione contiene un atleta fuori dall’elenco gestibile.' },
+          400,
+          origin,
+        );
+      }
+    }
 
     const callerClient = createClient(
       SUPABASE_URL,
@@ -279,8 +326,6 @@ Deno.serve(async req => {
       },
     );
 
-    // Security boundary: every selected athlete must be actively owned by
-    // the caller. The browser cannot grant access to arbitrary athlete IDs.
     const { data: callerOwnerships, error: ownershipError } =
       await adminClient
         .from('athlete_members')
@@ -288,7 +333,7 @@ Deno.serve(async req => {
         .eq('user_id', callerData.user.id)
         .eq('role', 'owner')
         .eq('status', 'active')
-        .in('athlete_id', athleteIds);
+        .in('athlete_id', managedScope);
 
     if (ownershipError) throw ownershipError;
 
@@ -296,161 +341,256 @@ Deno.serve(async req => {
       (callerOwnerships ?? []).map(row => String(row.athlete_id)),
     );
 
-    if (athleteIds.some(athleteId => !ownedIds.has(athleteId))) {
+    if (managedScope.some(athleteId => !ownedIds.has(athleteId))) {
       return json(
-        { error: 'Puoi assegnare utenti solo ad atleti di cui sei Owner.' },
+        { error: 'Puoi gestire utenti solo per atleti di cui sei Owner.' },
         403,
         origin,
       );
     }
 
-    let targetUser = await findUserByEmail(adminClient, email);
-    const accountCreated = !targetUser;
+    let targetUser = null;
+    let accountCreated = false;
 
-    if (!targetUser) {
-      if (temporaryPassword.length < 8) {
+    if (requestedUserId) {
+      const { data: targetData, error: targetError } =
+        await adminClient.auth.admin.getUserById(requestedUserId);
+
+      if (targetError) throw targetError;
+      if (!targetData.user) {
+        return json({ error: 'Account da modificare non trovato.' }, 404, origin);
+      }
+
+      targetUser = targetData.user;
+
+      if (normalizeEmail(targetUser.email) !== email) {
         return json(
-          {
-            error:
-              'L’account non esiste ancora: inserisci una password temporanea di almeno 8 caratteri.',
-          },
+          { error: 'Il nome utente non corrisponde all’account selezionato.' },
           400,
           origin,
         );
       }
+    } else {
+      targetUser = await findUserByEmail(adminClient, email);
+      accountCreated = !targetUser;
 
-      const { data: createdData, error: createError } =
-        await adminClient.auth.admin.createUser({
-          email,
-          password: temporaryPassword,
-          email_confirm: true,
-          user_metadata: {
-            full_name: login,
-            ...(resolvedLogin.technical ? { tpos_username: login } : {}),
-          },
-        });
+      if (!targetUser) {
+        if (temporaryPassword.length < 8) {
+          return json(
+            {
+              error:
+                'L’account non esiste ancora: inserisci una password temporanea di almeno 8 caratteri.',
+            },
+            400,
+            origin,
+          );
+        }
 
-      if (createError) throw createError;
-      if (!createdData.user) {
-        throw new Error('Supabase non ha restituito l’utente creato.');
+        const { data: createdData, error: createError } =
+          await adminClient.auth.admin.createUser({
+            email,
+            password: temporaryPassword,
+            email_confirm: true,
+            user_metadata: {
+              full_name: login,
+              ...(resolvedLogin.technical ? { tpos_username: login } : {}),
+            },
+          });
+
+        if (createError) throw createError;
+        if (!createdData.user) {
+          throw new Error('Supabase non ha restituito l’utente creato.');
+        }
+
+        targetUser = createdData.user;
+        newlyCreatedUserId = targetUser.id;
       }
-
-      targetUser = createdData.user;
-      newlyCreatedUserId = targetUser.id;
     }
 
     const { data: existingMemberships, error: membershipReadError } =
       await adminClient
         .from('athlete_members')
-        .select('athlete_id, role')
+        .select('athlete_id, role, status')
         .eq('user_id', targetUser.id)
-        .in('athlete_id', athleteIds);
+        .in('athlete_id', managedScope);
 
     if (membershipReadError) throw membershipReadError;
 
-    if ((existingMemberships ?? []).some(row => row.role === 'owner')) {
-      return json(
-        { error: 'L’Owner di un atleta è protetto e non può essere modificato da questo form.' },
-        400,
-        origin,
+    const existingByAthlete = new Map(
+      (existingMemberships ?? []).map(item => [String(item.athlete_id), item]),
+    );
+
+    let finalAthleteIds = [...athleteIds];
+    let applySettingsIds = [...athleteIds];
+    let removeIds: string[] = [];
+
+    if (syncAssignments) {
+      const protectedOwnerIds = (existingMemberships ?? [])
+        .filter(item => item.role === 'owner')
+        .map(item => String(item.athlete_id));
+
+      const currentMembership = existingByAthlete.get(sourceAthleteId);
+
+      if (currentMembership?.role === 'owner') {
+        return json(
+          { error: 'L’Owner dell’atleta attivo è protetto e non può essere modificato da questo form.' },
+          400,
+          origin,
+        );
+      }
+
+      finalAthleteIds = [...new Set([
+        ...athleteIds,
+        ...protectedOwnerIds,
+      ])];
+
+      const finalSet = new Set(finalAthleteIds);
+
+      removeIds = (existingMemberships ?? [])
+        .filter(item =>
+          item.role !== 'owner'
+          && !finalSet.has(String(item.athlete_id))
+        )
+        .map(item => String(item.athlete_id));
+
+      const newIds = finalAthleteIds.filter(
+        athleteId => !existingByAthlete.has(athleteId),
       );
+
+      applySettingsIds = [...new Set([
+        ...newIds,
+        ...(finalSet.has(sourceAthleteId) ? [sourceAthleteId] : []),
+      ])].filter(athleteId => {
+        const existing = existingByAthlete.get(athleteId);
+        return existing?.role !== 'owner';
+      });
+    } else {
+      const protectedConflict = (existingMemberships ?? []).some(
+        item => item.role === 'owner',
+      );
+
+      if (protectedConflict) {
+        return json(
+          { error: 'L’Owner di un atleta è protetto e non può essere modificato da questo form.' },
+          400,
+          origin,
+        );
+      }
+    }
+
+    if (removeIds.length) {
+      const { error: permissionDeleteError } = await adminClient
+        .from('module_permissions')
+        .delete()
+        .eq('user_id', targetUser.id)
+        .in('athlete_id', removeIds);
+
+      if (permissionDeleteError) throw permissionDeleteError;
+
+      const { error: membershipDeleteError } = await adminClient
+        .from('athlete_members')
+        .delete()
+        .eq('user_id', targetUser.id)
+        .in('athlete_id', removeIds);
+
+      if (membershipDeleteError) throw membershipDeleteError;
+    }
+
+    if (applySettingsIds.length) {
+      const { error: membershipError } = await adminClient
+        .from('athlete_members')
+        .upsert(
+          applySettingsIds.map(athleteId => ({
+            athlete_id: athleteId,
+            user_id: targetUser!.id,
+            role,
+            status: 'active',
+            created_by: callerData.user.id,
+          })),
+          {
+            onConflict: 'athlete_id,user_id',
+          },
+        );
+
+      if (membershipError) throw membershipError;
+
+      const { error: clearPermissionsError } = await adminClient
+        .from('module_permissions')
+        .delete()
+        .eq('user_id', targetUser.id)
+        .in('athlete_id', applySettingsIds);
+
+      if (clearPermissionsError) throw clearPermissionsError;
+
+      if (role === 'member' && permissions.length) {
+        const permissionRows = applySettingsIds.flatMap(athleteId =>
+          permissions.map(permission => ({
+            athlete_id: athleteId,
+            user_id: targetUser!.id,
+            module_key: permission.module_key,
+            can_read: permission.can_read,
+            can_write: permission.can_write,
+            created_by: callerData.user.id,
+          }))
+        );
+
+        const { error: permissionError } = await adminClient
+          .from('module_permissions')
+          .insert(permissionRows);
+
+        if (permissionError) throw permissionError;
+      }
     }
 
     const { data: accountRoleRow, error: accountRoleReadError } =
       await adminClient
         .from('account_access')
-        .select('role, can_create_athletes, must_change_password')
+        .select('role, must_change_password')
         .eq('user_id', targetUser.id)
         .maybeSingle();
 
     if (accountRoleReadError) throw accountRoleReadError;
 
-    if (accountCreated) {
+    if (accountRoleRow?.role !== 'owner') {
+      const { data: remainingMemberships, error: remainingMembershipsError } =
+        await adminClient
+          .from('athlete_members')
+          .select('role, status')
+          .eq('user_id', targetUser.id);
+
+      if (remainingMembershipsError) throw remainingMembershipsError;
+
+      const hasAdminAccess = (remainingMemberships ?? []).some(
+        item =>
+          item.status === 'active'
+          && (item.role === 'admin' || item.role === 'owner'),
+      );
+
+      const accountPayload: {
+        user_id: string;
+        role: 'admin' | 'member';
+        can_create_athletes: boolean;
+        must_change_password?: boolean;
+      } = {
+        user_id: targetUser.id,
+        role: hasAdminAccess ? 'admin' : 'member',
+        can_create_athletes: hasAdminAccess,
+      };
+
+      if (accountCreated) {
+        accountPayload.must_change_password = true;
+      } else if (!accountRoleRow) {
+        accountPayload.must_change_password = false;
+      }
+
       const { error: accountRoleUpdateError } = await adminClient
         .from('account_access')
         .upsert(
-          {
-            user_id: targetUser.id,
-            role: role === 'admin' ? 'admin' : 'member',
-            can_create_athletes: role === 'admin',
-            must_change_password: true,
-          },
-          {
-            onConflict: 'user_id',
-          },
+          accountPayload,
+          { onConflict: 'user_id' },
         );
 
       if (accountRoleUpdateError) throw accountRoleUpdateError;
-    } else if (role === 'admin' && accountRoleRow?.role !== 'owner') {
-      const { error: accountRoleUpdateError } = await adminClient
-        .from('account_access')
-        .upsert(
-          {
-            user_id: targetUser.id,
-            role: 'admin',
-            can_create_athletes: true,
-          },
-          {
-            onConflict: 'user_id',
-          },
-        );
-
-      if (accountRoleUpdateError) throw accountRoleUpdateError;
-    } else if (!accountRoleRow) {
-      const { error: accountRoleInsertError } = await adminClient
-        .from('account_access')
-        .insert({
-          user_id: targetUser.id,
-          role: 'member',
-          can_create_athletes: false,
-          must_change_password: false,
-        });
-
-      if (accountRoleInsertError) throw accountRoleInsertError;
-    }
-
-    const { error: membershipError } = await adminClient
-      .from('athlete_members')
-      .upsert(
-        athleteIds.map(athleteId => ({
-          athlete_id: athleteId,
-          user_id: targetUser!.id,
-          role,
-          status: 'active',
-          created_by: callerData.user.id,
-        })),
-        {
-          onConflict: 'athlete_id,user_id',
-        },
-      );
-
-    if (membershipError) throw membershipError;
-
-    const { error: clearPermissionsError } = await adminClient
-      .from('module_permissions')
-      .delete()
-      .eq('user_id', targetUser.id)
-      .in('athlete_id', athleteIds);
-
-    if (clearPermissionsError) throw clearPermissionsError;
-
-    if (role === 'member' && permissions.length) {
-      const permissionRows = athleteIds.flatMap(athleteId =>
-        permissions.map(permission => ({
-          athlete_id: athleteId,
-          user_id: targetUser!.id,
-          module_key: permission.module_key,
-          can_read: permission.can_read,
-          can_write: permission.can_write,
-          created_by: callerData.user.id,
-        }))
-      );
-
-      const { error: permissionError } = await adminClient
-        .from('module_permissions')
-        .insert(permissionRows);
-
-      if (permissionError) throw permissionError;
     }
 
     return json(
@@ -462,8 +602,10 @@ Deno.serve(async req => {
         role,
         accountCreated,
         passwordChangeRequired: accountCreated,
-        athleteCount: athleteIds.length,
-        athleteIds,
+        athleteCount: finalAthleteIds.length,
+        athleteIds: finalAthleteIds,
+        removedAthleteCount: removeIds.length,
+        updatedAthleteCount: applySettingsIds.length,
         permissionCount: role === 'member' ? permissions.length : 0,
       },
       200,

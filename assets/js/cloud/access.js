@@ -154,9 +154,37 @@ export async function loadAthleteAccessDirectory(athleteId) {
   }));
 }
 
+export async function loadUserAthleteAssignments(userId) {
+  if (!currentAccess.isOwner) {
+    throw new Error('Solo il proprietario può leggere le assegnazioni degli utenti.');
+  }
+
+  if (!userId) {
+    throw new Error('Utente non specificato.');
+  }
+
+  const { data, error } = await supabase
+    .from('athlete_members')
+    .select('athlete_id, role, status')
+    .eq('user_id', userId);
+
+  if (error) {
+    throw new Error(`Impossibile leggere gli atleti assegnati: ${error.message}`);
+  }
+
+  return (data || []).map(row => ({
+    athleteId: row.athlete_id,
+    role: row.role || 'member',
+    status: row.status || 'active',
+  }));
+}
+
 export async function createOrUpdateAthleteAccess({
   athleteId,
   athleteIds = [],
+  managedAthleteIds = [],
+  userId = '',
+  syncAssignments = false,
   login = '',
   email = '',
   temporaryPassword = '',
@@ -171,6 +199,9 @@ export async function createOrUpdateAthleteAccess({
     body: {
       athleteId,
       athleteIds,
+      managedAthleteIds,
+      userId,
+      syncAssignments,
       login: login || email,
       temporaryPassword,
       role,
