@@ -1,5 +1,5 @@
 import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js';
-import { canReadModule, canWriteModule, loadCurrentAccess } from './cloud/access.js';
+import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js';
 import { canCreateAthletes, loadCurrentAccountAccess } from './cloud/accountAccess.js';
 import { enforceInitialPasswordChange } from './cloud/initialPassword.js';
 import { startPermissionGuard } from './cloud/permissionGuard.js';
