@@ -1,0 +1,43 @@
+/* Mobile/touch Calendar safety.
+   Direct manipulation stays available on desktop; on touch the weekly planner
+   is scroll-first and editing is opened only by long press. */
+
+.planner-mobile-touch-hint {
+  display: none;
+}
+
+@media (max-width: 900px) and (pointer: coarse) {
+  .planner-mobile-touch-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -2px 0 10px;
+    padding: 9px 11px;
+    border: 1px solid #dce4ee;
+    border-radius: 10px;
+    background: #f7f9fc;
+    color: #65738a;
+    font-size: .72rem;
+    line-height: 1.35;
+  }
+
+  .planner-mobile-touch-hint strong {
+    color: var(--navy-900);
+  }
+
+  .planner-timeline-event {
+    touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .planner-timeline-event .planner-resize-handle {
+    display: none !important;
+  }
+
+  .planner-timeline-event.tpos-long-press-pending {
+    outline: 2px solid rgba(74, 111, 153, .22);
+    outline-offset: -2px;
+  }
+}
