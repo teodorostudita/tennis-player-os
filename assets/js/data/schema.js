@@ -3,18 +3,18 @@ import { APP_VERSION } from '../version.js';
 export const STORAGE_KEY = 'tennisPlayerOS.state.v1';
 
 export const modules = [
-  { id: 'development', number: 1, name: 'Development', icon: '🎯', subtitle: 'Tecnica · Tattica · Sviluppo del gioco', color: 'var(--development)', description: 'Valutazioni per colpo/skill, progressi, video, obiettivi e piani di sviluppo tecnico-tattico. Gli aspetti mentali hanno ora un modulo dedicato.' },
+  { id: 'calendar', number: 1, name: 'Calendar', icon: '▣', subtitle: 'Programmazione · Logistica · Tornei', color: 'var(--calendar)', description: 'Planner settimanale, logistica familiare, tornei, scuola, visite, viaggi e altri impegni dell’atleta.' },
   { id: 'training', number: 2, name: 'Athletics', icon: '🏋️', subtitle: 'Preparazione atletica · Carico · Performance fisica', color: 'var(--training)', description: 'Preparazione fisica dell’atleta: forza, potenza, velocità, agilità, conditioning, mobilità, prevenzione e monitoraggio del carico atletico.' },
-  { id: 'drills', number: 3, name: 'Drills', icon: '🎾', subtitle: 'Esercizi · Pattern · Sessioni tennis', color: 'var(--drills)', description: 'Libreria degli esercizi tennis-specifici: obiettivo, setup, modalità, durata, intensità, varianti e organizzazione delle sessioni in campo.' },
-  { id: 'competition', number: 4, name: 'Competition', icon: '🏆', subtitle: 'Match · Risultati · Performance', color: 'var(--competition)', description: 'Risultati, statistiche, analisi match e debrief. La programmazione dei tornei vive nel Calendar e viene richiamata qui senza duplicazioni.' },
-  { id: 'opponents', number: 5, name: 'Opponents', icon: '👥', subtitle: 'Scouting · Analisi · Preparazione', color: 'var(--opponents)', description: 'Profili avversari, pattern, H2H, video, note e brief pre-match.' },
-  { id: 'equipment', number: 6, name: 'Equipment', icon: '🎾', subtitle: 'Racchette · Corde · Setup', color: 'var(--equipment)', description: 'Specifiche, corde e tensioni, scarpe, storico configurazioni e comfort.' },
-  { id: 'health', number: 7, name: 'Body & Health', icon: '♡', subtitle: 'Infortuni · Dolore · Monitoraggio', color: 'var(--health)', description: 'Storico problemi fisici, dolore, disponibilità, visite, protocolli e documentazione clinica.' },
-  { id: 'nutrition', number: 8, name: 'Nutrition & Recovery', icon: '☾', subtitle: 'Alimentazione · Sonno · Recupero', color: 'var(--nutrition)', description: 'Pasti e idratazione, sonno, fatigue, soreness, riposo e readiness nello stesso modulo di gestione quotidiana.' },
-  { id: 'mental', number: 9, name: 'Mental', icon: '🧠', subtitle: 'Routine · Focus · Gestione emotiva', color: 'var(--mental)', description: 'Mental training, routine pre-match, respirazione, visualizzazione mentale, cue, journaling e strategie di gestione della pressione.' },
-  { id: 'visual', number: 10, name: 'Visual', icon: '👁', subtitle: 'Percezione · Anticipazione · Training visivo', color: 'var(--visual)', description: 'Allenamento percettivo e visivo: profondità, traiettoria, spin, anticipazione, tracking e protocolli anche in VR.' },
-  { id: 'economics', number: 11, name: 'Economics', icon: '◉', subtitle: 'Costi · Budget · Sostenibilità', color: 'var(--economics)', description: 'Spese, budget stagionale, costo per torneo/match, sponsor e report.' },
-  { id: 'calendar', number: 12, name: 'Calendar', icon: '▣', subtitle: 'Programmazione · Logistica · Tornei', color: 'var(--calendar)', description: 'Planner settimanale, logistica familiare, tornei, scuola, visite, viaggi e altri impegni dell’atleta.' },
+  { id: 'development', number: 3, name: 'Development', icon: '🎯', subtitle: 'Tecnica · Tattica · Sviluppo del gioco', color: 'var(--development)', description: 'Valutazioni per colpo/skill, progressi, video, obiettivi e piani di sviluppo tecnico-tattico. Gli aspetti mentali hanno ora un modulo dedicato.' },
+  { id: 'drills', number: 4, name: 'Drills', icon: '🎾', subtitle: 'Esercizi · Pattern · Sessioni tennis', color: 'var(--drills)', description: 'Libreria degli esercizi tennis-specifici: obiettivo, setup, modalità, durata, intensità, varianti e organizzazione delle sessioni in campo.' },
+  { id: 'competition', number: 5, name: 'Competition', icon: '🏆', subtitle: 'Match · Risultati · Performance', color: 'var(--competition)', description: 'Risultati, statistiche, analisi match e debrief. La programmazione dei tornei vive nel Calendar e viene richiamata qui senza duplicazioni.' },
+  { id: 'opponents', number: 6, name: 'Opponents', icon: '👥', subtitle: 'Scouting · Analisi · Preparazione', color: 'var(--opponents)', description: 'Profili avversari, pattern, H2H, video, note e brief pre-match.' },
+  { id: 'equipment', number: 7, name: 'Equipment', icon: '🎾', subtitle: 'Racchette · Corde · Setup', color: 'var(--equipment)', description: 'Specifiche, corde e tensioni, scarpe, storico configurazioni e comfort.' },
+  { id: 'health', number: 8, name: 'Body & Health', icon: '♡', subtitle: 'Infortuni · Dolore · Monitoraggio', color: 'var(--health)', description: 'Storico problemi fisici, dolore, disponibilità, visite, protocolli e documentazione clinica.' },
+  { id: 'nutrition', number: 9, name: 'Nutrition & Recovery', icon: '☾', subtitle: 'Alimentazione · Sonno · Recupero', color: 'var(--nutrition)', description: 'Pasti e idratazione, sonno, fatigue, soreness, riposo e readiness nello stesso modulo di gestione quotidiana.' },
+  { id: 'mental', number: 10, name: 'Mental', icon: '🧠', subtitle: 'Routine · Focus · Gestione emotiva', color: 'var(--mental)', description: 'Mental training, routine pre-match, respirazione, visualizzazione mentale, cue, journaling e strategie di gestione della pressione.' },
+  { id: 'visual', number: 11, name: 'Visual', icon: '👁', subtitle: 'Percezione · Anticipazione · Training visivo', color: 'var(--visual)', description: 'Allenamento percettivo e visivo: profondità, traiettoria, spin, anticipazione, tracking e protocolli anche in VR.' },
+  { id: 'economics', number: 12, name: 'Economics', icon: '◉', subtitle: 'Costi · Budget · Sostenibilità', color: 'var(--economics)', description: 'Spese, budget stagionale, costo per torneo/match, sponsor e report.' },
 ];
 
 export const defaultState = {
@@ -97,7 +97,7 @@ export const defaultState = {
         execution: 'Minimo tre colpi cross prima che il giocatore designato possa cambiare lungolinea su palla favorevole.',
         scoring: 'Punto bonus per cambio direzione eseguito su palla adeguata e con buona profondità.',
         constraints: 'Nessun cambio prima del terzo colpo cross.',
-        progression: 'Punto libero dopo il cambio.',
+        progression: 'Giocare il punto libero dopo il cambio.',
         regression: 'Cambio chiamato dal coach.',
         tags: ['fondo', 'decisione', 'direzioni'],
         notes: '',
