@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '0.25.4',
+    date: '2026-09-23',
+    title: 'Sincronizzazione cross-device',
+    details: [
+      'Equipment viene caricato da Supabase durante il bootstrap prima di mostrare l’app.',
+      'In caso di errore di lettura cloud, Equipment non avvia la scrittura automatica e protegge il record remoto.',
+      'Il profilo atleta esteso viene salvato in athletes.metadata e sincronizzato tra dispositivi.',
+      'Migrazione automatica una tantum dei dati profilo già presenti nella cache locale.',
+    ],
+  },
+  {
     version: '0.25.3',
     date: '2026-09-23',
     title: 'Equipment: identificazione telai e ore corde',
