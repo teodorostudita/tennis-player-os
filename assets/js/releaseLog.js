@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.25.2',
+    date: '2026-09-23',
+    title: 'Equipment nel cloud',
+    details: [
+      'Inventario racchette, configurazione corrente, storico incordature e scarpe salvati in Supabase.',
+      'Migrazione automatica dei dati Equipment locali quando il cloud è ancora vuoto.',
+      'localStorage mantenuto come cache e fallback offline.',
+    ],
+  },
+  {
     version: '0.25.1',
     date: '2026-09-23',
     title: 'Versioning visibile e release log',
