@@ -241,8 +241,8 @@ export async function removeAthleteUser({
   athleteId,
   userId,
 }) {
-  if (!currentAccess.isOwner || currentAccess.athleteId !== athleteId) {
-    throw new Error('Solo il proprietario dell’atleta può rimuovere utenti.');
+  if (!currentAccess.isOwner) {
+    throw new Error('Solo il proprietario può rimuovere utenti.');
   }
 
   if (!userId) {

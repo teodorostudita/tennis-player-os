@@ -267,11 +267,10 @@ function renderShell(gate) {
             </div>
 
             <div id="access-remove-confirm" class="access-remove-confirm" hidden>
-              <strong>Rimuovere questo utente?</strong>
+              <strong>Eliminare definitivamente questo utente?</strong>
               <p>
-                L’accesso all’atleta corrente verrà eliminato. Se l’account non è associato
-                ad altri atleti, verrà eliminato completamente e il nome utente potrà
-                essere riutilizzato per un nuovo account.
+                L’account verrà rimosso da tutti gli atleti assegnati e poi eliminato
+                completamente. Il nome utente potrà essere riutilizzato per un nuovo account.
               </p>
               <div class="access-remove-confirm-actions">
                 <button class="button button-ghost" type="button" id="access-remove-cancel">Annulla</button>
@@ -282,7 +281,7 @@ function renderShell(gate) {
             <div id="access-message" class="auth-message" role="status" aria-live="polite"></div>
 
             <div class="access-form-actions access-form-actions-split">
-              <button class="button button-danger-ghost" type="button" id="access-remove-user" hidden>Rimuovi utente</button>
+              <button class="button button-danger-ghost" type="button" id="access-remove-user" hidden>Elimina utente</button>
               <div class="access-form-actions-main">
                 <button class="button button-ghost" type="button" id="access-reset-form" hidden>Annulla modifica</button>
                 <button class="button button-primary" type="submit" id="access-submit">Crea utente</button>
@@ -454,7 +453,7 @@ function updateEditorMode(gate, member = null) {
   if (passwordBlock) passwordBlock.hidden = editing;
   if (newUserButton) newUserButton.hidden = !editing;
   if (resetButton) resetButton.hidden = !editing;
-  if (removeButton) removeButton.hidden = !editing || !member?.currentAssigned;
+  if (removeButton) removeButton.hidden = !editing;
   if (removeConfirm) removeConfirm.hidden = true;
 
   for (const name of ['temporaryPassword', 'temporaryPasswordConfirm']) {
@@ -630,19 +629,32 @@ export function openAccessManagement({ athleteId }) {
     confirmButton.textContent = 'Rimozione…';
 
     try {
-      const result = await removeAthleteUser({
-        athleteId,
-        userId,
-      });
+      const assignments = await loadUserAthleteAssignments(userId);
+      const removableAssignments = assignments.filter(
+        assignment => assignment.role !== 'owner',
+      );
+
+      if (!removableAssignments.length) {
+        throw new Error('Questo utente non ha assegnazioni eliminabili.');
+      }
+
+      let lastResult = null;
+
+      for (const assignment of removableAssignments) {
+        lastResult = await removeAthleteUser({
+          athleteId: assignment.athleteId,
+          userId,
+        });
+      }
 
       await refreshMembers(gate, athleteId, athleteChoicesPromise);
       await applyMemberToForm(gate, null, athleteId);
 
       setMessage(
         gate,
-        result?.accountDeleted
+        lastResult?.accountDeleted
           ? 'Utente eliminato completamente. Il nome utente può essere riutilizzato.'
-          : 'Accesso rimosso dall’atleta corrente. L’account è stato conservato perché è associato ad altri atleti.',
+          : 'Le assegnazioni gestibili sono state rimosse. L’account è stato conservato perché esistono ancora assegnazioni protette.',
         'success',
       );
     } catch (error) {
