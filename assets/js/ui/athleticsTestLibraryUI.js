@@ -270,27 +270,63 @@ async function prepareImportPanel(dialog) {
   }
 }
 
-function inspectTrainingDialog() {
+async function inspectTrainingDialog() {
   const dialog = document.querySelector('#training-test-dialog');
   if (!dialog?.open) return;
 
-  void prepareImportPanel(dialog);
+  if (
+    dialog.__athleticsLibraryPreparing
+    || dialog.__athleticsLibraryPreparedForOpen
+  ) {
+    return;
+  }
+
+  dialog.__athleticsLibraryPreparing = true;
+
+  try {
+    await prepareImportPanel(dialog);
+    dialog.__athleticsLibraryPreparedForOpen = true;
+  } finally {
+    dialog.__athleticsLibraryPreparing = false;
+  }
 }
 
 function installDialogObserver() {
-  const observer = new MutationObserver(() => {
-    window.queueMicrotask(inspectTrainingDialog);
+  const observer = new MutationObserver(mutations => {
+    let shouldInspect = false;
+
+    for (const mutation of mutations) {
+      if (
+        mutation.type === 'attributes'
+        && mutation.attributeName === 'open'
+        && mutation.target?.matches?.('#training-test-dialog')
+      ) {
+        const dialog = mutation.target;
+
+        if (dialog.open) {
+          dialog.__athleticsLibraryPreparedForOpen = false;
+          shouldInspect = true;
+        } else {
+          dialog.__athleticsLibraryPreparedForOpen = false;
+          dialog.__athleticsLibraryPreparing = false;
+        }
+      }
+    }
+
+    if (shouldInspect) {
+      window.queueMicrotask(() => {
+        void inspectTrainingDialog();
+      });
+    }
   });
 
   observer.observe(document.body, {
     attributes: true,
     attributeFilter: ['open'],
-    childList: true,
     subtree: true,
   });
 
   window.addEventListener('hashchange', () => {
-    window.queueMicrotask(inspectTrainingDialog);
     scheduleLibrarySync();
   });
 }
@@ -303,5 +339,4 @@ installDialogObserver();
 
 window.addEventListener('load', () => {
   scheduleLibrarySync();
-  window.queueMicrotask(inspectTrainingDialog);
 });
