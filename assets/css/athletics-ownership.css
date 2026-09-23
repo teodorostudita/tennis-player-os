@@ -1,0 +1,85 @@
+.athletics-owner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  background: rgba(11, 31, 58, .08);
+  color: var(--ink, #0b1f3a);
+  white-space: nowrap;
+}
+
+.athletics-owner-badge.locked {
+  opacity: .78;
+}
+
+.athletics-record-locked {
+  cursor: default !important;
+}
+
+button.training-session-card.athletics-record-locked,
+button.training-goal-card.athletics-record-locked {
+  opacity: .72;
+}
+
+.athletics-manage-owners {
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+.athletics-ownership-dialog {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.athletics-ownership-body {
+  display: grid;
+  gap: 10px;
+  max-height: min(62vh, 620px);
+  overflow: auto;
+}
+
+.athletics-ownership-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 280px);
+  gap: 14px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(11, 31, 58, .1);
+}
+
+.athletics-ownership-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.athletics-ownership-row span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  opacity: .64;
+}
+
+.athletics-ownership-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.athletics-ownership-row select {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .athletics-ownership-row {
+    grid-template-columns: 1fr;
+  }
+
+  .athletics-manage-owners {
+    width: 100%;
+  }
+}

@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.25.5',
+    date: '2026-09-23',
+    title: 'Athletics: responsabilità per record',
+    details: [
+      'Athletics passa da un unico blob condiviso a record individuali per test, misurazioni, sessioni e obiettivi.',
+      'Ogni record ha un responsabile: i preparatori leggono tutto ma possono modificare soltanto i propri contenuti.',
+      'Owner/Admin può riassegnare il responsabile dei record tramite il nuovo pannello “Responsabili”.',
+      'Il programma settimanale generale resta amministrativo e modificabile solo da Owner/Admin.',
+      'La sincronizzazione aggiorna solo i record cambiati, evitando sovrascritture tra due preparatori che lavorano contemporaneamente.',
+      'Il vecchio stato Athletics in athlete_module_state viene mantenuto intatto come backup storico.',
+    ],
+  },
+  {
     version: '0.25.4',
     date: '2026-09-23',
     title: 'Sincronizzazione cross-device',
