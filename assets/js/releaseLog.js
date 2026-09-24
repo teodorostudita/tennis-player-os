@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.2',
+    date: '2026-09-24',
+    title: 'Opponents: importazione assistita TennisTalker',
+    details: [
+      'Aggiunto il comando “Importa TennisTalker” nella sezione Rankings di Opponents.',
+      'Importazione tramite copia/incolla dalla pagina Classifiche già aperta nel browser, senza memorizzare credenziali TennisTalker.',
+      'Il parser recupera ranking, nome, classifica FITP, categoria, regione, provincia, club e, quando presente nell’HTML copiato, link e ID TennisTalker.',
+      'È possibile incollare più pagine consecutive: i giocatori vengono accumulati, deduplicati e ordinati fino alla Top 50.',
+      'Le snapshot importate usano lo stesso modello dati già esistente e aggiornano la ranking history dei profili opponent riconosciuti.',
+      'La snapshot manuale resta disponibile come fallback indipendente dalla fonte esterna.',
+    ],
+  },
+  {
     version: '0.26.1',
     date: '2026-09-24',
     title: 'Player Profile cloud consolidato',
