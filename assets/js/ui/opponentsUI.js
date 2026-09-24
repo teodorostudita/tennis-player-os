@@ -6,6 +6,11 @@ import {
 } from '../cloud/opponentsCloud.js';
 import { store } from '../data/store.js';
 import { showInAppAlert, showInAppConfirm } from './inAppMessages.js';
+import {
+  TENNISTALKER_COMPANION,
+  appAssetUrl,
+  companionSetupUrl,
+} from '../companionConfig.js';
 
 const SECTIONS = [
   ['rankings', 'Rankings'],
@@ -81,6 +86,107 @@ function athleteCompetition() {
 
 function canWrite() {
   return canWriteModule('opponents');
+}
+
+
+function companionPresence() {
+  const marker = document.getElementById('tpos-companion-presence');
+  const version = marker?.dataset?.version || '';
+  const major = Number(String(version).split('.')[0] || 0);
+
+  return {
+    installed: Boolean(marker?.dataset?.ready === 'true' || version),
+    version,
+    compatible: Boolean(version && major >= TENNISTALKER_COMPANION.expectedMajor),
+  };
+}
+
+function tennisTalkerRankingUrl() {
+  const competition = athleteCompetition();
+  const category = String(competition.category || '').trim();
+  const gender = String(competition.gender || '').toUpperCase() === 'M'
+    ? 'male'
+    : 'female';
+
+  const url = new URL('https://www.tennistalker.it/classifiche');
+  url.searchParams.set('gender', gender);
+  if (category) url.searchParams.set('category', category);
+
+  return url.href;
+}
+
+function tennisTalkerMatchesUrl(profile) {
+  const sourceUrl = String(profile?.source?.url || '').trim();
+  if (!sourceUrl) return '';
+
+  try {
+    const url = new URL(sourceUrl);
+    const match = url.pathname.match(/^\/giocatore\/(\d+)\/?$/i);
+    if (!match) return '';
+    return `${url.origin}/giocatore/${match[1]}/partite`;
+  } catch {
+    return '';
+  }
+}
+
+function renderTennisTalkerIntegration() {
+  const companion = companionPresence();
+  const competition = athleteCompetition();
+
+  const statusClass = companion.installed && companion.compatible
+    ? 'connected'
+    : companion.installed
+      ? 'warning'
+      : 'offline';
+
+  const statusText = companion.installed
+    ? companion.compatible
+      ? `Collegato${companion.version ? ` · v${escapeHtml(companion.version)}` : ''}`
+      : `Aggiornamento richiesto${companion.version ? ` · v${escapeHtml(companion.version)}` : ''}`
+    : 'Companion non rilevato';
+
+  const primaryInstallLabel = TENNISTALKER_COMPANION.chromeWebStoreUrl
+    ? 'Installa Companion'
+    : companion.installed
+      ? 'Guida Companion'
+      : 'Configura Companion';
+
+  return `
+    <section class="panel opp-integration-card">
+      <div class="opp-integration-main">
+        <div class="opp-integration-logo" aria-hidden="true">TT</div>
+        <div>
+          <div class="eyebrow">Integrazione</div>
+          <h3>TennisTalker Companion</h3>
+          <p>
+            Importa ranking, profili e storico match direttamente dalle pagine TennisTalker,
+            senza copia/incolla.
+          </p>
+        </div>
+      </div>
+      <div class="opp-integration-actions">
+        <span class="opp-integration-status ${statusClass}">
+          <i aria-hidden="true"></i>${statusText}
+        </span>
+        <a
+          class="button button-ghost"
+          href="${escapeAttr(tennisTalkerRankingUrl())}"
+          target="_blank"
+          rel="noopener"
+        >
+          Apri classifica ${escapeHtml(competition.category || '')}
+        </a>
+        <a
+          class="button ${companion.installed && companion.compatible ? 'button-ghost' : 'button-primary'}"
+          href="${escapeAttr(companionSetupUrl())}"
+          target="_blank"
+          rel="noopener"
+        >
+          ${primaryInstallLabel}
+        </a>
+      </div>
+    </section>
+  `;
 }
 
 function setCloudStatus({ status, message = '' }) {
@@ -379,6 +485,14 @@ function renderProfileDetail(profile) {
       <div class="opp-detail-top">
         <button class="button button-ghost" id="opp-back-profiles" type="button">← Profiles</button>
         <div class="opp-detail-actions">
+          ${profile.source?.url ? `
+            <a
+              class="button button-ghost"
+              href="${escapeAttr(profile.source.url)}"
+              target="_blank"
+              rel="noopener"
+            >↗ TennisTalker</a>
+          ` : ''}
           <button class="button button-ghost" id="opp-toggle-watch" type="button">${profile.watchlisted ? '★ In watchlist' : '☆ Segui'}</button>
           ${canWrite() ? '<button class="button button-primary" id="opp-edit-profile" type="button">Modifica dati</button>' : ''}
         </div>
@@ -429,6 +543,14 @@ function renderProfileDetail(profile) {
             </p>
           </div>
           <div class="opp-history-actions">
+            ${tennisTalkerMatchesUrl(profile) ? `
+              <a
+                class="button button-ghost"
+                href="${escapeAttr(tennisTalkerMatchesUrl(profile))}"
+                target="_blank"
+                rel="noopener"
+              >↗ Aggiorna da TennisTalker</a>
+            ` : ''}
             ${canWrite() ? '<button class="button button-primary" id="opp-add-match" type="button">+ Match</button>' : ''}
             ${history.length ? `
               <button
@@ -532,6 +654,7 @@ function renderOpponents() {
       <div class="opp-section-switch" role="tablist">
         ${SECTIONS.map(([id, label]) => `<button class="opp-section-button ${ui.section === id ? 'active' : ''}" data-opp-section="${id}" type="button">${label}</button>`).join('')}
       </div>
+      ${renderTennisTalkerIntegration()}
       <div class="opp-section-content">${content}</div>
     </div>
   `;
@@ -1022,4 +1145,28 @@ window.addEventListener('hashchange', () => {
   }
 });
 
-if (route() === 'opponents') renderOpponents();
+let companionPresenceSignature = '';
+const companionPresenceObserver = new MutationObserver(() => {
+  const presence = companionPresence();
+  const signature = `${presence.installed}|${presence.version}|${presence.compatible}`;
+
+  if (signature === companionPresenceSignature) return;
+  companionPresenceSignature = signature;
+
+  if (route() === 'opponents' && document.querySelector('[data-opponents-root]')) {
+    window.queueMicrotask(renderOpponents);
+  }
+});
+
+companionPresenceObserver.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['data-version', 'data-ready'],
+});
+
+if (route() === 'opponents') {
+  const presence = companionPresence();
+  companionPresenceSignature = `${presence.installed}|${presence.version}|${presence.compatible}`;
+  renderOpponents();
+}

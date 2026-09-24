@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.27.0',
+    date: '2026-09-24',
+    title: 'TennisTalker Companion: onboarding prodotto',
+    details: [
+      'Opponents mostra lo stato del Companion e una scorciatoia diretta alla classifica TennisTalker coerente con categoria e sesso dell’atleta.',
+      'Il Companion 1.0 aggiunge direttamente sulle pagine TennisTalker i comandi Importa Top 50, Aggiorna opponent e Importa storico match.',
+      'Il popup dell’estensione resta disponibile come fallback e diagnostica, ma non è più necessario nel flusso normale.',
+      'Aggiunta una pagina di installazione e guida integrata, predisposta per passare al Chrome Web Store modificando un solo file di configurazione.',
+      'I profili opponent e lo Storico match offrono scorciatoie dirette alle relative pagine TennisTalker.',
+      'TPOS rileva automaticamente versione e disponibilità del Companion senza richiedere configurazioni manuali.',
+    ],
+  },
+  {
     version: '0.26.8',
     date: '2026-09-24',
     title: 'Opponents: profilo compatto',

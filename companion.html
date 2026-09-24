@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tennis Player OS Companion</title>
+  <link rel="stylesheet" href="assets/css/companion-setup.css">
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div class="brand">Tennis Player OS</div>
+      <a class="back" href="./#/opponents">← Torna a Opponents</a>
+    </div>
+
+    <section class="hero">
+      <div class="eyebrow">Integrazione TennisTalker</div>
+      <h1>Tennis Player OS Companion</h1>
+      <p>
+        Il Companion aggiunge direttamente dentro TennisTalker i pulsanti per importare
+        classifiche, profili e storico match in Tennis Player OS. Dopo l'installazione
+        non serve usare il popup dell'estensione.
+      </p>
+      <div class="status" id="version-label">Companion</div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2 id="install-title">Installa Companion</h2>
+        <p id="install-copy"></p>
+        <div class="actions">
+          <a class="button primary hidden" id="store-install" target="_blank" rel="noopener">
+            Installa dal Chrome Web Store
+          </a>
+          <a class="button secondary" id="manual-download" download>
+            Scarica pacchetto
+          </a>
+        </div>
+
+        <ol class="steps" id="manual-steps">
+          <li>Scarica il pacchetto e decomprimilo.</li>
+          <li>Apri <strong>Chrome → Estensioni → Gestisci estensioni</strong>.</li>
+          <li>Attiva <strong>Modalità sviluppatore</strong>.</li>
+          <li>Premi <strong>Carica estensione non pacchettizzata</strong> e seleziona la cartella estratta.</li>
+          <li>Ricarica una volta Tennis Player OS e TennisTalker.</li>
+        </ol>
+
+        <div class="note" id="beta-note">
+          Questa procedura manuale è il fallback beta. Dopo la pubblicazione sul Chrome Web Store
+          l'installazione richiederà soltanto il normale clic su “Aggiungi a Chrome”.
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Dopo l'installazione</h2>
+        <p>Il flusso normale diventa:</p>
+        <ol class="steps">
+          <li>Apri la pagina desiderata su TennisTalker.</li>
+          <li>Usa il pannello <strong>Tennis Player OS</strong> che compare nella pagina.</li>
+          <li>TPOS si apre su Opponents e mostra la conferma di importazione.</li>
+        </ol>
+        <div class="note">
+          Il Companion non legge né salva la password TennisTalker. Usa la sessione già aperta nel browser.
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <h2>Privacy in breve</h2>
+      <div class="privacy">
+        I dati vengono letti soltanto dalle pagine TennisTalker che apri volontariamente.
+        Il payload da importare resta temporaneamente nel browser e viene rimosso quando
+        Tennis Player OS conclude o annulla l'importazione.
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import {
+      TENNISTALKER_COMPANION,
+      companionDownloadUrl,
+    } from './assets/js/companionConfig.js';
+
+    document.querySelector('#version-label').textContent =
+      `Companion v${TENNISTALKER_COMPANION.currentVersion}`;
+
+    const download = document.querySelector('#manual-download');
+    download.href = companionDownloadUrl();
+
+    const store = document.querySelector('#store-install');
+    const copy = document.querySelector('#install-copy');
+    const steps = document.querySelector('#manual-steps');
+    const betaNote = document.querySelector('#beta-note');
+
+    if (TENNISTALKER_COMPANION.chromeWebStoreUrl) {
+      store.href = TENNISTALKER_COMPANION.chromeWebStoreUrl;
+      store.classList.remove('hidden');
+      download.textContent = 'Installazione manuale';
+      copy.textContent =
+        'L’installazione consigliata avviene direttamente dal Chrome Web Store.';
+      steps.open = false;
+      betaNote.classList.add('hidden');
+    } else {
+      copy.textContent =
+        'La versione 1.0 è pronta per la pubblicazione. Finché non è disponibile sul Chrome Web Store puoi installarla manualmente con i passaggi qui sotto.';
+    }
+  </script>
+</body>
+</html>
