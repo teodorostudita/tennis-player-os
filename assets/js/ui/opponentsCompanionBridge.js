@@ -583,7 +583,127 @@ function normalizeIncomingProfile(raw = {}) {
     stats: raw.stats && typeof raw.stats === 'object' ? raw.stats : {},
     equipment: raw.equipment && typeof raw.equipment === 'object' ? raw.equipment : {},
     strengths: raw.strengths && typeof raw.strengths === 'object' ? raw.strengths : {},
+    matches: Array.isArray(raw.matches) ? raw.matches : [],
+    matchHistorySource: clean(raw.matchHistorySource),
   };
+}
+
+
+function normalizedName(value = '') {
+  return clean(value).toLocaleLowerCase('it-IT');
+}
+
+function importedMatchFingerprint(match = {}) {
+  return [
+    clean(match.date),
+    normalizedName(match.opponentName),
+    clean(match.opponentExternalId),
+    clean(match.score),
+    clean(match.result).toUpperCase(),
+    clean(match.tournament),
+  ].join('|');
+}
+
+function athleteName() {
+  const athlete = store.getState().athlete || {};
+  return clean([athlete.firstName, athlete.lastName].filter(Boolean).join(' '));
+}
+
+function mergeTennisTalkerMatches(profile, incomingMatches = []) {
+  profile.matchHistory = Array.isArray(profile.matchHistory)
+    ? profile.matchHistory
+    : [];
+
+  if (!Array.isArray(incomingMatches) || !incomingMatches.length) {
+    return { added: 0, updated: 0 };
+  }
+
+  const existingByExternalKey = new Map();
+  const existingByFingerprint = new Map();
+
+  for (const match of profile.matchHistory) {
+    const externalKey = clean(match.source?.externalKey);
+    if (externalKey) existingByExternalKey.set(externalKey, match);
+    existingByFingerprint.set(importedMatchFingerprint(match), match);
+  }
+
+  const currentAthleteName = normalizedName(athleteName());
+  let added = 0;
+  let updated = 0;
+  const now = new Date().toISOString();
+
+  for (const incoming of incomingMatches) {
+    if (!incoming || !incoming.opponentName) continue;
+
+    const externalKey = clean(incoming.externalKey);
+    const fingerprint = importedMatchFingerprint(incoming);
+
+    let target = (
+      (externalKey && existingByExternalKey.get(externalKey))
+      || existingByFingerprint.get(fingerprint)
+      || null
+    );
+
+    const record = {
+      date: clean(incoming.date),
+      result: clean(incoming.result).toUpperCase(),
+      againstAthlete: (
+        currentAthleteName
+        && normalizedName(incoming.opponentName) === currentAthleteName
+      ),
+      opponentName: clean(incoming.opponentName),
+      opponentExternalId: clean(incoming.opponentExternalId),
+      opponentUrl: clean(incoming.opponentUrl),
+      opponentFitpRanking: clean(incoming.opponentFitpRanking),
+      opponentCategory: clean(incoming.opponentCategory),
+      score: clean(incoming.score),
+      surface: clean(incoming.surface),
+      tournament: clean(incoming.tournament),
+      notes: '',
+      source: {
+        provider: 'TennisTalker',
+        externalKey,
+        raw: clean(incoming.raw),
+        importedAt: now,
+      },
+    };
+
+    if (target) {
+      // Update only imported/external fields. Keep manual notes intact.
+      target.date = record.date || target.date || '';
+      target.result = record.result || target.result || '';
+      target.againstAthlete = record.againstAthlete;
+      target.opponentName = record.opponentName || target.opponentName || '';
+      target.opponentExternalId = record.opponentExternalId || target.opponentExternalId || '';
+      target.opponentUrl = record.opponentUrl || target.opponentUrl || '';
+      target.opponentFitpRanking = record.opponentFitpRanking || target.opponentFitpRanking || '';
+      target.opponentCategory = record.opponentCategory || target.opponentCategory || '';
+      target.score = record.score || target.score || '';
+      target.surface = record.surface || target.surface || '';
+      target.tournament = record.tournament || target.tournament || '';
+      target.source = {
+        ...(target.source || {}),
+        ...record.source,
+        importedAt: target.source?.importedAt || now,
+        lastCheckedAt: now,
+      };
+      updated += 1;
+      continue;
+    }
+
+    target = {
+      id: makeId('match'),
+      ...record,
+      createdAt: now,
+    };
+
+    profile.matchHistory.push(target);
+    if (externalKey) existingByExternalKey.set(externalKey, target);
+    existingByFingerprint.set(fingerprint, target);
+    added += 1;
+  }
+
+  return { added, updated };
 }
 
 async function openProfileImportDialog(payload) {
@@ -674,6 +794,18 @@ async function openProfileImportDialog(payload) {
             ? `Trovato il profilo TPOS di <strong>${escapeHtml(existing.name)}</strong>. I dati esterni verranno aggiornati senza toccare scouting, match plan o storico manuale.`
             : `Nuovo opponent rilevato: <strong>${escapeHtml(incoming.name)}</strong>.`}
         </div>
+
+        ${incoming.matches.length ? `
+          <div class="auth-message" style="margin-bottom:14px">
+            Storico TennisTalker: <strong>${incoming.matches.length}</strong> match riconosciuti
+            ${incoming.matchHistorySource ? `· ${escapeHtml(incoming.matchHistorySource)}` : ''}.
+            Verranno aggiunti/aggiornati senza duplicare quelli già importati.
+          </div>
+        ` : `
+          <div class="auth-message" style="margin-bottom:14px">
+            Nessun match storico riconosciuto automaticamente in questa lettura.
+          </div>
+        `}
 
         <div class="form-grid">
           <div class="field full">
@@ -820,6 +952,18 @@ async function openProfileImportDialog(payload) {
           },
         };
 
+        const matchMerge = mergeTennisTalkerMatches(current, incoming.matches);
+        current.externalData = {
+          ...(current.externalData || {}),
+          tennisTalker: {
+            ...(current.externalData?.tennisTalker || {}),
+            matchHistorySource: incoming.matchHistorySource,
+            importedMatches: incoming.matches.length,
+            matchMerge,
+            lastMatchImportAt: now,
+          },
+        };
+
         current.updatedAt = now;
       } else {
         const history = rankingHistoryForExternal(
@@ -829,7 +973,7 @@ async function openProfileImportDialog(payload) {
           incoming.name,
         );
 
-        state.opponents.profiles.push(defaultOpponentProfile({
+        const created = defaultOpponentProfile({
           name: clean(data.name),
           category: clean(data.category),
           gender,
@@ -856,11 +1000,19 @@ async function openProfileImportDialog(payload) {
               strengths: incoming.strengths,
               importedAt: now,
               sourceUrl: incoming.externalUrl,
+              matchHistorySource: incoming.matchHistorySource,
+              importedMatches: incoming.matches.length,
             },
           },
           createdAt: now,
           updatedAt: now,
-        }));
+        });
+
+        const matchMerge = mergeTennisTalkerMatches(created, incoming.matches);
+        created.externalData.tennisTalker.matchMerge = matchMerge;
+        created.externalData.tennisTalker.lastMatchImportAt = now;
+
+        state.opponents.profiles.push(created);
       }
 
       state.meta.opponentsCompanionProfileImportedAt = now;

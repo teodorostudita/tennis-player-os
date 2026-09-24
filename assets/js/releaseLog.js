@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.7',
+    date: '2026-09-24',
+    title: 'Opponents: storico match TennisTalker',
+    details: [
+      'Il Companion prova a leggere automaticamente la pagina Partite del profilo TennisTalker usando la sessione browser corrente.',
+      'Se la pagina completa non è riconoscibile, usa come fallback le Ultime partite visibili nella panoramica.',
+      'Importati soltanto match di singolare riconosciuti con sufficiente certezza.',
+      'Lo storico esterno viene fuso con quello TPOS senza cancellare match o note manuali.',
+      'Gli aggiornamenti successivi deduplicano i match già importati tramite chiave TennisTalker e fingerprint.',
+      'Quando un avversario importato coincide con l’atleta corrente, il match viene marcato automaticamente come H2H.',
+    ],
+  },
+  {
     version: '0.26.6',
     date: '2026-09-24',
     title: 'Opponents: import profilo TennisTalker',
