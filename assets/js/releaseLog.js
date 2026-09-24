@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.0',
+    date: '2026-09-24',
+    title: 'Opponents foundation',
+    details: [
+      'Nuovo modulo Opponents con Rankings, Watchlist, Profiles e Matchup.',
+      'Snapshot Top 50 con struttura pronta per integrazioni esterne e cronologia ranking per opponent.',
+      'Profili opponent con dati competitivi, fonte TennisTalker, storico match, scouting personalizzato e match plan.',
+      'Creazione rapida di un profilo opponent direttamente da una riga del ranking.',
+      'Persistenza cloud per atleta tramite athlete_module_state con cache locale e fallback offline.',
+      'Aggiunti Categoria competitiva e Sesso competitivo nel Player Profile.',
+    ],
+  },
+  {
     version: '0.25.5',
     date: '2026-09-23',
     title: 'Athletics: responsabilità per record',
