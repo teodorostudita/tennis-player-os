@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.1',
+    date: '2026-09-24',
+    title: 'Player Profile cloud consolidato',
+    details: [
+      'Categoria e sesso competitivo entrano nel writer cloud standard del Player Profile.',
+      'Rimosso il secondo writer separato della sezione Competition, evitando aggiornamenti concorrenti sul metadata atleta.',
+      'Compatibilità mantenuta con i dati già salvati in tennisPlayerOS.competition.',
+      'Stato di salvataggio esplicito: Profilo → cloud, Profilo cloud ✓ oppure errore cloud.',
+      'Player Profile modificabile solo da Owner/Admin; gli altri account lo vedono in sola lettura.',
+    ],
+  },
+  {
     version: '0.26.0',
     date: '2026-09-24',
     title: 'Opponents foundation',

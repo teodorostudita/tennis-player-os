@@ -12,6 +12,8 @@ const PROFILE_FIELDS = [
   'coach',
   'seasonGoal',
   'notes',
+  'competitionCategory',
+  'competitionGender',
 ];
 const PROFILE_SAVE_DELAY_MS = 350;
 
@@ -22,14 +24,31 @@ function clone(value) {
 function profileFromMetadata(metadata = {}) {
   const root = metadata?.[PROFILE_METADATA_ROOT];
   const profile = root?.profile;
+  const competition = root?.competition;
 
-  if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+  if (
+    (!profile || typeof profile !== 'object' || Array.isArray(profile))
+    && (!competition || typeof competition !== 'object' || Array.isArray(competition))
+  ) {
     return null;
   }
 
-  return Object.fromEntries(
-    PROFILE_FIELDS.map(field => [field, String(profile[field] || '')]),
+  const normalized = Object.fromEntries(
+    PROFILE_FIELDS.map(field => [field, String(profile?.[field] || '')]),
   );
+
+  normalized.competitionCategory = String(
+    profile?.competitionCategory
+    || competition?.category
+    || '',
+  );
+  normalized.competitionGender = String(
+    profile?.competitionGender
+    || competition?.gender
+    || '',
+  );
+
+  return normalized;
 }
 
 function profileFromAthlete(athlete = {}) {
@@ -52,11 +71,20 @@ function metadataWithProfile(metadata = {}, profile = {}) {
       ? source[PROFILE_METADATA_ROOT]
       : {};
 
+  const normalizedProfile = profileFromAthlete(profile);
+
   return {
     ...source,
     [PROFILE_METADATA_ROOT]: {
       ...root,
-      profile: profileFromAthlete(profile),
+      profile: normalizedProfile,
+      competition: {
+        ...(root.competition && typeof root.competition === 'object' && !Array.isArray(root.competition)
+          ? root.competition
+          : {}),
+        category: normalizedProfile.competitionCategory,
+        gender: normalizedProfile.competitionGender,
+      },
     },
   };
 }
@@ -305,16 +333,20 @@ export function startAthleteProfileCloudSync({
         state.athlete.cloudMetadata = clone(saved.cloudMetadata || {});
         state.athlete.cloudDisplayName = saved.cloudDisplayName || '';
         state.meta.athleteProfileCloudSavedAt = new Date().toISOString();
+        state.meta.athleteProfileCloudErrorAt = '';
+        state.meta.athleteProfileCloudErrorMessage = '';
       });
 
       status('synced');
     } catch (error) {
       console.warn('Athlete profile cloud save failed; local cache retained.', error);
       queuedAthlete = athlete;
-      status(
-        'error',
-        error?.message || 'Salvataggio profilo atleta cloud non riuscito.',
-      );
+      const message = error?.message || 'Salvataggio profilo atleta cloud non riuscito.';
+      store.update(state => {
+        state.meta.athleteProfileCloudErrorAt = new Date().toISOString();
+        state.meta.athleteProfileCloudErrorMessage = message;
+      });
+      status('error', message);
     } finally {
       inFlight = false;
 
