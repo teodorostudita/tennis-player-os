@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.27.1',
+    date: '2026-09-24',
+    title: 'Companion: preparazione Chrome Web Store',
+    details: [
+      'Aggiunta informativa privacy pubblica dedicata a Tennis Player OS Companion.',
+      'La pagina di onboarding Companion collega direttamente all’informativa privacy completa.',
+      'Preparato un pacchetto Chrome Web Store con permessi e host limitati esclusivamente agli ambienti di produzione.',
+    ],
+  },
+  {
     version: '0.27.0',
     date: '2026-09-24',
     title: 'TennisTalker Companion: onboarding prodotto',

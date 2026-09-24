@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy — Tennis Player OS Companion</title>
+  <style>
+    :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17263a;background:#f3f6fa}
+    *{box-sizing:border-box}body{margin:0}.wrap{width:min(860px,calc(100% - 28px));margin:0 auto;padding:42px 0 64px}
+    .top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
+    .brand{font-weight:900;color:#173a61}.back{color:#50647c;text-decoration:none;font-size:14px}
+    article{background:#fff;border:1px solid #dfe6ef;border-radius:18px;box-shadow:0 10px 34px rgba(25,48,76,.07);padding:28px}
+    .eyebrow{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.09em;color:#6d7d91}
+    h1{margin:7px 0 8px;font-size:30px}h2{margin:28px 0 8px;font-size:18px}
+    p,li{color:#596b82;line-height:1.6;font-size:14px}ul{padding-left:22px}
+    .note{margin-top:20px;padding:13px;border-radius:12px;background:#f7f9fc;color:#637287;font-size:12px;line-height:1.55}
+    a{color:#173a61}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div class="brand">Tennis Player OS</div>
+      <a class="back" href="companion.html">← Companion</a>
+    </div>
+    <article>
+      <div class="eyebrow">Chrome Extension</div>
+      <h1>Privacy — Tennis Player OS Companion</h1>
+      <p><strong>Ultimo aggiornamento: 24 settembre 2026.</strong></p>
+
+      <h2>Scopo del Companion</h2>
+      <p>
+        Tennis Player OS Companion consente all’utente di importare in Tennis Player OS
+        dati sportivi visualizzati nelle pagine TennisTalker che l’utente apre volontariamente,
+        inclusi ranking, profili giocatore e storico delle partite.
+      </p>
+
+      <h2>Dati trattati</h2>
+      <p>Il Companion può leggere, esclusivamente sui domini TennisTalker autorizzati:</p>
+      <ul>
+        <li>contenuto della pagina visualizzata, come nomi dei giocatori, ranking, categoria, club, risultati, punteggi e dati sportivi correlati;</li>
+        <li>URL della pagina TennisTalker necessaria a identificare la fonte e il giocatore;</li>
+        <li>dati sportivi derivati dalla pagina, strettamente necessari all’importazione richiesta dall’utente.</li>
+      </ul>
+      <p>
+        Il Companion <strong>non legge né memorizza password, username, cookie di autenticazione,
+        dati di pagamento o altre credenziali</strong>. Quando è necessaria una richiesta alla pagina
+        TennisTalker, viene utilizzata la normale sessione browser già autenticata dall’utente.
+      </p>
+
+      <h2>Come vengono usati i dati</h2>
+      <p>
+        I dati vengono utilizzati esclusivamente per la funzione richiesta dall’utente:
+        trasferire il contenuto sportivo selezionato a Tennis Player OS per alimentare
+        il modulo Opponents.
+      </p>
+
+      <h2>Memorizzazione e trasmissione</h2>
+      <p>
+        Il payload da importare può essere conservato temporaneamente in
+        <code>chrome.storage.local</code> per consentire il passaggio dalla pagina TennisTalker
+        alla webapp Tennis Player OS. Dopo che l’importazione viene conclusa o annullata,
+        il payload temporaneo viene rimosso.
+      </p>
+      <p>
+        Quando l’utente conferma l’importazione in Tennis Player OS, i dati diventano parte
+        dell’account Tennis Player OS dell’utente e possono essere salvati nell’infrastruttura
+        cloud utilizzata dalla webapp. Le comunicazioni avvengono tramite HTTPS.
+      </p>
+
+      <h2>Condivisione dei dati</h2>
+      <p>
+        Il Companion non vende dati, non li utilizza per pubblicità, profilazione o
+        marketing comportamentale e non li condivide con reti pubblicitarie.
+        I dati sono trasferiti soltanto a Tennis Player OS nella misura necessaria
+        a fornire la funzione di importazione richiesta dall’utente.
+      </p>
+
+      <h2>Permessi del browser</h2>
+      <ul>
+        <li><strong>storage</strong>: conserva temporaneamente il payload di importazione;</li>
+        <li><strong>tabs</strong>: individua o apre la scheda Tennis Player OS dopo un’importazione;</li>
+        <li><strong>clipboardWrite</strong>: copia negli appunti la diagnostica solo quando l’utente preme esplicitamente il relativo comando;</li>
+        <li><strong>accesso a TennisTalker</strong>: legge le sole pagine necessarie a ranking, profili e storico match;</li>
+        <li><strong>accesso a tennis.polidorionline.it</strong>: consegna il payload e segnala alla webapp la presenza del Companion.</li>
+      </ul>
+
+      <h2>Conservazione</h2>
+      <p>
+        Il Companion non mantiene un archivio autonomo permanente dei dati TennisTalker.
+        La copia temporanea presente nello storage dell’estensione viene eliminata dopo
+        il completamento o l’annullamento dell’importazione.
+      </p>
+
+      <h2>Limited Use</h2>
+      <p>
+        L’uso dei dati è limitato esclusivamente alla singola finalità dichiarata
+        dell’estensione e alle funzionalità visibili all’utente. I dati non vengono
+        utilizzati per pubblicità personalizzata, rivendita, profilazione o finalità
+        estranee all’importazione verso Tennis Player OS.
+      </p>
+
+      <h2>Servizi di terze parti</h2>
+      <p>
+        TennisTalker è un servizio di terze parti. Tennis Player OS Companion non è
+        affiliato né approvato da TennisTalker. L’utente utilizza TennisTalker secondo
+        i termini applicabili al proprio account e al servizio.
+      </p>
+
+      <h2>Contatti</h2>
+      <p>
+        Per richieste relative alla privacy o al Companion è possibile utilizzare
+        i contatti di supporto pubblicati sul sito Tennis Player OS.
+      </p>
+
+      <div class="note">
+        Questa informativa riguarda specificamente Tennis Player OS Companion e integra
+        le informazioni privacy eventualmente applicabili alla webapp Tennis Player OS.
+      </div>
+    </article>
+  </main>
+</body>
+</html>
