@@ -21,6 +21,7 @@ const ui = {
   rankCategory: '',
   rankGender: '',
   rankScope: 'Italia',
+  matchHistoryExpanded: {},
 };
 
 let cloudReady = false;
@@ -367,6 +368,12 @@ function renderProfileDetail(profile) {
   const plan = profile.matchPlan || {};
   const history = [...(profile.matchHistory || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   const rankingHistory = [...(profile.rankingHistory || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  const matchWins = history.filter(match => match.result === 'W').length;
+  const matchLosses = history.filter(match => match.result === 'L').length;
+  const hasExplicitMatchHistoryState = Object.prototype.hasOwnProperty.call(ui.matchHistoryExpanded, profile.id);
+  const matchHistoryExpanded = hasExplicitMatchHistoryState
+    ? Boolean(ui.matchHistoryExpanded[profile.id])
+    : history.length <= 5;
   return `
     <section class="opp-profile-detail" data-opponent-detail="${escapeAttr(profile.id)}">
       <div class="opp-detail-top">
@@ -408,11 +415,46 @@ function renderProfileDetail(profile) {
         </article>
       </section>
 
-      <section class="panel">
-        <div class="panel-header opp-panel-header-row"><div><h3>Storico match</h3><p>Risultati dell’opponent; W/L è dal suo punto di vista.</p></div>${canWrite() ? '<button class="button button-primary" id="opp-add-match" type="button">+ Match</button>' : ''}</div>
-        <div class="opp-table-scroll">
-          ${history.length ? `<table class="opp-table"><thead><tr><th>Data</th><th>Avversario</th><th>Esito</th><th>Score</th><th>Torneo</th><th>Superficie</th><th></th></tr></thead><tbody>${history.map(match => `<tr><td>${formatDate(match.date)}</td><td>${escapeHtml(match.againstAthlete ? athleteCompetition().name : match.opponentName || '—')}</td><td><strong>${escapeHtml(match.result || '—')}</strong></td><td>${escapeHtml(match.score || '—')}</td><td>${escapeHtml(match.tournament || '—')}</td><td>${escapeHtml(match.surface || '—')}</td><td>${canWrite() ? `<button class="opp-delete-link" data-delete-match="${escapeAttr(match.id)}" type="button">Elimina</button>` : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="opp-inline-empty padded">Nessun match registrato.</div>'}
+      <section class="panel opp-match-history-panel">
+        <div class="panel-header opp-panel-header-row">
+          <div>
+            <div class="opp-match-history-title">
+              <h3>Storico match</h3>
+              ${history.length ? `<span class="opp-history-count">${history.length}</span>` : ''}
+            </div>
+            <p>
+              ${history.length
+                ? `${matchWins} V · ${matchLosses} S · W/L dal punto di vista dell’opponent`
+                : 'Risultati dell’opponent; W/L è dal suo punto di vista.'}
+            </p>
+          </div>
+          <div class="opp-history-actions">
+            ${canWrite() ? '<button class="button button-primary" id="opp-add-match" type="button">+ Match</button>' : ''}
+            ${history.length ? `
+              <button
+                class="button button-ghost opp-history-toggle"
+                id="opp-toggle-match-history"
+                type="button"
+                aria-expanded="${matchHistoryExpanded ? 'true' : 'false'}"
+                aria-controls="opp-match-history-body"
+              >
+                <span aria-hidden="true">${matchHistoryExpanded ? '▴' : '▾'}</span>
+                ${matchHistoryExpanded ? 'Comprimi' : `Espandi (${history.length})`}
+              </button>
+            ` : ''}
+          </div>
         </div>
+
+        ${matchHistoryExpanded ? `
+          <div class="opp-table-scroll opp-match-history-scroll" id="opp-match-history-body">
+            ${history.length ? `<table class="opp-table"><thead><tr><th>Data</th><th>Avversario</th><th>Esito</th><th>Score</th><th>Torneo</th><th>Superficie</th><th></th></tr></thead><tbody>${history.map(match => `<tr><td>${formatDate(match.date)}</td><td>${escapeHtml(match.againstAthlete ? athleteCompetition().name : match.opponentName || '—')}</td><td><strong>${escapeHtml(match.result || '—')}</strong></td><td>${escapeHtml(match.score || '—')}</td><td>${escapeHtml(match.tournament || '—')}</td><td>${escapeHtml(match.surface || '—')}</td><td>${canWrite() ? `<button class="opp-delete-link" data-delete-match="${escapeAttr(match.id)}" type="button">Elimina</button>` : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="opp-inline-empty padded">Nessun match registrato.</div>'}
+          </div>
+        ` : `
+          <div class="opp-match-history-collapsed" id="opp-match-history-body">
+            <span>${history.length} match archiviati</span>
+            <small>Espandi lo storico solo quando ti serve consultarlo.</small>
+          </div>
+        `}
       </section>
 
       <section class="opp-detail-columns">
@@ -558,6 +600,13 @@ function bindDetailEvents(profile) {
   });
 
   document.querySelector('#opp-edit-profile')?.addEventListener('click', () => openProfileDialog(profile));
+
+  document.querySelector('#opp-toggle-match-history')?.addEventListener('click', event => {
+    const expanded = event.currentTarget.getAttribute('aria-expanded') === 'true';
+    ui.matchHistoryExpanded[profile.id] = !expanded;
+    renderOpponents();
+  });
+
   document.querySelector('#opp-add-match')?.addEventListener('click', () => openMatchDialog(profile));
   document.querySelectorAll('[data-delete-match]').forEach(button => {
     button.addEventListener('click', async () => {

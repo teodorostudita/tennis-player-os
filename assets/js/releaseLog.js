@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.8',
+    date: '2026-09-24',
+    title: 'Opponents: profilo compatto',
+    details: [
+      'Storico match comprimibile nel profilo opponent per mantenere Scouting e Match Plan immediatamente accessibili.',
+      'Con più di 5 match lo storico parte chiuso; con uno storico breve resta aperto di default.',
+      'La testata mostra sempre numero di match e bilancio V/S dal punto di vista dell’opponent.',
+      'Quando espanso, lo storico ha altezza massima e scroll interno con intestazione tabella fissa.',
+      'Lo stato aperto/chiuso viene mantenuto per ciascun profilo durante la sessione.',
+    ],
+  },
+  {
     version: '0.26.7',
     date: '2026-09-24',
     title: 'Opponents: storico match TennisTalker',
