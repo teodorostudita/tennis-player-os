@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.6',
+    date: '2026-09-24',
+    title: 'Opponents: import profilo TennisTalker',
+    details: [
+      'Il Companion riconosce le pagine giocatore TennisTalker e invia un profilo strutturato a TPOS.',
+      'Importati nome, classifica e punti FITP, categoria, club, regione/provincia, mano, rovescio e superficie preferita.',
+      'Conservati separatamente W/L, win rate, massima classifica, brand e percentuali dei Punti di Forza TennisTalker.',
+      'TPOS aggiorna un opponent esistente tramite TennisTalker ID/link oppure propone la creazione di un nuovo profilo.',
+      'Scouting TPOS, match plan, watchlist e storico manuale non vengono sovrascritti dagli aggiornamenti esterni.',
+      'Per i nuovi profili viene recuperata automaticamente la ranking history già presente nelle snapshot Top 50.',
+    ],
+  },
+  {
     version: '0.26.5',
     date: '2026-09-24',
     title: 'Companion: DOM mailbox bridge',
