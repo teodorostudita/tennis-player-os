@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.4',
+    date: '2026-09-24',
+    title: 'Companion bridge affidabile',
+    details: [
+      'Corretto il race condition che poteva perdere il ranking inviato dal Companion durante il caricamento di TPOS.',
+      'TPOS annuncia esplicitamente quando il bridge Opponents è pronto a ricevere dati.',
+      'Il Companion ritenta automaticamente la consegna finché la webapp non risponde.',
+      'Il payload resta in attesa nell’estensione finché TPOS non conferma importazione o annullamento.',
+    ],
+  },
+  {
     version: '0.26.3',
     date: '2026-09-24',
     title: 'Opponents: Companion bridge',

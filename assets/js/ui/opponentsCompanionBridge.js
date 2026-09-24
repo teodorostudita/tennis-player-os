@@ -6,6 +6,8 @@ import { store } from '../data/store.js';
 const EXTENSION_SOURCE = 'TPOS_COMPANION_EXTENSION';
 const WEBAPP_SOURCE = 'TPOS_WEBAPP';
 const MESSAGE_TYPE = 'TENNISTALKER_RANKING_IMPORT';
+const READY_TYPE = 'TPOS_COMPANION_BRIDGE_READY';
+const FINISHED_TYPE = 'TPOS_COMPANION_IMPORT_FINISHED';
 const MAX_RANKING = 50;
 
 let currentImportId = '';
@@ -71,7 +73,7 @@ function normalizePlayers(players = []) {
     if (!current || item.rank < current.rank) map.set(key, item);
   });
 
-  return [...map.values()].sort((a,b) => a.rank - b.rank);
+  return [...map.values()].sort((a, b) => a.rank - b.rank);
 }
 
 function profileMatchForEntry(opponents, entry) {
@@ -125,7 +127,7 @@ function updateProfilesFromSnapshot(opponents, snapshot) {
 }
 
 async function waitUntilReady() {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     const access = getCurrentAccess();
     if (access.athleteId && route() === 'opponents') return access;
     await new Promise(resolve => window.setTimeout(resolve, 100));
@@ -133,13 +135,23 @@ async function waitUntilReady() {
   return getCurrentAccess();
 }
 
-function sendFinished(importId, outcome) {
+function postToCompanion(type, extra = {}) {
   window.postMessage({
     source: WEBAPP_SOURCE,
-    type: 'TPOS_COMPANION_IMPORT_FINISHED',
-    importId,
-    outcome,
+    type,
+    ...extra,
   }, location.origin);
+}
+
+function announceReady() {
+  postToCompanion(READY_TYPE, {
+    route: route(),
+    at: new Date().toISOString(),
+  });
+}
+
+function sendFinished(importId, outcome) {
+  postToCompanion(FINISHED_TYPE, { importId, outcome });
 }
 
 function categoryOptions(selected) {
@@ -165,7 +177,11 @@ function closeExistingDialog() {
 
 async function openImportDialog(payload) {
   const access = await waitUntilReady();
-  if (!access.athleteId || route() !== 'opponents') return;
+
+  if (!access.athleteId || route() !== 'opponents') {
+    announceReady();
+    return;
+  }
 
   if (!canWriteModule('opponents')) {
     sendFinished(payload.importId, 'readonly');
@@ -340,3 +356,11 @@ window.addEventListener('message', event => {
 
   void openImportDialog(message.payload);
 });
+
+window.addEventListener('hashchange', () => {
+  window.setTimeout(announceReady, 50);
+});
+
+announceReady();
+window.setTimeout(announceReady, 500);
+window.setTimeout(announceReady, 1500);
