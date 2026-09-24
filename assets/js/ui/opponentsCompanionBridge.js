@@ -3,14 +3,11 @@ import { canWriteModule, getCurrentAccess } from '../cloud/access.js';
 import { normalizeOpponentsPayload } from '../cloud/opponentsCloud.js';
 import { store } from '../data/store.js';
 
-const EXTENSION_SOURCE = 'TPOS_COMPANION_EXTENSION';
-const WEBAPP_SOURCE = 'TPOS_WEBAPP';
-const MESSAGE_TYPE = 'TENNISTALKER_RANKING_IMPORT';
-const READY_TYPE = 'TPOS_COMPANION_BRIDGE_READY';
-const FINISHED_TYPE = 'TPOS_COMPANION_IMPORT_FINISHED';
+const MAILBOX_ID = 'tpos-companion-mailbox';
 const MAX_RANKING = 50;
 
 let currentImportId = '';
+const processedImportIds = new Set();
 
 function route() {
   return location.hash.replace(/^#\/?/, '') || 'dashboard';
@@ -126,32 +123,42 @@ function updateProfilesFromSnapshot(opponents, snapshot) {
   }
 }
 
-async function waitUntilReady() {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    const access = getCurrentAccess();
-    if (access.athleteId && route() === 'opponents') return access;
-    await new Promise(resolve => window.setTimeout(resolve, 100));
+function mailbox() {
+  return document.getElementById(MAILBOX_ID);
+}
+
+function readMailboxPayload() {
+  const box = mailbox();
+  if (!box || box.dataset.status !== 'pending') return null;
+
+  try {
+    const payload = JSON.parse(box.textContent || '');
+    if (!payload?.importId || !Array.isArray(payload.players) || !payload.players.length) {
+      return null;
+    }
+    return payload;
+  } catch (error) {
+    console.warn('TPOS Companion mailbox payload non valido.', error);
+    return null;
   }
-  return getCurrentAccess();
 }
 
-function postToCompanion(type, extra = {}) {
-  window.postMessage({
-    source: WEBAPP_SOURCE,
-    type,
-    ...extra,
-  }, location.origin);
-}
+function finishMailbox(importId, outcome) {
+  const box = mailbox();
+  if (!box) return;
 
-function announceReady() {
-  postToCompanion(READY_TYPE, {
-    route: route(),
-    at: new Date().toISOString(),
-  });
-}
+  let payload = null;
+  try {
+    payload = JSON.parse(box.textContent || '');
+  } catch {
+    payload = null;
+  }
 
-function sendFinished(importId, outcome) {
-  postToCompanion(FINISHED_TYPE, { importId, outcome });
+  if (payload?.importId !== importId) return;
+
+  box.dataset.status = 'finished';
+  box.dataset.outcome = outcome;
+  box.dataset.finishedAt = new Date().toISOString();
 }
 
 function categoryOptions(selected) {
@@ -167,47 +174,86 @@ function genderOptions(selected) {
   `;
 }
 
-function closeExistingDialog() {
+function closeExistingDialog(outcome = 'replaced') {
   const existing = document.querySelector('#opp-companion-import-dialog');
   if (!existing) return;
-  if (currentImportId) sendFinished(currentImportId, 'replaced');
+
+  if (currentImportId) {
+    finishMailbox(currentImportId, outcome);
+    processedImportIds.add(currentImportId);
+  }
+
   currentImportId = '';
   existing.close();
 }
 
+async function waitUntilAppReady() {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const access = getCurrentAccess();
+
+    if (
+      access.athleteId
+      && route() === 'opponents'
+      && document.querySelector('[data-opponents-root]')
+    ) {
+      return access;
+    }
+
+    await new Promise(resolve => window.setTimeout(resolve, 100));
+  }
+
+  return getCurrentAccess();
+}
+
 async function openImportDialog(payload) {
-  const access = await waitUntilReady();
+  if (
+    currentImportId === payload.importId
+    || processedImportIds.has(payload.importId)
+  ) {
+    return;
+  }
+
+  currentImportId = payload.importId;
+
+  const access = await waitUntilAppReady();
 
   if (!access.athleteId || route() !== 'opponents') {
-    announceReady();
+    currentImportId = '';
     return;
   }
 
   if (!canWriteModule('opponents')) {
-    sendFinished(payload.importId, 'readonly');
+    finishMailbox(payload.importId, 'readonly');
+    processedImportIds.add(payload.importId);
+    currentImportId = '';
     return;
   }
 
   const players = normalizePlayers(payload.players);
   if (!players.length) {
-    sendFinished(payload.importId, 'empty');
+    finishMailbox(payload.importId, 'empty');
+    processedImportIds.add(payload.importId);
+    currentImportId = '';
     return;
   }
 
   closeExistingDialog();
 
+  currentImportId = payload.importId;
+
   const athlete = store.getState().athlete || {};
   const categories = [...new Set(players.map(p => p.detectedCategory).filter(Boolean))];
+
   const category = categories.length === 1
     ? categories[0]
     : clean(athlete.competitionCategory) || 'U12';
+
   const gender = clean(athlete.competitionGender) || 'F';
   const preview = players.slice(0, MAX_RANKING);
 
   const dialog = document.createElement('dialog');
   dialog.id = 'opp-companion-import-dialog';
   dialog.className = 'planner-dialog opp-dialog';
-  currentImportId = payload.importId;
 
   dialog.innerHTML = `
     <form method="dialog">
@@ -226,21 +272,51 @@ async function openImportDialog(payload) {
         </div>
 
         <div class="form-grid">
-          <div class="field"><label>Data snapshot</label><input name="date" type="date" value="${todayKey()}" required /></div>
-          <div class="field"><label>Categoria</label><select name="category">${categoryOptions(category)}</select></div>
-          <div class="field"><label>Sesso</label><select name="gender">${genderOptions(gender)}</select></div>
-          <div class="field"><label>Ambito</label><select name="scope"><option selected>Italia</option><option>Regione</option><option>Provincia</option></select></div>
-          <div class="field full"><label>Regione / Provincia</label><input name="area" placeholder="Lascia vuoto per Italia" /></div>
+          <div class="field">
+            <label>Data snapshot</label>
+            <input name="date" type="date" value="${todayKey()}" required />
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <select name="category">${categoryOptions(category)}</select>
+          </div>
+          <div class="field">
+            <label>Sesso</label>
+            <select name="gender">${genderOptions(gender)}</select>
+          </div>
+          <div class="field">
+            <label>Ambito</label>
+            <select name="scope">
+              <option selected>Italia</option>
+              <option>Regione</option>
+              <option>Provincia</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Regione / Provincia</label>
+            <input name="area" placeholder="Lascia vuoto per Italia" />
+          </div>
         </div>
 
         <div class="opp-table-scroll" style="margin-top:14px;max-height:330px">
           <table class="opp-table">
-            <thead><tr><th>#</th><th>Giocatrice</th><th>FITP</th><th>Area</th><th>Club</th></tr></thead>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Giocatrice</th>
+                <th>FITP</th>
+                <th>Area</th>
+                <th>Club</th>
+              </tr>
+            </thead>
             <tbody>
               ${preview.map(player => `
                 <tr>
                   <td class="opp-rank-number">${escapeHtml(player.rank)}</td>
-                  <td><strong>${escapeHtml(player.playerName)}</strong>${player.externalId ? `<small style="display:block">TT #${escapeHtml(player.externalId)}</small>` : ''}</td>
+                  <td>
+                    <strong>${escapeHtml(player.playerName)}</strong>
+                    ${player.externalId ? `<small style="display:block">TT #${escapeHtml(player.externalId)}</small>` : ''}
+                  </td>
                   <td>${escapeHtml(player.fitpRanking || '—')}</td>
                   <td>${escapeHtml([player.region, player.province].filter(Boolean).join(' · ') || '—')}</td>
                   <td>${escapeHtml(player.club || '—')}</td>
@@ -269,7 +345,8 @@ async function openImportDialog(payload) {
   document.body.appendChild(dialog);
 
   const cancel = () => {
-    sendFinished(payload.importId, 'cancelled');
+    finishMailbox(payload.importId, 'cancelled');
+    processedImportIds.add(payload.importId);
     currentImportId = '';
     dialog.close();
   };
@@ -291,7 +368,11 @@ async function openImportDialog(payload) {
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
 
     const filtered = players
-      .filter(player => !player.detectedCategory || !data.category || player.detectedCategory === data.category)
+      .filter(player =>
+        !player.detectedCategory
+        || !data.category
+        || player.detectedCategory === data.category
+      )
       .slice(0, MAX_RANKING);
 
     if (!filtered.length) return;
@@ -323,10 +404,17 @@ async function openImportDialog(payload) {
     };
 
     store.update(state => {
-      if (!state.opponents) state.opponents = normalizeOpponentsPayload({});
+      if (!state.opponents) {
+        state.opponents = normalizeOpponentsPayload({});
+      }
+
       state.opponents = normalizeOpponentsPayload(state.opponents);
 
-      if (state.opponents.rankings.snapshots.some(item => item.companionImportId === payload.importId)) {
+      if (
+        state.opponents.rankings.snapshots.some(
+          item => item.companionImportId === payload.importId
+        )
+      ) {
         return;
       }
 
@@ -335,32 +423,47 @@ async function openImportDialog(payload) {
       state.meta.opponentsCompanionImportedAt = new Date().toISOString();
     });
 
-    sendFinished(payload.importId, 'imported');
+    finishMailbox(payload.importId, 'imported');
+    processedImportIds.add(payload.importId);
     currentImportId = '';
     dialog.close();
+
     window.dispatchEvent(new Event('hashchange'));
   });
 
   dialog.showModal();
 }
 
-window.addEventListener('message', event => {
-  if (event.source !== window) return;
+function checkMailbox() {
+  const payload = readMailboxPayload();
+  if (!payload) return;
 
-  const message = event.data;
   if (
-    message?.source !== EXTENSION_SOURCE
-    || message?.type !== MESSAGE_TYPE
-    || !message?.payload?.importId
-  ) return;
+    payload.importId === currentImportId
+    || processedImportIds.has(payload.importId)
+  ) {
+    return;
+  }
 
-  void openImportDialog(message.payload);
+  void openImportDialog(payload);
+}
+
+const observer = new MutationObserver(() => {
+  checkMailbox();
 });
 
+observer.observe(document.documentElement, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+  attributes: true,
+  attributeFilter: ['data-status'],
+});
+
+window.setInterval(checkMailbox, 500);
 window.addEventListener('hashchange', () => {
-  window.setTimeout(announceReady, 50);
+  window.setTimeout(checkMailbox, 50);
+  window.setTimeout(checkMailbox, 500);
 });
 
-announceReady();
-window.setTimeout(announceReady, 500);
-window.setTimeout(announceReady, 1500);
+checkMailbox();

@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.5',
+    date: '2026-09-24',
+    title: 'Companion: DOM mailbox bridge',
+    details: [
+      'Sostituito il trasferimento window.postMessage con una mailbox DOM condivisa tra estensione Chrome e webapp.',
+      'Il payload TennisTalker resta disponibile nella pagina finché TPOS non lo importa o lo annulla.',
+      'La webapp controlla la mailbox sia tramite MutationObserver sia con polling di sicurezza.',
+      'Eliminata la dipendenza dai tempi di caricamento e dall’isolated world dell’estensione Chrome.',
+    ],
+  },
+  {
     version: '0.26.4',
     date: '2026-09-24',
     title: 'Companion bridge affidabile',
