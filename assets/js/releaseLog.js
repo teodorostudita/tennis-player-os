@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.26.3',
+    date: '2026-09-24',
+    title: 'Opponents: Companion bridge',
+    details: [
+      'Tennis Player OS Companion può inviare direttamente il ranking letto da TennisTalker alla webapp.',
+      'TPOS mostra una conferma con anteprima prima di creare la snapshot Top 50.',
+      'Categoria e sesso vengono precompilati dal ranking e dal Player Profile; data, ambito e area restano modificabili prima del salvataggio.',
+      'ID e URL TennisTalker vengono conservati per collegare stabilmente ranking e profili opponent.',
+      'I profili già esistenti vengono aggiornati senza toccare scouting, storico personalizzato o match plan.',
+      'Disattivato il precedente flusso copia/incolla TennisTalker nell’interfaccia.',
+    ],
+  },
+  {
     version: '0.26.2',
     date: '2026-09-24',
     title: 'Opponents: importazione assistita TennisTalker',
