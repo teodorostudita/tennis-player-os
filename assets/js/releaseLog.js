@@ -1,5 +1,20 @@
 export const RELEASE_LOG = [
   {
+    version: '0.28.0',
+    date: '2026-09-25',
+    title: 'Development: tecnica e tattica',
+    details: [
+      'Development diventa operativo con due macro-aree parallele: Tecnica e Tattica.',
+      'Progressione comune in quattro stadi: Imparare, Rendere stabile, Variare e adattare, Usare in partita.',
+      'Il trasferimento in partita è il punto di arrivo naturale di ogni competenza e non viene trattato come target configurabile.',
+      'La roadmap usa ordine di lavoro, priorità, stato ed eventuale scadenza per esprimere cosa sviluppare prima e quando.',
+      'Ogni tema può essere collegato ai drills già presenti senza duplicare la libreria degli esercizi.',
+      'Indicatori personalizzati e rilevazioni quantitative permettono di misurare lo sviluppo direttamente nel tema tecnico o tattico.',
+      'Le valutazioni di sviluppo sono storicizzate con data, stadio e nota del coach.',
+      'Development è sincronizzato nel cloud per atleta tramite athlete_module_state, mantenendo la cache locale.',
+    ],
+  },
+  {
     version: '0.27.1',
     date: '2026-09-24',
     title: 'Companion: preparazione Chrome Web Store',
