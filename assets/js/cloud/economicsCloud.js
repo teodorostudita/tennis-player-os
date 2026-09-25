@@ -4,7 +4,7 @@ import {
 } from './moduleStateCloud.js';
 
 const MODULE_KEY = 'economics';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const SAVE_DELAY_MS = 300;
 
 function clone(value) {
@@ -23,6 +23,7 @@ export function normalizeEconomicsPayload(payload = {}) {
     agreements: Array.isArray(source.agreements) ? source.agreements : [],
     entries: Array.isArray(source.entries) ? source.entries : [],
     budgets: Array.isArray(source.budgets) ? source.budgets : [],
+    budgetPlans: Array.isArray(source.budgetPlans) ? source.budgetPlans : [],
     sponsors: Array.isArray(source.sponsors) ? source.sponsors : [],
   };
 }
@@ -35,6 +36,7 @@ export function hasMeaningfulEconomicsData(payload = {}) {
     || economics.agreements.length
     || economics.entries.length
     || economics.budgets.length
+    || economics.budgetPlans.length
     || economics.sponsors.length
   );
 }

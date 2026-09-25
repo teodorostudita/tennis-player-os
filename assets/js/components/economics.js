@@ -840,95 +840,187 @@ function renderPayments(container, state, store) {
 
 function renderBudget(container, state, store) {
   const economics = normalizeEconomicsState(state.economics);
-  const entries = entriesForYear(economics.entries, ui.year)
-    .filter(entry => entry.direction !== 'income' && entry.status !== 'cancelled');
-
-  const budgets = economics.budgets
-    .filter(budget => Number(budget.year) === ui.year);
-
+  const plan = getSeasonBudgetPlan(economics, ui.seasonStart);
+  const totalBudget = Number(plan?.totalAmount || 0);
+  const allocations = normalizeBudgetAllocations(plan?.allocations);
   const rows = Object.keys(categoryLabels).map(category => {
-    const budget = budgets.find(item => item.category === category);
-    const spent = sum(entries.filter(entry => entry.category === category));
+    const allocated = Number(allocations[category] || 0);
+    const committed = seasonCategoryCommitted(economics, ui.seasonStart, category);
+    const variance = allocated - committed;
+    const share = totalBudget > 0 ? (allocated / totalBudget) * 100 : 0;
 
     return {
       category,
-      budget: Number(budget?.amount || 0),
-      spent,
+      allocated,
+      committed,
+      variance,
+      share,
     };
   });
 
-  const totalBudget = rows.reduce((acc, row) => acc + row.budget, 0);
-  const totalCommitted = rows.reduce((acc, row) => acc + row.spent, 0);
+  const allocatedTotal = rows.reduce((total, row) => total + row.allocated, 0);
+  const committedTotal = rows.reduce((total, row) => total + row.committed, 0);
+  const allocationDelta = totalBudget - allocatedTotal;
+  const forecastMargin = totalBudget - committedTotal;
+  const allocationPct = totalBudget > 0
+    ? Math.min(100, (allocatedTotal / totalBudget) * 100)
+    : 0;
   const writable = canWriteModule('economics');
+  const sliderStep = budgetSliderStep(totalBudget);
 
   container.innerHTML = `
     <section class="economics-subhead">
       <div>
-        <div class="eyebrow">Budget & forecast · ${ui.year}</div>
-        <h2>Budget annuale</h2>
-        <p>Il budget resta una vista annuale; gli accordi di formazione hanno invece una propria stagione.</p>
+        <div class="eyebrow">Budget & forecast · stagione ${seasonLabel(ui.seasonStart)}</div>
+        <h2>Budget stagionale</h2>
+        <p>Si parte dal budget complessivo settembre–agosto, poi lo si distribuisce tra le aree senza perdere il confronto con gli impegni reali.</p>
       </div>
       ${writable
-        ? '<button class="button button-ghost" id="economics-set-budget" type="button">Imposta budget</button>'
+        ? '<button class="button button-primary" id="economics-set-season-budget" type="button">Imposta budget totale</button>'
         : ''}
     </section>
 
-    <section class="economics-kpis economics-budget-kpis">
+    <section class="economics-kpis economics-budget-kpis economics-season-budget-kpis">
       <article class="economics-kpi">
-        <span>Budget ${ui.year}</span><strong>${money(totalBudget)}</strong>
+        <span>Budget ${seasonLabel(ui.seasonStart)}</span>
+        <strong>${money(totalBudget)}</strong>
       </article>
       <article class="economics-kpi">
-        <span>Impegnato</span><strong>${money(totalCommitted)}</strong>
+        <span>Allocato alle aree</span>
+        <strong>${money(allocatedTotal)}</strong>
       </article>
       <article class="economics-kpi">
-        <span>Residuo</span><strong>${money(totalBudget - totalCommitted)}</strong>
+        <span>${allocationDelta >= 0 ? 'Da allocare' : 'Sovra-allocato'}</span>
+        <strong class="${allocationDelta < 0 ? 'economics-negative' : ''}">${money(Math.abs(allocationDelta))}</strong>
+      </article>
+      <article class="economics-kpi">
+        <span>Impegni previsti</span>
+        <strong>${money(committedTotal)}</strong>
+      </article>
+      <article class="economics-kpi">
+        <span>Margine forecast</span>
+        <strong class="${forecastMargin < 0 ? 'economics-negative' : ''}">${money(forecastMargin)}</strong>
       </article>
     </section>
 
-    <section class="panel">
-      <div class="panel-body economics-budget-list">
-        ${rows.map(row => {
-          const pct = row.budget > 0
-            ? Math.min(100, (row.spent / row.budget) * 100)
-            : 0;
+    <div class="economics-budget-allocation-summary ${allocationDelta < 0 ? 'over' : allocationDelta === 0 && totalBudget > 0 ? 'matched' : ''}">
+      <div>
+        <strong>${budgetAllocationStatus(totalBudget, allocationDelta)}</strong>
+        <span>${budgetAllocationCopy(totalBudget, allocatedTotal, allocationDelta)}</span>
+      </div>
+      <div class="economics-budget-allocation-percent">${totalBudget > 0 ? Math.round((allocatedTotal / totalBudget) * 100) : 0}%</div>
+    </div>
 
-          return `
-            <div class="economics-budget-row">
-              <div class="economics-budget-copy">
-                <strong>${categoryLabels[row.category]}</strong>
-                <span>${money(row.spent)} / ${row.budget ? money(row.budget) : 'budget non impostato'}</span>
-              </div>
+    <div class="economics-budget-track economics-budget-total-track">
+      <span style="width:${allocationPct}%"></span>
+    </div>
 
-              <div class="economics-budget-track">
-                <span style="width:${pct}%"></span>
-              </div>
+    <section class="panel economics-season-budget-panel">
+      <div class="panel-header">
+        <div>
+          <h3>Ripartizione del budget</h3>
+          <p>${totalBudget > 0 ? 'Muovi i cursori o inserisci direttamente un importo. Il totale allocato deve convergere sul budget complessivo.' : 'Imposta prima il budget complessivo della stagione per abilitare la ripartizione.'}</p>
+        </div>
+      </div>
 
-              ${writable
-                ? `<button class="button button-ghost economics-small-button" data-budget-category="${row.category}" type="button">Modifica</button>`
-                : ''}
-            </div>
-          `;
-        }).join('')}
+      <div class="economics-season-budget-table-wrap">
+        <table class="economics-season-budget-table">
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Allocazione</th>
+              <th>% budget</th>
+              <th>Impegnato</th>
+              <th>Margine</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr data-budget-row="${row.category}">
+                <td>
+                  <strong>${categoryLabels[row.category]}</strong>
+                </td>
+                <td class="economics-budget-allocation-cell">
+                  <div class="economics-budget-slider-line">
+                    <input
+                      type="range"
+                      min="0"
+                      max="${Math.max(totalBudget, 0)}"
+                      step="${sliderStep}"
+                      value="${Math.min(row.allocated, Math.max(totalBudget, row.allocated))}"
+                      data-budget-slider="${row.category}"
+                      ${!writable || totalBudget <= 0 ? 'disabled' : ''}
+                      aria-label="Budget ${escapeAttr(categoryLabels[row.category])}"
+                    />
+                    <input
+                      class="economics-budget-amount-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value="${row.allocated || ''}"
+                      data-budget-amount="${row.category}"
+                      ${!writable || totalBudget <= 0 ? 'disabled' : ''}
+                      aria-label="Importo budget ${escapeAttr(categoryLabels[row.category])}"
+                    />
+                  </div>
+                </td>
+                <td data-budget-share="${row.category}">${formatPct(row.share)}</td>
+                <td>${money(row.committed)}</td>
+                <td class="${row.variance < 0 ? 'economics-negative' : ''}" data-budget-margin="${row.category}">${money(row.variance)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       </div>
     </section>
+
+    ${economics.budgets.length ? `
+      <p class="economics-legacy-budget-note">
+        I vecchi budget annuali restano conservati nei dati per compatibilità, ma questa vista usa esclusivamente il nuovo budget stagionale.
+      </p>
+    ` : ''}
   `;
 
-  container.querySelector('#economics-set-budget')?.addEventListener('click', () => {
-    openBudgetDialog({
+  container.querySelector('#economics-set-season-budget')?.addEventListener('click', () => {
+    openSeasonBudgetDialog({
       container,
-      state: store.getState(),
       store,
     });
   });
 
-  container.querySelectorAll('[data-budget-category]').forEach(button => {
-    button.addEventListener('click', () => {
-      openBudgetDialog({
-        container,
-        state: store.getState(),
+  container.querySelectorAll('[data-budget-slider]').forEach(slider => {
+    slider.addEventListener('input', () => {
+      const category = slider.dataset.budgetSlider;
+      const amountInput = container.querySelector(`[data-budget-amount="${category}"]`);
+      if (amountInput) amountInput.value = slider.value;
+      paintBudgetAllocationPreview(container, economics, totalBudget);
+    });
+
+    slider.addEventListener('change', () => {
+      saveBudgetAllocation({
         store,
-        category: button.dataset.budgetCategory,
+        category: slider.dataset.budgetSlider,
+        amount: Number(slider.value || 0),
       });
+      rerenderEconomics(container, store);
+    });
+  });
+
+  container.querySelectorAll('[data-budget-amount]').forEach(input => {
+    input.addEventListener('input', () => {
+      const category = input.dataset.budgetAmount;
+      const slider = container.querySelector(`[data-budget-slider="${category}"]`);
+      if (slider) slider.value = String(Math.max(0, Number(input.value || 0)));
+      paintBudgetAllocationPreview(container, economics, totalBudget);
+    });
+
+    input.addEventListener('change', () => {
+      saveBudgetAllocation({
+        store,
+        category: input.dataset.budgetAmount,
+        amount: Math.max(0, Number(input.value || 0)),
+      });
+      rerenderEconomics(container, store);
     });
   });
 }
@@ -1701,50 +1793,48 @@ function openAgreementDialog({
   dialog.showModal();
 }
 
-function openBudgetDialog({
+function openSeasonBudgetDialog({
   container,
-  state,
   store,
-  category = 'training',
 }) {
   if (!canWriteModule('economics')) return;
 
-  const economics = normalizeEconomicsState(state.economics);
-
-  const existing = economics.budgets
-    .find(item =>
-      Number(item.year) === ui.year
-      && item.category === category);
+  const economics = normalizeEconomicsState(store.getState().economics);
+  const existing = getSeasonBudgetPlan(economics, ui.seasonStart);
+  const currentTotal = Number(existing?.totalAmount || 0);
+  const allocated = Object.values(normalizeBudgetAllocations(existing?.allocations))
+    .reduce((total, value) => total + Number(value || 0), 0);
 
   const dialog = document.createElement('dialog');
-  dialog.className = 'planner-dialog economics-dialog';
+  dialog.className = 'planner-dialog economics-dialog economics-season-budget-dialog';
 
   dialog.innerHTML = `
-    <form method="dialog" id="economics-budget-form">
+    <form method="dialog" id="economics-season-budget-form">
       <div class="dialog-head">
         <div>
-          <div class="eyebrow">Budget ${ui.year}</div>
-          <h3>Imposta budget</h3>
+          <div class="eyebrow">Budget ${seasonLabel(ui.seasonStart)}</div>
+          <h3>Budget complessivo stagionale</h3>
         </div>
         <button class="dialog-close" type="button" data-dialog-close>×</button>
       </div>
 
       <div class="dialog-body form-grid">
-        <div class="field">
-          <label>Categoria</label>
-          <select name="category">${categoryOptions(category)}</select>
-        </div>
-
-        <div class="field">
-          <label>Budget annuale (€)</label>
+        <div class="field full">
+          <label>Budget complessivo settembre–agosto (€)</label>
           <input
-            name="amount"
+            name="totalAmount"
             type="number"
             min="0"
             step="0.01"
             required
-            value="${escapeAttr(existing?.amount || '')}"
+            value="${escapeAttr(currentTotal || '')}"
+            placeholder="es. 25000"
           />
+        </div>
+
+        <div class="field full economics-budget-dialog-note">
+          <strong>Attualmente allocato alle aree: ${money(allocated)}</strong>
+          <span>Se riduci il budget sotto il totale già distribuito, le allocazioni non vengono modificate automaticamente: la tabella evidenzierà lo sforamento finché non le riequilibri.</span>
         </div>
       </div>
 
@@ -1761,34 +1851,33 @@ function openBudgetDialog({
   document.querySelector('#main-content').appendChild(dialog);
   bindDialogClose(dialog);
 
-  dialog.querySelector('#economics-budget-form')
+  dialog.querySelector('#economics-season-budget-form')
     .addEventListener('submit', event => {
       event.preventDefault();
 
-      const data = Object.fromEntries(
-        new FormData(event.currentTarget).entries(),
-      );
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      const totalAmount = Math.max(0, Number(data.totalAmount || 0));
 
       store.update(next => {
         ensureEconomicsCollections(next.economics);
 
-        const index = next.economics.budgets.findIndex(
-          item =>
-            Number(item.year) === ui.year
-            && item.category === data.category,
+        const plans = next.economics.budgetPlans;
+        const index = plans.findIndex(
+          item => Number(item.seasonStart) === Number(ui.seasonStart),
         );
 
+        const previous = index >= 0 ? plans[index] : null;
         const row = {
-          id: index >= 0
-            ? next.economics.budgets[index].id
-            : makeId('econ-budget'),
-          year: ui.year,
-          category: data.category,
-          amount: Number(data.amount || 0),
+          id: previous?.id || makeId('econ-season-budget'),
+          seasonStart: Number(ui.seasonStart),
+          totalAmount,
+          allocations: normalizeBudgetAllocations(previous?.allocations),
+          createdAt: previous?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
-        if (index >= 0) next.economics.budgets[index] = row;
-        else next.economics.budgets.push(row);
+        if (index >= 0) plans[index] = row;
+        else plans.push(row);
       });
 
       dialog.close();
@@ -1801,6 +1890,163 @@ function openBudgetDialog({
   });
 
   dialog.showModal();
+}
+
+function saveBudgetAllocation({ store, category, amount }) {
+  store.update(next => {
+    ensureEconomicsCollections(next.economics);
+
+    let plan = next.economics.budgetPlans.find(
+      item => Number(item.seasonStart) === Number(ui.seasonStart),
+    );
+
+    if (!plan) {
+      plan = {
+        id: makeId('econ-season-budget'),
+        seasonStart: Number(ui.seasonStart),
+        totalAmount: 0,
+        allocations: normalizeBudgetAllocations(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      next.economics.budgetPlans.push(plan);
+    }
+
+    plan.allocations = normalizeBudgetAllocations(plan.allocations);
+    plan.allocations[category] = Math.max(0, Number(amount || 0));
+    plan.updatedAt = new Date().toISOString();
+  });
+}
+
+function getSeasonBudgetPlan(economics, seasonStart) {
+  return economics.budgetPlans.find(
+    item => Number(item.seasonStart) === Number(seasonStart),
+  ) || null;
+}
+
+function normalizeBudgetAllocations(value = {}) {
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? value
+    : {};
+
+  return Object.fromEntries(
+    Object.keys(categoryLabels).map(category => [
+      category,
+      Math.max(0, Number(source[category] || 0)),
+    ]),
+  );
+}
+
+function seasonCategoryCommitted(economics, seasonStart, category) {
+  const seasonEntries = entriesForSeason(economics.entries, seasonStart)
+    .filter(entry =>
+      entry.direction !== 'income'
+      && entry.status !== 'cancelled'
+      && entry.category === category);
+
+  if (category !== 'training') {
+    return sum(seasonEntries);
+  }
+
+  const agreements = economics.agreements
+    .filter(item => Number(item.seasonStart) === Number(seasonStart));
+  const agreementIds = new Set(agreements.map(item => item.id));
+  const agreementsTotal = agreements.reduce(
+    (total, agreement) => total + Number(agreement.agreedAmount || 0),
+    0,
+  );
+  const unlinkedTraining = seasonEntries.filter(
+    entry => !entry.agreementId || !agreementIds.has(entry.agreementId),
+  );
+
+  return agreementsTotal + sum(unlinkedTraining);
+}
+
+function budgetSliderStep(totalBudget) {
+  if (totalBudget <= 5000) return 25;
+  if (totalBudget <= 15000) return 50;
+  return 100;
+}
+
+function budgetAllocationStatus(totalBudget, delta) {
+  if (totalBudget <= 0) return 'Budget complessivo non impostato';
+  if (Math.abs(delta) < 0.01) return 'Budget completamente ripartito';
+  if (delta > 0) return `Restano ${money(delta)} da allocare`;
+  return `Allocazioni superiori di ${money(Math.abs(delta))}`;
+}
+
+function budgetAllocationCopy(totalBudget, allocatedTotal, delta) {
+  if (totalBudget <= 0) {
+    return 'Imposta il budget stagionale prima di distribuire le risorse tra le aree.';
+  }
+
+  if (Math.abs(delta) < 0.01) {
+    return `${money(allocatedTotal)} distribuiti sulle aree: il totale coincide con il budget della stagione.`;
+  }
+
+  if (delta > 0) {
+    return `${money(allocatedTotal)} allocati su ${money(totalBudget)}.`;
+  }
+
+  return `${money(allocatedTotal)} allocati su ${money(totalBudget)}: riduci una o più aree.`;
+}
+
+function paintBudgetAllocationPreview(container, economics, totalBudget) {
+  if (!container || totalBudget < 0) return;
+
+  let allocatedTotal = 0;
+  const amounts = new Map();
+
+  container.querySelectorAll('[data-budget-amount]').forEach(input => {
+    const amount = Math.max(0, Number(input.value || 0));
+    amounts.set(input.dataset.budgetAmount, amount);
+    allocatedTotal += amount;
+  });
+
+  for (const category of Object.keys(categoryLabels)) {
+    const shareCell = container.querySelector(`[data-budget-share="${category}"]`);
+    if (shareCell) {
+      const share = totalBudget > 0
+        ? (Number(amounts.get(category) || 0) / totalBudget) * 100
+        : 0;
+      shareCell.textContent = formatPct(share);
+    }
+
+    const marginCell = container.querySelector(`[data-budget-margin="${category}"]`);
+    if (marginCell) {
+      const committed = seasonCategoryCommitted(economics, ui.seasonStart, category);
+      const margin = Number(amounts.get(category) || 0) - committed;
+      marginCell.textContent = money(margin);
+      marginCell.classList.toggle('economics-negative', margin < 0);
+    }
+  }
+
+  const delta = totalBudget - allocatedTotal;
+  const summary = container.querySelector('.economics-budget-allocation-summary');
+  if (summary) {
+    summary.classList.toggle('over', delta < 0);
+    summary.classList.toggle('matched', Math.abs(delta) < 0.01 && totalBudget > 0);
+
+    const strong = summary.querySelector('strong');
+    const span = summary.querySelector('span');
+    const pct = summary.querySelector('.economics-budget-allocation-percent');
+
+    if (strong) strong.textContent = budgetAllocationStatus(totalBudget, delta);
+    if (span) span.textContent = budgetAllocationCopy(totalBudget, allocatedTotal, delta);
+    if (pct) pct.textContent = `${totalBudget > 0 ? Math.round((allocatedTotal / totalBudget) * 100) : 0}%`;
+  }
+
+  const track = container.querySelector('.economics-budget-total-track > span');
+  if (track) {
+    track.style.width = `${totalBudget > 0 ? Math.min(100, (allocatedTotal / totalBudget) * 100) : 0}%`;
+  }
+}
+
+function formatPct(value) {
+  return `${new Intl.NumberFormat('it-IT', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(Number(value || 0))}%`;
 }
 
 function buildSeasonSnapshot(economics, seasonStart) {
@@ -1897,6 +2143,7 @@ function normalizeEconomicsState(value = {}) {
     agreements: Array.isArray(source.agreements) ? source.agreements : [],
     entries: Array.isArray(source.entries) ? source.entries : [],
     budgets: Array.isArray(source.budgets) ? source.budgets : [],
+    budgetPlans: Array.isArray(source.budgetPlans) ? source.budgetPlans : [],
     sponsors: Array.isArray(source.sponsors) ? source.sponsors : [],
   };
 }
@@ -1907,6 +2154,7 @@ function ensureEconomicsCollections(economics) {
   if (!Array.isArray(economics.agreements)) economics.agreements = [];
   if (!Array.isArray(economics.entries)) economics.entries = [];
   if (!Array.isArray(economics.budgets)) economics.budgets = [];
+  if (!Array.isArray(economics.budgetPlans)) economics.budgetPlans = [];
   if (!Array.isArray(economics.sponsors)) economics.sponsors = [];
 }
 

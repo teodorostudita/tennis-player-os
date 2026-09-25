@@ -220,3 +220,100 @@
   .economics-season-kpis,.economics-cashflow-grid { grid-template-columns:1fr; }
   .economics-commitment-row { align-items:flex-start; }
 }
+
+
+/* Economics v0.29.1 · seasonal budget allocation */
+.economics-season-budget-kpis {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.economics-negative { color:#a34d4d !important; }
+.economics-budget-allocation-summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin:0 0 8px;
+  padding:12px 14px;
+  border:1px solid #d8e4f1;
+  border-radius:12px;
+  background:#f4f8fc;
+}
+.economics-budget-allocation-summary > div:first-child { display:grid; gap:3px; }
+.economics-budget-allocation-summary strong { color:#445a73; font-size:.82rem; }
+.economics-budget-allocation-summary span { color:#6d7a8b; font-size:.72rem; }
+.economics-budget-allocation-summary.over {
+  border-color:#e5c6c6;
+  background:#fcf4f4;
+}
+.economics-budget-allocation-summary.over strong { color:#934f4f; }
+.economics-budget-allocation-summary.matched {
+  border-color:#cce2d2;
+  background:#f0f8f2;
+}
+.economics-budget-allocation-summary.matched strong { color:#4a7658; }
+.economics-budget-allocation-percent {
+  flex:0 0 auto;
+  font-size:1.2rem;
+  font-weight:900;
+  color:#33465e;
+}
+.economics-budget-total-track { margin:0 0 16px; }
+.economics-season-budget-panel .panel-header { align-items:flex-end; }
+.economics-season-budget-table-wrap { overflow-x:auto; }
+.economics-season-budget-table {
+  width:100%;
+  border-collapse:collapse;
+  min-width:760px;
+}
+.economics-season-budget-table th,
+.economics-season-budget-table td {
+  padding:12px 14px;
+  border-top:1px solid var(--line);
+  text-align:left;
+  vertical-align:middle;
+}
+.economics-season-budget-table thead th {
+  border-top:0;
+  color:#6b788a;
+  font-size:.66rem;
+  text-transform:uppercase;
+  letter-spacing:.045em;
+}
+.economics-season-budget-table tbody td {
+  font-size:.78rem;
+}
+.economics-budget-allocation-cell { min-width:330px; }
+.economics-budget-slider-line {
+  display:grid;
+  grid-template-columns:minmax(160px,1fr) 112px;
+  gap:12px;
+  align-items:center;
+}
+.economics-budget-slider-line input[type="range"] { width:100%; }
+.economics-budget-amount-input {
+  width:100%;
+  min-width:0;
+  text-align:right;
+}
+.economics-budget-dialog-note {
+  display:grid;
+  gap:5px;
+  padding:12px;
+  border:1px solid #d8e4f1;
+  border-radius:11px;
+  background:#f5f8fb;
+}
+.economics-budget-dialog-note strong { font-size:.8rem; color:#4b5e75; }
+.economics-budget-dialog-note span { font-size:.72rem; color:#6d7a8b; line-height:1.45; }
+.economics-legacy-budget-note {
+  margin:12px 2px 0;
+  color:#8894a3;
+  font-size:.68rem;
+}
+@media (max-width:1050px) {
+  .economics-season-budget-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width:650px) {
+  .economics-season-budget-kpis { grid-template-columns:1fr 1fr; }
+  .economics-budget-allocation-summary { align-items:flex-start; }
+}
