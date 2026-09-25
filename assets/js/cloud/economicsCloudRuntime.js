@@ -63,9 +63,13 @@ async function start() {
     allowWrite: canWrite,
   });
 
-  if (currentRoute() === 'economics') {
-    window.dispatchEvent(new HashChangeEvent('hashchange'));
-  }
+  // Loading the cloud payload updates the store after app.js has already
+  // rendered the current route. app.js re-renders Dashboard directly on
+  // store updates, which replaces the route buttons without rebinding their
+  // click handlers. Force one full route render after the Economics bootstrap
+  // so navigation handlers are always restored.
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
+
 
   if (canWrite) {
     startEconomicsCloudSync({

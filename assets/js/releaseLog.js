@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.28.3',
+    date: '2026-09-25',
+    title: 'Hotfix navigazione Dashboard',
+    details: [
+      'Corretto il caricamento cloud di Economics che poteva ridisegnare la Dashboard dopo il bootstrap senza riassociare i comandi di navigazione.',
+      'Dopo il bootstrap cloud di Economics viene ora forzato un rendering completo della route corrente, ripristinando i pulsanti Apri modulo.',
+      'Nessuna modifica ai dati Economics, Sponsor o ai privilegi esistenti.',
+    ],
+  },
+  {
     version: '0.28.2',
     date: '2026-09-25',
     title: 'Economics: Sponsor e cloud',
