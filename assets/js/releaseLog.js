@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.28.1',
+    date: '2026-09-25',
+    title: 'Utenti & Accessi: gestione workspace',
+    details: [
+      'Il pannello Utenti & Accessi si apre ora sulla sola lista utenti; l’editor compare soltanto creando o selezionando un account.',
+      'Le righe utente sono direttamente selezionabili e mostrano gli atleti assegnati senza dipendere dall’atleta attualmente aperto nell’app.',
+      'Ogni utente espone le proprie assegnazioni per atleta, con ruolo e privilegi per modulo separati per ciascun atleta.',
+      'La configurazione esistente viene mostrata inizialmente in sola lettura; Modifica abilita l’editing, Annulla scarta le modifiche e Elimina rimuove le assegnazioni gestibili.',
+      'Aggiunte RPC workspace-level per leggere e sostituire in modo transazionale le assegnazioni e i privilegi che l’Owner è autorizzato a gestire.',
+      'Le assegnazioni Owner restano protette e non possono essere modificate o eliminate dal pannello.',
+    ],
+  },
+  {
     version: '0.28.0',
     date: '2026-09-25',
     title: 'Development: tecnica e tattica',
