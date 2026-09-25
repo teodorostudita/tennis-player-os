@@ -31,6 +31,19 @@ function selectedYear() {
   return Number.isFinite(value) ? value : new Date().getFullYear();
 }
 
+function selectedSeasonStart() {
+  const select = document.querySelector('#economics-season');
+  const now = new Date();
+  const fallback = now.getMonth() + 1 >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+  const value = Number(select?.value || fallback);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function seasonLabel(start) {
+  const year = Number(start || selectedSeasonStart());
+  return `${year}/${String(year + 1).slice(-2)}`;
+}
+
 function sponsors() {
   const rows = store.getState().economics?.sponsors;
   return Array.isArray(rows) ? rows : [];
@@ -74,7 +87,7 @@ function formatPeriod(sponsor) {
   }
   if (sponsor.startDate) return `dal ${dateLabel(sponsor.startDate)}`;
   if (sponsor.endDate) return `fino al ${dateLabel(sponsor.endDate)}`;
-  return `Stagione ${sponsor.seasonYear || selectedYear()}`;
+  return `Stagione ${seasonLabel(sponsor.seasonYear || selectedSeasonStart())}`;
 }
 
 function escapeHtml(value = '') {
@@ -201,7 +214,7 @@ function renderSponsorSection() {
   const content = document.querySelector('#economics-section-content');
   if (!content) return;
 
-  const year = selectedYear();
+  const year = selectedSeasonStart();
   const rows = sponsorsForYear(year);
   const summary = sponsorSummary(rows);
   const writable = canWriteModule('economics');
@@ -284,7 +297,7 @@ function openSponsorDialog(sponsorId = '') {
   const sponsor = current || {
     id: '',
     name: '',
-    seasonYear: selectedYear(),
+    seasonYear: selectedSeasonStart(),
     status: 'prospect',
     type: 'cash',
     contactName: '',
@@ -323,7 +336,7 @@ function openSponsorDialog(sponsorId = '') {
         <div class="field">
           <label>Stagione</label>
           <input name="seasonYear" type="number" min="2000" max="2100"
-                 required value="${escapeAttr(sponsor.seasonYear || selectedYear())}" />
+                 required value="${escapeAttr(sponsor.seasonYear || selectedSeasonStart())}" />
         </div>
 
         <div class="field">
@@ -433,7 +446,7 @@ function openSponsorDialog(sponsorId = '') {
       ...sponsor,
       ...data,
       id: current?.id || makeId('econ-sponsor'),
-      seasonYear: Number(data.seasonYear || selectedYear()),
+      seasonYear: Number(data.seasonYear || selectedSeasonStart()),
       cashCommitted: Number(data.cashCommitted || 0),
       cashReceived: Number(data.cashReceived || 0),
       inKindValue: Number(data.inKindValue || 0),
@@ -704,6 +717,11 @@ document.addEventListener('change', event => {
   if (route() !== 'economics') return;
 
   if (event.target?.matches?.('#economics-year')) {
+    queueEnhancement();
+  }
+
+  if (event.target?.matches?.('#economics-season')) {
+    if (sponsorModeActive) renderSponsorSection();
     queueEnhancement();
   }
 }, true);

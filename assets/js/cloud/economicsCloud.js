@@ -4,7 +4,7 @@ import {
 } from './moduleStateCloud.js';
 
 const MODULE_KEY = 'economics';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const SAVE_DELAY_MS = 300;
 
 function clone(value) {
@@ -20,6 +20,7 @@ export function normalizeEconomicsPayload(payload = {}) {
     ...source,
     currency: String(source.currency || 'EUR'),
     trainingAreas: Array.isArray(source.trainingAreas) ? source.trainingAreas : [],
+    agreements: Array.isArray(source.agreements) ? source.agreements : [],
     entries: Array.isArray(source.entries) ? source.entries : [],
     budgets: Array.isArray(source.budgets) ? source.budgets : [],
     sponsors: Array.isArray(source.sponsors) ? source.sponsors : [],
@@ -31,6 +32,7 @@ export function hasMeaningfulEconomicsData(payload = {}) {
 
   return Boolean(
     economics.trainingAreas.length
+    || economics.agreements.length
     || economics.entries.length
     || economics.budgets.length
     || economics.sponsors.length

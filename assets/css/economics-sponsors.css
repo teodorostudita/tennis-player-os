@@ -165,3 +165,58 @@
   font-size: .76rem;
   line-height: 1.45;
 }
+
+
+/* Economics v0.29 · season agreements */
+.economics-readonly-banner { margin-bottom: 14px; }
+.economics-inline-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.economics-season-picker select { min-width: 120px; }
+
+.economics-season-overview { margin-bottom:18px; padding:18px; border:1px solid var(--line); border-radius:17px; background:linear-gradient(135deg,#f8fafc,#f1f5f9); }
+.economics-season-overview-head { display:flex; justify-content:space-between; gap:16px; margin-bottom:14px; }
+.economics-season-overview-head h2 { margin:4px 0; font-size:1.35rem; }
+.economics-season-overview-head p { margin:0; color:var(--muted); font-size:.82rem; }
+.economics-season-kpis { margin-bottom:12px; }
+.economics-season-progress { display:grid; gap:7px; }
+.economics-season-progress-copy { display:flex; justify-content:space-between; gap:12px; color:#526177; font-size:.76rem; }
+.economics-overview-grid-v2 { margin-bottom:16px; }
+.economics-commitment-list { display:grid; gap:0; }
+.economics-commitment-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:11px 0; border-bottom:1px solid var(--line); }
+.economics-commitment-row:last-child { border-bottom:0; }
+.economics-commitment-row > div:first-child { display:grid; gap:3px; }
+.economics-commitment-row strong { font-size:.84rem; }
+.economics-commitment-row span { color:var(--muted); font-size:.72rem; }
+.economics-commitment-values { text-align:right; display:grid; gap:3px; }
+.economics-cashflow-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.economics-cashflow-grid > div { display:grid; gap:4px; padding:12px; border:1px solid var(--line); border-radius:11px; background:#f7f9fc; }
+.economics-cashflow-grid span { color:var(--muted); font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.035em; }
+.economics-cashflow-grid strong { font-size:1rem; }
+
+.economics-area-grid-v2 { align-items:stretch; }
+.economics-area-card-v2 .panel-body { gap:12px; }
+.economics-agreement-empty { display:grid; gap:5px; padding:14px; border:1px dashed #cbd6e3; border-radius:12px; background:#f8fafc; }
+.economics-agreement-empty strong { font-size:.82rem; color:#415269; }
+.economics-agreement-empty span { font-size:.75rem; color:var(--muted); line-height:1.45; }
+.economics-agreement-total { display:grid; gap:3px; padding:12px 13px; border-radius:12px; background:#f4f7fb; border:1px solid var(--line); }
+.economics-agreement-total span { color:var(--muted); font-size:.67rem; font-weight:850; text-transform:uppercase; letter-spacing:.045em; }
+.economics-agreement-total strong { font-size:1.25rem; }
+.economics-agreement-total small { color:#637187; font-size:.72rem; }
+.economics-agreement-progress { margin-top:-3px; }
+.economics-agreement-meta { display:grid; gap:4px; color:#647287; font-size:.72rem; }
+.economics-agreement-meta strong { color:#46566b; }
+.economics-card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:auto; padding-top:4px; }
+.economics-card-actions .button { font-size:.75rem; }
+
+.economics-payment-link-note { margin:-3px 0 14px; padding:11px 13px; border:1px solid #d8e4f1; border-radius:11px; background:#f3f7fb; color:#49617b; font-size:.76rem; line-height:1.5; }
+.economics-agreement-link { display:block !important; margin-top:4px !important; color:#58779a !important; font-weight:700; }
+.economics-agreement-picker-field { padding:12px; border:1px solid #d8e4f1; border-radius:12px; background:#f7fafc; }
+.economics-field-help { color:var(--muted); font-size:.7rem; line-height:1.4; }
+
+@media (max-width:900px) {
+  .economics-season-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .economics-cashflow-grid { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:600px) {
+  .economics-season-kpis,.economics-cashflow-grid { grid-template-columns:1fr; }
+  .economics-commitment-row { align-items:flex-start; }
+}
