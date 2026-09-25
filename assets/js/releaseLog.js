@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '0.28.2',
+    date: '2026-09-25',
+    title: 'Economics: Sponsor e cloud',
+    details: [
+      'Aggiunta la sezione Sponsor in Economics per gestire prospect, trattative e partnership attive per stagione.',
+      'Ogni sponsor registra contatti, tipo di accordo, durata, cash concordato e ricevuto, valore in-kind, benefit, impegni dell’atleta e note.',
+      'Economics è ora sincronizzato nel cloud per atleta tramite athlete_module_state: aree di formazione, movimenti, budget e sponsor seguono lo stesso record cloud.',
+      'Alla prima apertura, i dati Economics già presenti localmente vengono migrati automaticamente nel cloud quando l’utente dispone dei permessi di scrittura.',
+      'La cache locale resta disponibile come fallback offline e lo stato di sincronizzazione viene mostrato nella barra superiore.',
+      'La sezione Sponsor e i comandi Economics rispettano i privilegi di sola lettura del modulo.',
+    ],
+  },
+  {
     version: '0.28.1',
     date: '2026-09-25',
     title: 'Utenti & Accessi: gestione workspace',
