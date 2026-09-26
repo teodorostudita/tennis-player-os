@@ -713,3 +713,23 @@
     width:100%;
   }
 }
+
+/* v0.30.3 · explicit axes on measurement charts */
+.mv-axis-chart {
+  min-height: 132px;
+}
+.mv-spark-axis {
+  stroke:#cfd7e2;
+  stroke-width:1;
+}
+.mv-spark-axis-label {
+  fill:#7b8798;
+  font-size:9px;
+  font-weight:700;
+}
+.mv-spark-point {
+  fill:currentColor;
+  color:#637aa0;
+  stroke:white;
+  stroke-width:1.4;
+}

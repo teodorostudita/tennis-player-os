@@ -1431,7 +1431,7 @@ function genericMetricCard(protocol, metric, rows) {
           ${metricStat('Variazione', summary.delta !== null ? formatSignedDelta(summary.delta, metric.unit) : '—')}
         </div>
 
-        ${sparkline(rows)}
+        ${sparkline(rows, metric.unit)}
 
         <div class="mv-measure-foot">
           <span>${rows.length} ${rows.length === 1 ? 'rilevazione' : 'rilevazioni'}</span>
@@ -1476,7 +1476,34 @@ function metricSummary(rows) {
   };
 }
 
-function sparkline(rows) {
+function formatAxisMonthYear(value) {
+  if (!value) return '';
+
+  const [year, month] = String(value).split('-').map(Number);
+  if (!year || !month) return String(value);
+
+  const label = new Intl.DateTimeFormat('it-IT', {
+    month: 'short',
+    year: '2-digit',
+  }).format(new Date(year, month - 1, 1));
+
+  return label.replace('.', '');
+}
+
+function formatAxisNumber(value, unit = '') {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '';
+
+  const formatted = new Intl.NumberFormat('it-IT', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(number);
+
+  if (unit === '%') return `${formatted}%`;
+  return formatted;
+}
+
+function sparkline(rows, unit = '') {
   const sorted = [...rows]
     .filter(row => Number.isFinite(Number(row.value)))
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -1486,37 +1513,145 @@ function sparkline(rows) {
     return '<div class="mv-sparkline-empty">Servono almeno due valori per visualizzare il trend.</div>';
   }
 
-  const width = 360;
-  const height = 92;
-  const pad = 10;
+  const width = 430;
+  const height = 154;
+  const left = 46;
+  const right = 12;
+  const top = 10;
+  const bottom = 34;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
 
   const values = sorted.map(row => Number(row.value));
-  let min = Math.min(...values);
-  let max = Math.max(...values);
 
-  if (min === max) {
-    const spread = Math.max(1, Math.abs(min) * 0.05);
-    min -= spread;
-    max += spread;
+  let min;
+  let max;
+  let yTicks;
+
+  if (unit === '%') {
+    min = 0;
+    max = 100;
+    yTicks = [0, 25, 50, 75, 100];
   } else {
-    const spread = (max - min) * 0.08;
-    min -= spread;
-    max += spread;
+    min = Math.min(...values);
+    max = Math.max(...values);
+
+    if (min === max) {
+      const spread = Math.max(1, Math.abs(min) * 0.05);
+      min -= spread;
+      max += spread;
+    } else {
+      const spread = (max - min) * 0.08;
+      min -= spread;
+      max += spread;
+    }
+
+    const step = (max - min) / 4;
+    yTicks = [0, 1, 2, 3, 4].map(index => min + step * index);
   }
 
-  const points = sorted.map((row, index) => {
-    const x = pad + (index / (sorted.length - 1)) * (width - pad * 2);
-    const ratio = (Number(row.value) - min) / (max - min);
-    const y = height - pad - ratio * (height - pad * 2);
+  const xForIndex = index => (
+    left + (index / (sorted.length - 1)) * plotWidth
+  );
 
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
+  const yForValue = value => {
+    const ratio = (Number(value) - min) / (max - min);
+    return top + plotHeight - ratio * plotHeight;
+  };
+
+  const points = sorted.map((row, index) =>
+    `${xForIndex(index).toFixed(1)},${yForValue(row.value).toFixed(1)}`
+  ).join(' ');
+
+  // Keep the date axis readable on dense series: show all labels up to six
+  // points, otherwise distribute about six labels and always include the last.
+  const maxXTicks = 6;
+  const xStep = sorted.length <= maxXTicks
+    ? 1
+    : Math.ceil((sorted.length - 1) / (maxXTicks - 1));
+
+  const xTickIndexes = [];
+  for (let index = 0; index < sorted.length; index += xStep) {
+    xTickIndexes.push(index);
+  }
+  if (xTickIndexes[xTickIndexes.length - 1] !== sorted.length - 1) {
+    xTickIndexes.push(sorted.length - 1);
+  }
 
   return `
-    <svg class="mv-sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Trend della misurazione">
-      <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" class="mv-spark-grid"></line>
-      <line x1="${pad}" y1="${pad}" x2="${width - pad}" y2="${pad}" class="mv-spark-grid"></line>
+    <svg
+      class="mv-sparkline mv-axis-chart"
+      viewBox="0 0 ${width} ${height}"
+      role="img"
+      aria-label="Andamento della misurazione nel tempo"
+    >
+      ${yTicks.map(tick => {
+        const y = yForValue(tick);
+        return `
+          <line
+            x1="${left}"
+            y1="${y.toFixed(1)}"
+            x2="${width - right}"
+            y2="${y.toFixed(1)}"
+            class="mv-spark-grid"
+          ></line>
+          <text
+            x="${left - 7}"
+            y="${(y + 3).toFixed(1)}"
+            text-anchor="end"
+            class="mv-spark-axis-label"
+          >${escapeHtml(formatAxisNumber(tick, unit))}</text>
+        `;
+      }).join('')}
+
+      <line
+        x1="${left}"
+        y1="${top}"
+        x2="${left}"
+        y2="${top + plotHeight}"
+        class="mv-spark-axis"
+      ></line>
+      <line
+        x1="${left}"
+        y1="${top + plotHeight}"
+        x2="${width - right}"
+        y2="${top + plotHeight}"
+        class="mv-spark-axis"
+      ></line>
+
+      ${xTickIndexes.map(index => {
+        const x = xForIndex(index);
+        const y = top + plotHeight;
+
+        return `
+          <line
+            x1="${x.toFixed(1)}"
+            y1="${y.toFixed(1)}"
+            x2="${x.toFixed(1)}"
+            y2="${(y + 4).toFixed(1)}"
+            class="mv-spark-axis"
+          ></line>
+          <text
+            x="${x.toFixed(1)}"
+            y="${height - 8}"
+            text-anchor="middle"
+            class="mv-spark-axis-label"
+          >${escapeHtml(formatAxisMonthYear(sorted[index].date))}</text>
+        `;
+      }).join('')}
+
       <polyline points="${points}" class="mv-spark-line"></polyline>
+
+      ${sorted.map((row, index) => `
+        <circle
+          cx="${xForIndex(index).toFixed(1)}"
+          cy="${yForValue(row.value).toFixed(1)}"
+          r="2.7"
+          class="mv-spark-point"
+        >
+          <title>${escapeHtml(formatDate(row.date))}: ${escapeHtml(formatMeasuredValue(row.value, unit))}</title>
+        </circle>
+      `).join('')}
     </svg>
   `;
 }
