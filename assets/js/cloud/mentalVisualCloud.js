@@ -14,16 +14,114 @@ const MENTAL_SKILL_IDS = [
   'immaginazione',
 ];
 
-const REFLEXION_METRICS = [
-  'Anticipation',
-  'Eye-hand Coordination',
-  'Mental Flexibility',
-  'Reactive Inhibition',
-  'Simple reaction time',
+export const VISUAL_STARTER_PROTOCOLS = [
+  {
+    id: 'protocol-giocoleria-propriocezione',
+    name: 'Giocoleria + propriocezione',
+    domains: ['sensomotorio'],
+    description: 'Giocoleria combinata con compiti propriocettivi, equilibrio e variazioni della base di appoggio.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-inseguimento-palla',
+    name: 'Inseguimento oculare su palla appesa',
+    domains: ['funzione-visiva'],
+    description: 'Seguire con lo sguardo una palla oscillante senza muovere la testa.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-fuoco-distanze',
+    name: 'Fuoco a distanze diverse',
+    domains: ['funzione-visiva'],
+    description: 'Alternare il fuoco tra oggetti vicini e lontani mantenendo nitidezza e controllo.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-matita',
+    name: 'Matita: accomodazione e convergenza',
+    domains: ['funzione-visiva'],
+    description: 'Avvicinare e allontanare una matita mantenendo il fuoco e controllando la convergenza.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-periferica-pollici',
+    name: 'Visione periferica con i pollici',
+    domains: ['funzione-visiva', 'percezione-anticipazione'],
+    description: 'Mantenere il punto di fissazione mentre si rilevano stimoli progressivamente più periferici.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-otto-orizzontale',
+    name: 'Tracciamento a otto orizzontale',
+    domains: ['funzione-visiva'],
+    description: 'Seguire con lo sguardo una matita colorata che descrive un otto orizzontale.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-vr-fissazione',
+    name: 'VR · Fissazione',
+    domains: ['funzione-visiva'],
+    description: 'Protocollo in realtà virtuale per stabilità della fissazione.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-vr-accomodazione',
+    name: 'VR · Accomodazione',
+    domains: ['funzione-visiva'],
+    description: 'Protocollo in realtà virtuale per il cambio di fuoco e accomodazione.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-vr-inseguimento',
+    name: 'VR · Inseguimento visivo',
+    domains: ['funzione-visiva', 'percezione-anticipazione'],
+    description: 'Protocollo in realtà virtuale per inseguimento e continuità visiva.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-vr-convergenza',
+    name: 'VR · Convergenza',
+    domains: ['funzione-visiva'],
+    description: 'Protocollo in realtà virtuale per la convergenza.',
+    metrics: [],
+  },
+  {
+    id: 'protocol-vr-stereoacuita',
+    name: 'VR · Stereoacuità',
+    domains: ['funzione-visiva', 'percezione-anticipazione'],
+    description: 'Protocollo in realtà virtuale per percezione stereoscopica della profondità.',
+    metrics: [],
+  },
 ];
+
+export const REFLEXION_PRESET = {
+  id: 'protocol-reflexion-go',
+  name: 'Reflexion Go',
+  domains: ['neurocognitivo', 'sensomotorio', 'percezione-anticipazione'],
+  description: 'Protocollo neurocognitivo e visuomotorio. Le cinque misurazioni sono espresse in percentuale.',
+  metrics: [
+    { id: 'anticipation', name: 'Anticipation', unit: '%' },
+    { id: 'eye-hand-coordination', name: 'Eye-hand Coordination', unit: '%' },
+    { id: 'mental-flexibility', name: 'Mental Flexibility', unit: '%' },
+    { id: 'reactive-inhibition', name: 'Reactive Inhibition', unit: '%' },
+    { id: 'simple-reaction-time', name: 'Simple reaction time', unit: '%' },
+  ],
+};
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function makeMetricId(name, index = 0) {
+  const base = String(name || 'misurazione')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    || 'misurazione';
+
+  return `${base}${index ? `-${index + 1}` : ''}`;
 }
 
 function defaultMentalSkill() {
@@ -43,7 +141,8 @@ export function normalizeMentalPayload(payload = {}) {
   for (const id of MENTAL_SKILL_IDS) {
     const skill = sourceSkills[id] && typeof sourceSkills[id] === 'object'
       ? sourceSkills[id]
-      : {};
+      : defaultMentalSkill();
+
     skills[id] = {
       level: Math.max(1, Math.min(5, Number(skill.level || 3))),
       notes: String(skill.notes || ''),
@@ -66,38 +165,144 @@ export function normalizeMentalPayload(payload = {}) {
   };
 }
 
+function normalizeProtocol(protocol, index = 0) {
+  const source = protocol && typeof protocol === 'object'
+    ? protocol
+    : {};
+
+  const metrics = Array.isArray(source.metrics)
+    ? source.metrics
+        .map((metric, metricIndex) => {
+          const name = String(metric?.name || '').trim();
+          if (!name) return null;
+
+          return {
+            id: String(metric?.id || makeMetricId(name, metricIndex)),
+            name,
+            unit: String(metric?.unit || '').trim(),
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  return {
+    id: String(source.id || `protocol-${Date.now()}-${index}`),
+    name: String(source.name || 'Protocollo').trim(),
+    domains: Array.isArray(source.domains)
+      ? [...new Set(source.domains.map(String))]
+      : [],
+    description: String(source.description || '').trim(),
+    metrics,
+  };
+}
+
+function normalizeMeasurementSeries(rows) {
+  if (!Array.isArray(rows)) return [];
+
+  const byDate = new Map();
+
+  for (const row of rows) {
+    const date = String(row?.date || '');
+    if (!date) continue;
+
+    const value = Number(row?.value);
+    if (!Number.isFinite(value)) continue;
+
+    byDate.set(date, { date, value });
+  }
+
+  return [...byDate.values()]
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function migrateLegacyReflexion(source, protocols, measurements) {
+  const legacy = source.reflexion
+    && typeof source.reflexion === 'object'
+    && !Array.isArray(source.reflexion)
+      ? source.reflexion
+      : null;
+
+  if (!legacy) return;
+
+  const legacyNames = [
+    'Anticipation',
+    'Eye-hand Coordination',
+    'Mental Flexibility',
+    'Reactive Inhibition',
+    'Simple reaction time',
+  ];
+
+  const hasAnyData = legacyNames.some(name =>
+    Array.isArray(legacy[name]) && legacy[name].length,
+  );
+
+  if (!hasAnyData) return;
+
+  let protocol = protocols.find(item =>
+    item.id === REFLEXION_PRESET.id
+    || item.name.toLowerCase() === REFLEXION_PRESET.name.toLowerCase(),
+  );
+
+  if (!protocol) {
+    protocol = clone(REFLEXION_PRESET);
+    protocols.push(protocol);
+  }
+
+  if (!measurements[protocol.id]) measurements[protocol.id] = {};
+
+  for (const metric of REFLEXION_PRESET.metrics) {
+    const rows = legacy[metric.name];
+
+    if (!Array.isArray(rows) || !rows.length) continue;
+
+    measurements[protocol.id][metric.id] = normalizeMeasurementSeries(rows);
+  }
+}
+
 export function normalizeVisualPayload(payload = {}) {
   const source = payload && typeof payload === 'object' && !Array.isArray(payload)
     ? payload
     : {};
 
-  const sourceReflexion = source.reflexion
-    && typeof source.reflexion === 'object'
-    && !Array.isArray(source.reflexion)
-      ? source.reflexion
-      : {};
+  const hasExplicitProtocols = Array.isArray(source.protocols);
 
-  const reflexion = {};
+  const protocols = hasExplicitProtocols
+    ? source.protocols.map(normalizeProtocol)
+    : VISUAL_STARTER_PROTOCOLS.map(item => clone(item));
 
-  for (const metric of REFLEXION_METRICS) {
-    const rows = Array.isArray(sourceReflexion[metric])
-      ? sourceReflexion[metric]
-      : [];
+  const measurements = {};
 
-    reflexion[metric] = rows
-      .map(row => ({
-        date: String(row?.date || ''),
-        value: Math.max(0, Math.min(100, Number(row?.value || 0))),
-      }))
-      .filter(row => row.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
+  if (
+    source.measurements
+    && typeof source.measurements === 'object'
+    && !Array.isArray(source.measurements)
+  ) {
+    for (const protocol of protocols) {
+      const protocolSource = source.measurements[protocol.id];
+
+      if (
+        !protocolSource
+        || typeof protocolSource !== 'object'
+        || Array.isArray(protocolSource)
+      ) continue;
+
+      measurements[protocol.id] = {};
+
+      for (const metric of protocol.metrics) {
+        measurements[protocol.id][metric.id] =
+          normalizeMeasurementSeries(protocolSource[metric.id]);
+      }
+    }
   }
 
+  migrateLegacyReflexion(source, protocols, measurements);
+
   return {
+    protocols,
     trainingSessions: Array.isArray(source.trainingSessions)
       ? source.trainingSessions
       : [],
-    reflexion,
+    measurements,
   };
 }
 
@@ -168,6 +373,7 @@ export function startStructuredPerformanceSync({
     moduleKey,
     store.getState()[moduleKey],
   );
+
   let timer = null;
   let inFlight = false;
   let queuedPayload = null;
@@ -195,7 +401,7 @@ export function startStructuredPerformanceSync({
         athleteId,
         moduleKey,
         payload,
-        schemaVersion: 1,
+        schemaVersion: moduleKey === 'visual' ? 2 : 1,
       });
 
       lastSavedFingerprint = nextFingerprint;
@@ -230,6 +436,7 @@ export function startStructuredPerformanceSync({
 
     queuedPayload = clone(normalized);
     window.clearTimeout(timer);
+
     timer = window.setTimeout(() => {
       void flush();
     }, SAVE_DELAY_MS);
@@ -241,6 +448,7 @@ export function startStructuredPerformanceSync({
 
   const retryOnline = () => {
     if (!queuedPayload) return;
+
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
       void flush();
@@ -257,5 +465,3 @@ export function startStructuredPerformanceSync({
     window.removeEventListener('online', retryOnline);
   };
 }
-
-export { REFLEXION_METRICS };

@@ -476,3 +476,240 @@
 
   .mv-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+/* v0.30.2 · configurable Perception & Neuro protocols */
+.mv-domain-card-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+.mv-domain-card-top h3 { margin:0; }
+.mv-domain-card-top span {
+  color:var(--muted);
+  font-size:.62rem;
+  white-space:nowrap;
+}
+
+.mv-measured-overview { margin-bottom:16px; }
+.mv-measured-protocol-list { display:grid; gap:12px; }
+.mv-measured-protocol {
+  display:grid;
+  gap:10px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fafbfd;
+}
+.mv-measured-protocol-head > div {
+  display:grid;
+  gap:3px;
+}
+.mv-measured-protocol-head strong { font-size:.86rem; }
+.mv-measured-protocol-head span {
+  color:var(--muted);
+  font-size:.66rem;
+}
+.mv-measured-protocol-metrics {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:7px;
+}
+.mv-measured-protocol-metrics > div {
+  display:grid;
+  gap:3px;
+  padding:8px;
+  border:1px solid #e6eaf0;
+  border-radius:9px;
+  background:white;
+}
+.mv-measured-protocol-metrics span {
+  color:#667489;
+  font-size:.63rem;
+  font-weight:800;
+}
+.mv-measured-protocol-metrics strong {
+  color:var(--navy-900);
+  font-size:.88rem;
+}
+.mv-measured-protocol-metrics small {
+  color:var(--muted);
+  font-size:.6rem;
+}
+
+.mv-empty-state-actions {
+  display:grid;
+  justify-items:center;
+  gap:0;
+}
+
+.mv-subhead-actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.mv-protocol-card-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+.mv-protocol-card-head > div {
+  display:grid;
+  gap:4px;
+}
+.mv-protocol-card-head h3 { margin:0; }
+.mv-protocol-card-head span {
+  color:var(--muted);
+  font-size:.65rem;
+}
+.mv-edit-button {
+  width:34px;
+  height:34px;
+  flex:0 0 auto;
+}
+
+.mv-protocol-metrics {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding-top:2px;
+}
+.mv-protocol-metrics > span {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:6px 8px;
+  border:1px solid #dfe5ed;
+  border-radius:9px;
+  background:#fafbfd;
+  color:#5e6d81;
+  font-size:.65rem;
+}
+.mv-protocol-metrics b {
+  color:#8490a1;
+  font-size:.58rem;
+}
+
+.mv-protocol-foot {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-top:auto;
+  padding-top:3px;
+}
+.mv-protocol-foot > span {
+  color:var(--muted);
+  font-size:.64rem;
+}
+
+.mv-protocol-dialog {
+  width:min(860px,calc(100% - 24px));
+}
+
+.mv-domain-fieldset {
+  margin:16px 0 0;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+.mv-domain-fieldset legend {
+  padding:0 6px;
+  color:#5c6a7e;
+  font-size:.72rem;
+  font-weight:850;
+}
+.mv-domain-checks {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.mv-domain-checks label {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 9px;
+  border:1px solid #e4e9f0;
+  border-radius:9px;
+  background:#fafbfd;
+  font-size:.72rem;
+  font-weight:750;
+}
+.mv-domain-checks input {
+  width:16px;
+  height:16px;
+}
+
+.mv-metric-definition {
+  margin-top:16px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#f8fafc;
+}
+.mv-metric-definition-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:10px;
+}
+.mv-metric-definition-head > div {
+  display:grid;
+  gap:3px;
+}
+.mv-metric-definition-head strong { font-size:.8rem; }
+.mv-metric-definition-head span {
+  color:var(--muted);
+  font-size:.67rem;
+}
+.mv-metric-definition-list {
+  display:grid;
+  gap:8px;
+}
+.mv-metric-definition-row {
+  display:grid;
+  grid-template-columns:minmax(0,1.6fr) minmax(100px,.6fr) auto;
+  gap:8px;
+  align-items:end;
+}
+.mv-metric-definition-row label {
+  display:grid;
+  gap:5px;
+}
+.mv-metric-definition-row label span {
+  color:#647187;
+  font-size:.65rem;
+  font-weight:800;
+}
+.mv-metric-definition-row input:not([type="hidden"]) {
+  width:100%;
+  border:1px solid #d7dfeb;
+  border-radius:9px;
+  padding:9px 10px;
+  background:white;
+}
+.mv-remove-metric {
+  width:38px;
+  height:38px;
+  color:#9b4f58;
+}
+
+@media (max-width:700px) {
+  .mv-domain-checks,
+  .mv-metric-definition-row {
+    grid-template-columns:1fr;
+  }
+
+  .mv-metric-definition-head,
+  .mv-protocol-foot {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .mv-remove-metric {
+    width:100%;
+  }
+}

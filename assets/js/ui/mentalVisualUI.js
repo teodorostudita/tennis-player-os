@@ -8,13 +8,15 @@ import {
   getCurrentAccess,
 } from '../cloud/access.js';
 import {
-  REFLEXION_METRICS,
+  REFLEXION_PRESET,
+  VISUAL_STARTER_PROTOCOLS,
   loadStructuredPerformanceModule,
   normalizeMentalPayload,
   normalizeVisualPayload,
   startStructuredPerformanceSync,
 } from '../cloud/mentalVisualCloud.js';
 import {
+  showInAppAlert,
   showInAppConfirm,
 } from './inAppMessages.js';
 
@@ -116,81 +118,6 @@ const VISUAL_DOMAINS = [
   },
 ];
 
-const VISUAL_PROTOCOLS = [
-  {
-    id: 'reflexion-go',
-    name: 'Reflexion Go',
-    domains: ['neurocognitivo', 'sensomotorio', 'percezione-anticipazione'],
-    description: 'Sessioni neurocognitive e visuomotorie con misurazioni separate nella sezione Misurazioni.',
-  },
-  {
-    id: 'giocoleria-propriocezione',
-    name: 'Giocoleria + propriocezione',
-    domains: ['sensomotorio'],
-    description: 'Giocoleria combinata con compiti propriocettivi, equilibrio e variazioni della base di appoggio.',
-  },
-  {
-    id: 'inseguimento-palla',
-    name: 'Inseguimento oculare su palla appesa',
-    domains: ['funzione-visiva'],
-    description: 'Seguire con lo sguardo una palla oscillante senza muovere la testa.',
-  },
-  {
-    id: 'fuoco-distanze',
-    name: 'Fuoco a distanze diverse',
-    domains: ['funzione-visiva'],
-    description: 'Alternare il fuoco tra oggetti vicini e lontani mantenendo nitidezza e controllo.',
-  },
-  {
-    id: 'matita',
-    name: 'Matita: accomodazione e convergenza',
-    domains: ['funzione-visiva'],
-    description: 'Avvicinare e allontanare una matita mantenendo il fuoco e controllando la convergenza.',
-  },
-  {
-    id: 'periferica-pollici',
-    name: 'Visione periferica con i pollici',
-    domains: ['funzione-visiva', 'percezione-anticipazione'],
-    description: 'Mantenere il punto di fissazione mentre si rilevano stimoli progressivamente più periferici.',
-  },
-  {
-    id: 'otto-orizzontale',
-    name: 'Tracciamento a otto orizzontale',
-    domains: ['funzione-visiva'],
-    description: 'Seguire con lo sguardo una matita colorata che descrive un otto orizzontale.',
-  },
-  {
-    id: 'vr-fissazione',
-    name: 'VR · Fissazione',
-    domains: ['funzione-visiva'],
-    description: 'Protocollo in realtà virtuale per stabilità della fissazione.',
-  },
-  {
-    id: 'vr-accomodazione',
-    name: 'VR · Accomodazione',
-    domains: ['funzione-visiva'],
-    description: 'Protocollo in realtà virtuale per il cambio di fuoco e accomodazione.',
-  },
-  {
-    id: 'vr-inseguimento',
-    name: 'VR · Inseguimento visivo',
-    domains: ['funzione-visiva', 'percezione-anticipazione'],
-    description: 'Protocollo in realtà virtuale per inseguimento e continuità visiva.',
-  },
-  {
-    id: 'vr-convergenza',
-    name: 'VR · Convergenza',
-    domains: ['funzione-visiva'],
-    description: 'Protocollo in realtà virtuale per la convergenza.',
-  },
-  {
-    id: 'vr-stereoacuita',
-    name: 'VR · Stereoacuità',
-    domains: ['funzione-visiva', 'percezione-anticipazione'],
-    description: 'Protocollo in realtà virtuale per percezione stereoscopica della profondità.',
-  },
-];
-
 let mentalSection = 'panoramica';
 let visualSection = 'panoramica';
 let cloudState = {
@@ -246,8 +173,8 @@ function toolById(id) {
   return MENTAL_TOOLS.find(item => item.id === id);
 }
 
-function protocolById(id) {
-  return VISUAL_PROTOCOLS.find(item => item.id === id);
+function protocolById(id, visual = normalizeVisualPayload(store.getState().visual)) {
+  return visual.protocols.find(item => item.id === id);
 }
 
 function domainById(id) {
@@ -1045,6 +972,7 @@ function reviewRow(review) {
   `;
 }
 
+
 function renderVisual(host) {
   const visual = normalizeVisualPayload(store.getState().visual);
 
@@ -1053,7 +981,7 @@ function renderVisual(host) {
       <div>
         <div class="eyebrow">Perception & Neuro</div>
         <h2>Visione, neurocognizione e sensomotorio</h2>
-        <p>Separiamo allenamento e misurazione: le sessioni descrivono il lavoro svolto; Reflexion Go mantiene serie longitudinali data + valore percentuale.</p>
+        <p>I protocolli sono configurabili. Le misurazioni compaiono solo quando un protocollo definisce una o più metriche.</p>
       </div>
     </section>
 
@@ -1083,61 +1011,116 @@ function renderVisual(host) {
   } else if (visualSection === 'misurazioni') {
     renderVisualMeasurements(sectionHost, visual, host);
   } else if (visualSection === 'protocolli') {
-    renderVisualProtocols(sectionHost, host);
+    renderVisualProtocols(sectionHost, visual, host);
   } else {
     renderVisualOverview(sectionHost, visual);
   }
 }
 
-function renderVisualOverview(container, visual) {
-  const latestMetrics = REFLEXION_METRICS.map(metric => ({
-    metric,
-    summary: metricSummary(visual.reflexion[metric] || []),
-  }));
+function protocolMeasurementCount(protocol, visual) {
+  const source = visual.measurements?.[protocol.id] || {};
 
+  return protocol.metrics.reduce(
+    (total, metric) => total + (Array.isArray(source[metric.id]) ? source[metric.id].length : 0),
+    0,
+  );
+}
+
+function measuredProtocols(visual) {
+  return visual.protocols
+    .filter(protocol =>
+      protocol.metrics.length
+      && protocolMeasurementCount(protocol, visual) > 0
+    );
+}
+
+function renderVisualOverview(container, visual) {
   const recentSessions = [...visual.trainingSessions]
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))
     .slice(0, 5);
 
+  const activeMeasuredProtocols = measuredProtocols(visual);
+
   container.innerHTML = `
     <section class="mv-domain-grid">
-      ${VISUAL_DOMAINS.map(domain => `
-        <article class="panel mv-domain-card">
-          <div class="panel-body">
-            <h3>${escapeHtml(domain.name)}</h3>
-            <p>${escapeHtml(domain.description)}</p>
-          </div>
-        </article>
-      `).join('')}
+      ${VISUAL_DOMAINS.map(domain => {
+        const count = visual.protocols.filter(
+          protocol => protocol.domains.includes(domain.id),
+        ).length;
+
+        return `
+          <article class="panel mv-domain-card">
+            <div class="panel-body">
+              <div class="mv-domain-card-top">
+                <h3>${escapeHtml(domain.name)}</h3>
+                <span>${count} ${count === 1 ? 'protocollo' : 'protocolli'}</span>
+              </div>
+              <p>${escapeHtml(domain.description)}</p>
+            </div>
+          </article>
+        `;
+      }).join('')}
     </section>
 
-    <section class="panel mv-reflexion-overview">
-      <div class="panel-header">
-        <h3>Reflexion Go · ultimo valore</h3>
-        <p>Le denominazioni delle cinque misurazioni restano quelle originali.</p>
-      </div>
-      <div class="panel-body mv-reflexion-latest-grid">
-        ${latestMetrics.map(({ metric, summary }) => `
-          <div class="mv-reflexion-latest">
-            <span>${escapeHtml(metric)}</span>
-            <strong>${summary.latest ? `${summary.latest.value}%` : '—'}</strong>
-            <small>${summary.latest ? formatDate(summary.latest.date) : 'Nessun dato'}</small>
-          </div>
-        `).join('')}
-      </div>
-    </section>
+    ${activeMeasuredProtocols.length ? `
+      <section class="panel mv-measured-overview">
+        <div class="panel-header">
+          <h3>Misurazioni attive</h3>
+          <p>Compaiono qui soltanto i protocolli che hanno metriche definite e almeno un valore registrato.</p>
+        </div>
+
+        <div class="panel-body mv-measured-protocol-list">
+          ${activeMeasuredProtocols.map(protocol => measuredProtocolOverview(protocol, visual)).join('')}
+        </div>
+      </section>
+    ` : ''}
 
     <section class="panel">
       <div class="panel-header">
         <h3>Allenamento recente</h3>
         <p>Ultime sessioni visive, neurocognitive e sensomotorie.</p>
       </div>
+
       <div class="panel-body mv-simple-list">
         ${recentSessions.length
-          ? recentSessions.map(visualSessionRow).join('')
+          ? recentSessions.map(session => visualSessionRow(session, visual)).join('')
           : emptyCopy('Nessuna sessione registrata.')}
       </div>
     </section>
+  `;
+}
+
+function measuredProtocolOverview(protocol, visual) {
+  const protocolMeasurements = visual.measurements?.[protocol.id] || {};
+
+  const metricRows = protocol.metrics
+    .map(metric => {
+      const summary = metricSummary(protocolMeasurements[metric.id] || []);
+      return { metric, summary };
+    })
+    .filter(item => item.summary.latest);
+
+  if (!metricRows.length) return '';
+
+  return `
+    <article class="mv-measured-protocol">
+      <div class="mv-measured-protocol-head">
+        <div>
+          <strong>${escapeHtml(protocol.name)}</strong>
+          <span>${metricRows.length} ${metricRows.length === 1 ? 'misurazione attiva' : 'misurazioni attive'}</span>
+        </div>
+      </div>
+
+      <div class="mv-measured-protocol-metrics">
+        ${metricRows.map(({ metric, summary }) => `
+          <div>
+            <span>${escapeHtml(metric.name)}</span>
+            <strong>${formatMeasuredValue(summary.latest.value, metric.unit)}</strong>
+            <small>${formatDate(summary.latest.date)}</small>
+          </div>
+        `).join('')}
+      </div>
+    </article>
   `;
 }
 
@@ -1150,50 +1133,61 @@ function renderVisualTraining(container, visual, host) {
       <div>
         <div class="eyebrow">Allenamento</div>
         <h2>Sessioni percettive e neuro</h2>
-        <p>Registra il lavoro svolto senza confonderlo con le misurazioni Reflexion Go.</p>
+        <p>Ogni sessione è collegata a un protocollo configurabile.</p>
       </div>
-      ${canWriteModule('visual')
+
+      ${canWriteModule('visual') && visual.protocols.length
         ? '<button class="button button-primary" id="visual-add-session" type="button">+ Nuova sessione</button>'
         : ''}
     </section>
 
-    <section class="panel">
-      <div class="panel-body mv-table-wrap">
-        <table class="mv-table">
-          <thead>
-            <tr><th>Data</th><th>Protocollo</th><th>Domini</th><th>Durata</th><th>Note</th><th></th></tr>
-          </thead>
-          <tbody>
-            ${sessions.length
-              ? sessions.map(session => {
-                const protocol = protocolById(session.protocolId);
+    ${!visual.protocols.length ? `
+      <section class="panel">
+        <div class="panel-body">
+          <div class="mv-empty">
+            Prima crea almeno un protocollo nella sezione Protocolli.
+          </div>
+        </div>
+      </section>
+    ` : `
+      <section class="panel">
+        <div class="panel-body mv-table-wrap">
+          <table class="mv-table">
+            <thead>
+              <tr><th>Data</th><th>Protocollo</th><th>Domini</th><th>Durata</th><th>Note</th><th></th></tr>
+            </thead>
+            <tbody>
+              ${sessions.length
+                ? sessions.map(session => {
+                  const protocol = protocolById(session.protocolId, visual);
 
-                return `
-                  <tr>
-                    <td>${formatDate(session.date)}</td>
-                    <td>${escapeHtml(protocol?.name || session.protocolName || 'Sessione')}</td>
-                    <td>${protocol
-                      ? protocol.domains.map(id => escapeHtml(domainById(id)?.name || id)).join(' · ')
-                      : '—'}</td>
-                    <td>${Number(session.durationMin || 0) ? `${Number(session.durationMin)} min` : '—'}</td>
-                    <td>${escapeHtml(session.notes || '')}</td>
-                    <td>
-                      ${canWriteModule('visual')
-                        ? `<button class="resource-delete" type="button" data-delete-visual-session="${session.id}">Elimina</button>`
-                        : ''}
-                    </td>
-                  </tr>
-                `;
-              }).join('')
-              : `<tr><td colspan="6">${emptyCopy('Nessuna sessione registrata.')}</td></tr>`}
-          </tbody>
-        </table>
-      </div>
-    </section>
+                  return `
+                    <tr>
+                      <td>${formatDate(session.date)}</td>
+                      <td>${escapeHtml(protocol?.name || session.protocolName || 'Protocollo non disponibile')}</td>
+                      <td>${protocol
+                        ? protocol.domains.map(id => escapeHtml(domainById(id)?.name || id)).join(' · ')
+                        : '—'}</td>
+                      <td>${Number(session.durationMin || 0) ? `${Number(session.durationMin)} min` : '—'}</td>
+                      <td>${escapeHtml(session.notes || '')}</td>
+                      <td>
+                        ${canWriteModule('visual')
+                          ? `<button class="resource-delete" type="button" data-delete-visual-session="${session.id}">Elimina</button>`
+                          : ''}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')
+                : `<tr><td colspan="6">${emptyCopy('Nessuna sessione registrata.')}</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `}
   `;
 
   container.querySelector('#visual-add-session')?.addEventListener('click', () => {
-    openVisualSessionDialog(host);
+    openVisualSessionDialog(host, visual);
   });
 
   container.querySelectorAll('[data-delete-visual-session]').forEach(button => {
@@ -1218,7 +1212,9 @@ function renderVisualTraining(container, visual, host) {
   });
 }
 
-function openVisualSessionDialog(host, presetProtocolId = '') {
+function openVisualSessionDialog(host, visual, presetProtocolId = '') {
+  if (!visual.protocols.length) return;
+
   const dialog = document.createElement('dialog');
   dialog.className = 'planner-dialog mv-dialog';
 
@@ -1236,7 +1232,7 @@ function openVisualSessionDialog(host, presetProtocolId = '') {
         <div class="field full">
           <label>Protocollo</label>
           <select name="protocolId">
-            ${VISUAL_PROTOCOLS.map(protocol => `
+            ${visual.protocols.map(protocol => `
               <option value="${protocol.id}" ${presetProtocolId === protocol.id ? 'selected' : ''}>${escapeHtml(protocol.name)}</option>
             `).join('')}
           </select>
@@ -1268,6 +1264,7 @@ function openVisualSessionDialog(host, presetProtocolId = '') {
 
     store.update(state => {
       const next = normalizeVisualPayload(state.visual);
+
       next.trainingSessions.push({
         id: uid('visual-session'),
         date: data.date,
@@ -1275,6 +1272,7 @@ function openVisualSessionDialog(host, presetProtocolId = '') {
         durationMin: Number(data.durationMin || 0),
         notes: String(data.notes || '').trim(),
       });
+
       state.visual = next;
     });
 
@@ -1286,56 +1284,101 @@ function openVisualSessionDialog(host, presetProtocolId = '') {
   dialog.showModal();
 }
 
+function protocolsWithMetrics(visual) {
+  return visual.protocols.filter(protocol => protocol.metrics.length);
+}
+
 function renderVisualMeasurements(container, visual, host) {
+  const metricProtocols = protocolsWithMetrics(visual);
+
   container.innerHTML = `
     <section class="mv-subhead">
       <div>
-        <div class="eyebrow">Reflexion Go</div>
-        <h2>Misurazioni longitudinali</h2>
-        <p>Per ogni metrica conserviamo soltanto data e valore percentuale.</p>
+        <div class="eyebrow">Misurazioni</div>
+        <h2>Serie longitudinali</h2>
+        <p>Le metriche vengono definite nel protocollo. Ogni rilevazione conserva soltanto data e valore.</p>
       </div>
-      ${canWriteModule('visual')
+
+      ${canWriteModule('visual') && metricProtocols.length
         ? '<button class="button button-primary" id="visual-add-measurement" type="button">+ Nuova misurazione</button>'
         : ''}
     </section>
 
-    <div class="mv-measure-grid">
-      ${REFLEXION_METRICS.map(metric => metricCard(metric, visual.reflexion[metric] || [])).join('')}
-    </div>
+    ${!metricProtocols.length ? `
+      <section class="panel">
+        <div class="panel-body mv-empty-state-actions">
+          <div class="mv-empty">
+            Nessun protocollo contiene ancora misurazioni.
+          </div>
+          <button class="button button-ghost" id="visual-go-protocols" type="button">
+            Vai ai protocolli
+          </button>
+        </div>
+      </section>
+    ` : `
+      <div class="mv-measure-grid">
+        ${metricProtocols.flatMap(protocol =>
+          protocol.metrics.map(metric =>
+            genericMetricCard(
+              protocol,
+              metric,
+              visual.measurements?.[protocol.id]?.[metric.id] || [],
+            )
+          )
+        ).join('')}
+      </div>
 
-    <section class="panel mv-measure-history">
-      <div class="panel-header">
-        <h3>Storico completo</h3>
-        <p>Valori percentuali ordinati per data.</p>
-      </div>
-      <div class="panel-body mv-table-wrap">
-        <table class="mv-table">
-          <thead><tr><th>Data</th><th>Misurazione</th><th>Valore</th><th></th></tr></thead>
-          <tbody>
-            ${measurementHistoryRows(visual)}
-          </tbody>
-        </table>
-      </div>
-    </section>
+      <section class="panel mv-measure-history">
+        <div class="panel-header">
+          <h3>Storico completo</h3>
+          <p>Tutte le misurazioni ordinate per data.</p>
+        </div>
+
+        <div class="panel-body mv-table-wrap">
+          <table class="mv-table">
+            <thead>
+              <tr><th>Data</th><th>Protocollo</th><th>Misurazione</th><th>Valore</th><th></th></tr>
+            </thead>
+            <tbody>
+              ${genericMeasurementHistoryRows(visual)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `}
   `;
 
-  container.querySelector('#visual-add-measurement')?.addEventListener('click', () => {
-    openMeasurementDialog(host);
+  container.querySelector('#visual-go-protocols')?.addEventListener('click', () => {
+    visualSection = 'protocolli';
+    renderVisual(host);
   });
 
-  container.querySelectorAll('[data-add-metric]').forEach(button => {
+  container.querySelector('#visual-add-measurement')?.addEventListener('click', () => {
+    openGenericMeasurementDialog(host, visual);
+  });
+
+  container.querySelectorAll('[data-add-generic-metric]').forEach(button => {
     button.addEventListener('click', () => {
-      openMeasurementDialog(host, button.dataset.addMetric);
+      openGenericMeasurementDialog(
+        host,
+        visual,
+        button.dataset.protocolId,
+        button.dataset.metricId,
+      );
     });
   });
 
-  container.querySelectorAll('[data-delete-measurement]').forEach(button => {
+  container.querySelectorAll('[data-delete-generic-measurement]').forEach(button => {
     button.addEventListener('click', async () => {
-      const metric = button.dataset.metric;
-      const date = button.dataset.deleteMeasurement;
+      const protocolId = button.dataset.protocolId;
+      const metricId = button.dataset.metricId;
+      const date = button.dataset.deleteGenericMeasurement;
+
+      const protocol = visual.protocols.find(item => item.id === protocolId);
+      const metric = protocol?.metrics.find(item => item.id === metricId);
 
       const ok = await showInAppConfirm(
-        `Eliminare ${metric} del ${formatDate(date)}?`,
+        `Eliminare ${metric?.name || 'questa misurazione'} del ${formatDate(date)}?`,
         { title: 'Elimina misurazione', confirmLabel: 'Elimina', danger: true },
       );
 
@@ -1343,8 +1386,13 @@ function renderVisualMeasurements(container, visual, host) {
 
       store.update(state => {
         const next = normalizeVisualPayload(state.visual);
-        next.reflexion[metric] = next.reflexion[metric]
-          .filter(row => row.date !== date);
+        const series = next.measurements?.[protocolId]?.[metricId];
+
+        if (Array.isArray(series)) {
+          next.measurements[protocolId][metricId] =
+            series.filter(row => row.date !== date);
+        }
+
         state.visual = next;
       });
 
@@ -1353,7 +1401,7 @@ function renderVisualMeasurements(container, visual, host) {
   });
 }
 
-function metricCard(metric, rows) {
+function genericMetricCard(protocol, metric, rows) {
   const summary = metricSummary(rows);
 
   return `
@@ -1361,26 +1409,33 @@ function metricCard(metric, rows) {
       <div class="panel-body">
         <div class="mv-measure-head">
           <div>
-            <div class="eyebrow">Reflexion Go</div>
-            <h3>${escapeHtml(metric)}</h3>
+            <div class="eyebrow">${escapeHtml(protocol.name)}</div>
+            <h3>${escapeHtml(metric.name)}</h3>
           </div>
+
           ${canWriteModule('visual')
-            ? `<button class="button button-ghost mv-small-button" data-add-metric="${escapeAttr(metric)}" type="button">+ Valore</button>`
+            ? `<button
+                 class="button button-ghost mv-small-button"
+                 data-add-generic-metric
+                 data-protocol-id="${protocol.id}"
+                 data-metric-id="${metric.id}"
+                 type="button"
+               >+ Valore</button>`
             : ''}
         </div>
 
         <div class="mv-measure-stats">
-          ${metricStat('Ultimo', summary.latest ? `${summary.latest.value}%` : '—')}
-          ${metricStat('Baseline', summary.baseline ? `${summary.baseline.value}%` : '—')}
-          ${metricStat('Migliore', summary.best !== null ? `${summary.best}%` : '—')}
-          ${metricStat('Media ultime 5', summary.mean5 !== null ? `${summary.mean5.toFixed(1)}%` : '—')}
+          ${metricStat('Ultimo', summary.latest ? formatMeasuredValue(summary.latest.value, metric.unit) : '—')}
+          ${metricStat('Baseline', summary.baseline ? formatMeasuredValue(summary.baseline.value, metric.unit) : '—')}
+          ${metricStat('Media ultime 5', summary.mean5 !== null ? formatMeasuredValue(summary.mean5, metric.unit) : '—')}
+          ${metricStat('Variazione', summary.delta !== null ? formatSignedDelta(summary.delta, metric.unit) : '—')}
         </div>
 
         ${sparkline(rows)}
 
         <div class="mv-measure-foot">
-          <span>${rows.length} ${rows.length === 1 ? 'misurazione' : 'misurazioni'}</span>
-          <strong>${summary.delta !== null ? `${summary.delta >= 0 ? '+' : ''}${summary.delta.toFixed(1)} pt vs baseline` : '—'}</strong>
+          <span>${rows.length} ${rows.length === 1 ? 'rilevazione' : 'rilevazioni'}</span>
+          <strong>${metric.unit ? `Unità: ${escapeHtml(metric.unit)}` : 'Unità non specificata'}</strong>
         </div>
       </div>
     </article>
@@ -1393,14 +1448,13 @@ function metricStat(label, value) {
 
 function metricSummary(rows) {
   const sorted = [...rows]
-    .filter(row => row.date)
+    .filter(row => row.date && Number.isFinite(Number(row.value)))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   if (!sorted.length) {
     return {
       latest: null,
       baseline: null,
-      best: null,
       mean5: null,
       delta: null,
     };
@@ -1408,21 +1462,23 @@ function metricSummary(rows) {
 
   const latest = sorted[sorted.length - 1];
   const baseline = sorted[0];
-  const best = Math.max(...sorted.map(row => Number(row.value || 0)));
   const last5 = sorted.slice(-5);
-  const mean5 = last5.reduce((sum, row) => sum + Number(row.value || 0), 0) / last5.length;
+  const mean5 = last5.reduce(
+    (sum, row) => sum + Number(row.value),
+    0,
+  ) / last5.length;
 
   return {
     latest,
     baseline,
-    best,
     mean5,
-    delta: Number(latest.value || 0) - Number(baseline.value || 0),
+    delta: Number(latest.value) - Number(baseline.value),
   };
 }
 
 function sparkline(rows) {
   const sorted = [...rows]
+    .filter(row => Number.isFinite(Number(row.value)))
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(-12);
 
@@ -1434,14 +1490,30 @@ function sparkline(rows) {
   const height = 92;
   const pad = 10;
 
+  const values = sorted.map(row => Number(row.value));
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+
+  if (min === max) {
+    const spread = Math.max(1, Math.abs(min) * 0.05);
+    min -= spread;
+    max += spread;
+  } else {
+    const spread = (max - min) * 0.08;
+    min -= spread;
+    max += spread;
+  }
+
   const points = sorted.map((row, index) => {
     const x = pad + (index / (sorted.length - 1)) * (width - pad * 2);
-    const y = height - pad - (Number(row.value || 0) / 100) * (height - pad * 2);
+    const ratio = (Number(row.value) - min) / (max - min);
+    const y = height - pad - ratio * (height - pad * 2);
+
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
 
   return `
-    <svg class="mv-sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Trend percentuale">
+    <svg class="mv-sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Trend della misurazione">
       <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" class="mv-spark-grid"></line>
       <line x1="${pad}" y1="${pad}" x2="${width - pad}" y2="${pad}" class="mv-spark-grid"></line>
       <polyline points="${points}" class="mv-spark-line"></polyline>
@@ -1449,33 +1521,80 @@ function sparkline(rows) {
   `;
 }
 
-function measurementHistoryRows(visual) {
+function formatMeasuredValue(value, unit = '') {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return '—';
+
+  const formatted = new Intl.NumberFormat('it-IT', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(number);
+
+  if (!unit) return formatted;
+  if (unit === '%') return `${formatted}%`;
+
+  return `${formatted} ${unit}`;
+}
+
+function formatSignedDelta(value, unit = '') {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+
+  const prefix = number > 0 ? '+' : '';
+  const formatted = new Intl.NumberFormat('it-IT', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(number);
+
+  if (!unit) return `${prefix}${formatted}`;
+  if (unit === '%') return `${prefix}${formatted} pt`;
+
+  return `${prefix}${formatted} ${unit}`;
+}
+
+function genericMeasurementHistoryRows(visual) {
   const rows = [];
 
-  for (const metric of REFLEXION_METRICS) {
-    for (const row of visual.reflexion[metric] || []) {
-      rows.push({ metric, ...row });
+  for (const protocol of visual.protocols) {
+    const protocolSource = visual.measurements?.[protocol.id] || {};
+
+    for (const metric of protocol.metrics) {
+      const series = Array.isArray(protocolSource[metric.id])
+        ? protocolSource[metric.id]
+        : [];
+
+      for (const row of series) {
+        rows.push({
+          protocol,
+          metric,
+          date: row.date,
+          value: row.value,
+        });
+      }
     }
   }
 
   rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
   if (!rows.length) {
-    return `<tr><td colspan="4">${emptyCopy('Nessuna misurazione Reflexion Go registrata.')}</td></tr>`;
+    return `<tr><td colspan="5">${emptyCopy('Nessuna misurazione registrata.')}</td></tr>`;
   }
 
   return rows.map(row => `
     <tr>
       <td>${formatDate(row.date)}</td>
-      <td>${escapeHtml(row.metric)}</td>
-      <td><strong>${Number(row.value).toFixed(Number(row.value) % 1 ? 1 : 0)}%</strong></td>
+      <td>${escapeHtml(row.protocol.name)}</td>
+      <td>${escapeHtml(row.metric.name)}</td>
+      <td><strong>${formatMeasuredValue(row.value, row.metric.unit)}</strong></td>
       <td>
         ${canWriteModule('visual')
           ? `<button
                class="resource-delete"
                type="button"
-               data-delete-measurement="${escapeAttr(row.date)}"
-               data-metric="${escapeAttr(row.metric)}"
+               data-delete-generic-measurement="${escapeAttr(row.date)}"
+               data-protocol-id="${escapeAttr(row.protocol.id)}"
+               data-metric-id="${escapeAttr(row.metric.id)}"
              >Elimina</button>`
           : ''}
       </td>
@@ -1483,25 +1602,45 @@ function measurementHistoryRows(visual) {
   `).join('');
 }
 
-function openMeasurementDialog(host, presetMetric = '') {
+function openGenericMeasurementDialog(
+  host,
+  visual,
+  presetProtocolId = '',
+  presetMetricId = '',
+) {
+  const metricProtocols = protocolsWithMetrics(visual);
+  if (!metricProtocols.length) return;
+
+  const defaultProtocolId = presetProtocolId || metricProtocols[0].id;
+  const defaultProtocol = metricProtocols.find(item => item.id === defaultProtocolId)
+    || metricProtocols[0];
+  const defaultMetricId = presetMetricId || defaultProtocol.metrics[0]?.id || '';
+
   const dialog = document.createElement('dialog');
   dialog.className = 'planner-dialog mv-dialog';
 
   dialog.innerHTML = `
-    <form method="dialog" id="visual-measurement-form">
+    <form method="dialog" id="visual-generic-measurement-form">
       <div class="dialog-head">
-        <div><div class="eyebrow">Reflexion Go</div><h3>Nuova misurazione</h3></div>
+        <div><div class="eyebrow">Misurazioni</div><h3>Nuova misurazione</h3></div>
         <button class="dialog-close" type="button" data-close>×</button>
       </div>
 
       <div class="dialog-body form-grid">
         <div class="field full">
-          <label>Misurazione</label>
-          <select name="metric">
-            ${REFLEXION_METRICS.map(metric => `
-              <option value="${escapeAttr(metric)}" ${presetMetric === metric ? 'selected' : ''}>${escapeHtml(metric)}</option>
+          <label>Protocollo</label>
+          <select name="protocolId" id="measurement-protocol">
+            ${metricProtocols.map(protocol => `
+              <option value="${protocol.id}" ${protocol.id === defaultProtocol.id ? 'selected' : ''}>
+                ${escapeHtml(protocol.name)}
+              </option>
             `).join('')}
           </select>
+        </div>
+
+        <div class="field full">
+          <label>Misurazione</label>
+          <select name="metricId" id="measurement-metric"></select>
         </div>
 
         <div class="field">
@@ -1510,8 +1649,8 @@ function openMeasurementDialog(host, presetMetric = '') {
         </div>
 
         <div class="field">
-          <label>Valore (%)</label>
-          <input type="number" name="value" min="0" max="100" step="0.1" required />
+          <label id="measurement-value-label">Valore</label>
+          <input type="number" name="value" step="0.01" required />
         </div>
       </div>
 
@@ -1527,20 +1666,67 @@ function openMeasurementDialog(host, presetMetric = '') {
 
   host.appendChild(dialog);
 
+  const form = dialog.querySelector('#visual-generic-measurement-form');
+  const protocolSelect = form.elements.protocolId;
+  const metricSelect = form.elements.metricId;
+  const valueLabel = dialog.querySelector('#measurement-value-label');
+
+  const rebuildMetrics = preferredMetricId => {
+    const protocol = visual.protocols.find(
+      item => item.id === protocolSelect.value,
+    );
+
+    metricSelect.innerHTML = (protocol?.metrics || [])
+      .map(metric => `
+        <option value="${metric.id}" ${metric.id === preferredMetricId ? 'selected' : ''}>
+          ${escapeHtml(metric.name)}
+        </option>
+      `)
+      .join('');
+
+    const metric = protocol?.metrics.find(
+      item => item.id === metricSelect.value,
+    );
+
+    valueLabel.textContent = metric?.unit
+      ? `Valore (${metric.unit})`
+      : 'Valore';
+  };
+
+  rebuildMetrics(defaultMetricId);
+
+  protocolSelect.addEventListener('change', () => {
+    rebuildMetrics('');
+  });
+
+  metricSelect.addEventListener('change', () => {
+    rebuildMetrics(metricSelect.value);
+  });
+
   dialog.querySelectorAll('[data-close]').forEach(button => {
     button.addEventListener('click', () => dialog.close());
   });
 
-  dialog.querySelector('#visual-measurement-form').addEventListener('submit', event => {
+  form.addEventListener('submit', event => {
     event.preventDefault();
 
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const value = Math.max(0, Math.min(100, Number(data.value || 0)));
+    const value = Number(data.value);
+
+    if (!Number.isFinite(value)) return;
 
     store.update(state => {
       const next = normalizeVisualPayload(state.visual);
-      const series = next.reflexion[data.metric] || [];
 
+      if (!next.measurements[data.protocolId]) {
+        next.measurements[data.protocolId] = {};
+      }
+
+      if (!Array.isArray(next.measurements[data.protocolId][data.metricId])) {
+        next.measurements[data.protocolId][data.metricId] = [];
+      }
+
+      const series = next.measurements[data.protocolId][data.metricId];
       const existing = series.find(row => row.date === data.date);
 
       if (existing) {
@@ -1550,7 +1736,6 @@ function openMeasurementDialog(host, presetMetric = '') {
       }
 
       series.sort((a, b) => a.date.localeCompare(b.date));
-      next.reflexion[data.metric] = series;
       state.visual = next;
     });
 
@@ -1562,50 +1747,414 @@ function openMeasurementDialog(host, presetMetric = '') {
   dialog.showModal();
 }
 
-function renderVisualProtocols(container, host) {
+function renderVisualProtocols(container, visual, host) {
   container.innerHTML = `
     <section class="mv-subhead">
       <div>
         <div class="eyebrow">Protocolli</div>
         <h2>Libreria operativa</h2>
-        <p>Protocolli visivi, neurocognitivi e sensomotori. La propriocezione viene trattata nel dominio sensomotorio.</p>
+        <p>Ogni protocollo può appartenere a più domini e può avere zero, una o più misurazioni associate.</p>
       </div>
+
+      ${canWriteModule('visual') ? `
+        <div class="mv-subhead-actions">
+          <button class="button button-ghost" id="visual-add-reflexion-preset" type="button">
+            + Reflexion Go
+          </button>
+          <button class="button button-primary" id="visual-add-protocol" type="button">
+            + Nuovo protocollo
+          </button>
+        </div>
+      ` : ''}
     </section>
 
     <div class="mv-protocol-grid">
-      ${VISUAL_PROTOCOLS.map(protocol => `
-        <article class="panel mv-protocol-card">
-          <div class="panel-body">
-            <h3>${escapeHtml(protocol.name)}</h3>
-            <p>${escapeHtml(protocol.description)}</p>
-
-            <div class="mv-tags">
-              ${protocol.domains.map(id => `<span>${escapeHtml(domainById(id)?.name || id)}</span>`).join('')}
-            </div>
-
-            ${canWriteModule('visual')
-              ? `<button class="button button-ghost" type="button" data-use-protocol="${protocol.id}">Registra sessione</button>`
-              : ''}
-          </div>
-        </article>
-      `).join('')}
+      ${visual.protocols.length
+        ? visual.protocols.map(protocol => protocolCard(protocol, visual)).join('')
+        : emptyPanel('Nessun protocollo configurato.')}
     </div>
   `;
 
+  container.querySelector('#visual-add-protocol')?.addEventListener('click', () => {
+    openProtocolDialog(host, visual);
+  });
+
+  container.querySelector('#visual-add-reflexion-preset')?.addEventListener('click', async () => {
+    const exists = visual.protocols.some(protocol =>
+      protocol.id === REFLEXION_PRESET.id
+      || protocol.name.trim().toLowerCase() === REFLEXION_PRESET.name.toLowerCase(),
+    );
+
+    if (exists) {
+      await showInAppAlert(
+        'Reflexion Go è già presente nei protocolli.',
+        { title: 'Protocollo già presente' },
+      );
+      return;
+    }
+
+    store.update(state => {
+      const next = normalizeVisualPayload(state.visual);
+      next.protocols.push(JSON.parse(JSON.stringify(REFLEXION_PRESET)));
+      state.visual = next;
+    });
+
+    renderVisual(host);
+  });
+
+  container.querySelectorAll('[data-edit-protocol]').forEach(button => {
+    button.addEventListener('click', () => {
+      openProtocolDialog(host, visual, button.dataset.editProtocol);
+    });
+  });
+
   container.querySelectorAll('[data-use-protocol]').forEach(button => {
     button.addEventListener('click', () => {
-      openVisualSessionDialog(host, button.dataset.useProtocol);
+      openVisualSessionDialog(
+        host,
+        visual,
+        button.dataset.useProtocol,
+      );
     });
   });
 }
 
-function visualSessionRow(session) {
-  const protocol = protocolById(session.protocolId);
+function protocolCard(protocol, visual) {
+  const measurementCount = protocolMeasurementCount(protocol, visual);
+
+  return `
+    <article class="panel mv-protocol-card">
+      <div class="panel-body">
+        <div class="mv-protocol-card-head">
+          <div>
+            <h3>${escapeHtml(protocol.name)}</h3>
+            <span>
+              ${protocol.metrics.length
+                ? `${protocol.metrics.length} ${protocol.metrics.length === 1 ? 'misurazione' : 'misurazioni'}`
+                : 'Nessuna misurazione'}
+            </span>
+          </div>
+
+          ${canWriteModule('visual')
+            ? `<button class="icon-button mv-edit-button" type="button" data-edit-protocol="${protocol.id}" aria-label="Modifica protocollo">✎</button>`
+            : ''}
+        </div>
+
+        <p>${escapeHtml(protocol.description || 'Nessuna descrizione.')}</p>
+
+        <div class="mv-tags">
+          ${protocol.domains.length
+            ? protocol.domains.map(id => `<span>${escapeHtml(domainById(id)?.name || id)}</span>`).join('')
+            : '<span>Nessun dominio</span>'}
+        </div>
+
+        ${protocol.metrics.length ? `
+          <div class="mv-protocol-metrics">
+            ${protocol.metrics.map(metric => `
+              <span>
+                ${escapeHtml(metric.name)}
+                ${metric.unit ? `<b>${escapeHtml(metric.unit)}</b>` : ''}
+              </span>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="mv-protocol-foot">
+          <span>
+            ${measurementCount
+              ? `${measurementCount} ${measurementCount === 1 ? 'valore registrato' : 'valori registrati'}`
+              : 'Nessun valore registrato'}
+          </span>
+
+          ${canWriteModule('visual')
+            ? `<button class="button button-ghost" type="button" data-use-protocol="${protocol.id}">Registra sessione</button>`
+            : ''}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function makeLocalId(prefix = 'item') {
+  return `${prefix}-${globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+}
+
+function metricRowHtml(metric = null) {
+  return `
+    <div class="mv-metric-definition-row" data-metric-row>
+      <input type="hidden" name="metricId" value="${escapeAttr(metric?.id || makeLocalId('metric'))}" />
+
+      <label>
+        <span>Nome misurazione</span>
+        <input name="metricName" value="${escapeAttr(metric?.name || '')}" placeholder="es. Tempo di reazione" required />
+      </label>
+
+      <label>
+        <span>Unità</span>
+        <input name="metricUnit" value="${escapeAttr(metric?.unit || '')}" placeholder="%, ms, cm…" />
+      </label>
+
+      <button class="icon-button mv-remove-metric" type="button" data-remove-metric aria-label="Rimuovi misurazione">×</button>
+    </div>
+  `;
+}
+
+function openProtocolDialog(host, visual, protocolId = '') {
+  const existing = protocolId
+    ? visual.protocols.find(item => item.id === protocolId)
+    : null;
+
+  const protocol = existing || {
+    id: makeLocalId('protocol'),
+    name: '',
+    domains: [],
+    description: '',
+    metrics: [],
+  };
+
+  const dialog = document.createElement('dialog');
+  dialog.className = 'planner-dialog mv-dialog mv-protocol-dialog';
+
+  dialog.innerHTML = `
+    <form method="dialog" id="visual-protocol-form">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Perception & Neuro</div>
+          <h3>${existing ? 'Modifica protocollo' : 'Nuovo protocollo'}</h3>
+        </div>
+        <button class="dialog-close" type="button" data-close>×</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Nome protocollo</label>
+            <input name="name" value="${escapeAttr(protocol.name)}" required />
+          </div>
+
+          <div class="field full">
+            <label>Descrizione</label>
+            <textarea name="description">${escapeHtml(protocol.description)}</textarea>
+          </div>
+        </div>
+
+        <fieldset class="mv-domain-fieldset">
+          <legend>Domini</legend>
+          <div class="mv-domain-checks">
+            ${VISUAL_DOMAINS.map(domain => `
+              <label>
+                <input
+                  type="checkbox"
+                  name="domain"
+                  value="${domain.id}"
+                  ${protocol.domains.includes(domain.id) ? 'checked' : ''}
+                />
+                <span>${escapeHtml(domain.name)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </fieldset>
+
+        <section class="mv-metric-definition">
+          <div class="mv-metric-definition-head">
+            <div>
+              <strong>Misurazioni associate</strong>
+              <span>Opzionali. I singoli valori conserveranno soltanto data e valore.</span>
+            </div>
+            <button class="button button-ghost" id="visual-add-metric-definition" type="button">
+              + Misurazione
+            </button>
+          </div>
+
+          <div id="visual-metric-definition-list" class="mv-metric-definition-list">
+            ${protocol.metrics.map(metricRowHtml).join('')}
+          </div>
+        </section>
+      </div>
+
+      <div class="dialog-actions">
+        <div>
+          ${existing
+            ? '<button class="button button-danger-ghost" id="visual-delete-protocol" type="button">Elimina protocollo</button>'
+            : ''}
+        </div>
+
+        <div class="dialog-save-actions">
+          <button class="button button-ghost" type="button" data-close>Annulla</button>
+          <button class="button button-primary" type="submit">Salva</button>
+        </div>
+      </div>
+    </form>
+  `;
+
+  host.appendChild(dialog);
+
+  const form = dialog.querySelector('#visual-protocol-form');
+  const metricList = dialog.querySelector('#visual-metric-definition-list');
+
+  const bindRemoveMetricButtons = () => {
+    metricList.querySelectorAll('[data-remove-metric]').forEach(button => {
+      button.onclick = () => {
+        button.closest('[data-metric-row]')?.remove();
+      };
+    });
+  };
+
+  bindRemoveMetricButtons();
+
+  dialog.querySelector('#visual-add-metric-definition')?.addEventListener('click', () => {
+    metricList.insertAdjacentHTML('beforeend', metricRowHtml());
+    bindRemoveMetricButtons();
+  });
+
+  dialog.querySelectorAll('[data-close]').forEach(button => {
+    button.addEventListener('click', () => dialog.close());
+  });
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+
+    const name = String(form.elements.name.value || '').trim();
+    if (!name) return;
+
+    const domainIds = [...form.querySelectorAll('input[name="domain"]:checked')]
+      .map(input => input.value);
+
+    const metrics = [...metricList.querySelectorAll('[data-metric-row]')]
+      .map(row => ({
+        id: row.querySelector('[name="metricId"]').value,
+        name: String(row.querySelector('[name="metricName"]').value || '').trim(),
+        unit: String(row.querySelector('[name="metricUnit"]').value || '').trim(),
+      }))
+      .filter(metric => metric.name);
+
+    const duplicateMetricNames = metrics
+      .map(metric => metric.name.toLowerCase())
+      .filter((nameValue, index, all) => all.indexOf(nameValue) !== index);
+
+    if (duplicateMetricNames.length) {
+      await showInAppAlert(
+        'All’interno dello stesso protocollo ogni misurazione deve avere un nome distinto.',
+        { title: 'Misurazioni duplicate' },
+      );
+      return;
+    }
+
+    if (existing) {
+      const removedMetricIds = existing.metrics
+        .map(metric => metric.id)
+        .filter(id => !metrics.some(metric => metric.id === id));
+
+      const hasMeasuredRemovedMetric = removedMetricIds.some(id =>
+        Array.isArray(visual.measurements?.[existing.id]?.[id])
+        && visual.measurements[existing.id][id].length
+      );
+
+      if (hasMeasuredRemovedMetric) {
+        await showInAppAlert(
+          'Non puoi rimuovere una misurazione che possiede già valori registrati. Elimina prima i valori dalla sezione Misurazioni.',
+          { title: 'Misurazione in uso' },
+        );
+        return;
+      }
+    }
+
+    const duplicateProtocol = visual.protocols.find(item =>
+      item.id !== protocol.id
+      && item.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+
+    if (duplicateProtocol) {
+      await showInAppAlert(
+        'Esiste già un protocollo con questo nome.',
+        { title: 'Protocollo duplicato' },
+      );
+      return;
+    }
+
+    const normalizedProtocol = {
+      id: protocol.id,
+      name,
+      domains: domainIds,
+      description: String(form.elements.description.value || '').trim(),
+      metrics,
+    };
+
+    store.update(state => {
+      const next = normalizeVisualPayload(state.visual);
+      const index = next.protocols.findIndex(item => item.id === normalizedProtocol.id);
+
+      if (index >= 0) {
+        next.protocols[index] = normalizedProtocol;
+      } else {
+        next.protocols.push(normalizedProtocol);
+      }
+
+      if (!next.measurements[normalizedProtocol.id]) {
+        next.measurements[normalizedProtocol.id] = {};
+      }
+
+      for (const metric of normalizedProtocol.metrics) {
+        if (!Array.isArray(next.measurements[normalizedProtocol.id][metric.id])) {
+          next.measurements[normalizedProtocol.id][metric.id] = [];
+        }
+      }
+
+      state.visual = next;
+    });
+
+    dialog.close();
+    renderVisual(host);
+  });
+
+  dialog.querySelector('#visual-delete-protocol')?.addEventListener('click', async () => {
+    const current = normalizeVisualPayload(store.getState().visual);
+
+    const usedBySession = current.trainingSessions.some(
+      session => session.protocolId === existing.id,
+    );
+
+    const usedByMeasurements = protocolMeasurementCount(existing, current) > 0;
+
+    if (usedBySession || usedByMeasurements) {
+      await showInAppAlert(
+        'Questo protocollo è già utilizzato da sessioni o misurazioni e non può essere eliminato.',
+        { title: 'Protocollo in uso' },
+      );
+      return;
+    }
+
+    const ok = await showInAppConfirm(
+      `Eliminare il protocollo “${existing.name}”?`,
+      { title: 'Elimina protocollo', confirmLabel: 'Elimina', danger: true },
+    );
+
+    if (!ok) return;
+
+    store.update(state => {
+      const next = normalizeVisualPayload(state.visual);
+      next.protocols = next.protocols.filter(item => item.id !== existing.id);
+      delete next.measurements[existing.id];
+      state.visual = next;
+    });
+
+    dialog.close();
+    renderVisual(host);
+  });
+
+  dialog.addEventListener('close', () => dialog.remove());
+  dialog.showModal();
+}
+
+function visualSessionRow(session, visual) {
+  const protocol = protocolById(session.protocolId, visual);
 
   return `
     <div class="mv-simple-row">
       <div>
-        <strong>${escapeHtml(protocol?.name || 'Sessione')}</strong>
+        <strong>${escapeHtml(protocol?.name || 'Protocollo non disponibile')}</strong>
         <span>${formatDate(session.date)}</span>
       </div>
       <strong>${Number(session.durationMin || 0) ? `${Number(session.durationMin)} min` : '—'}</strong>
