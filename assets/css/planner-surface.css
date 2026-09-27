@@ -1,0 +1,16 @@
+/* Planner tennis surface · v0.30.7 */
+.calendar-tennis-surface-field[hidden] { display:none !important; }
+.event-surface-chip {
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  padding:2px 6px;
+  border-radius:999px;
+  background:rgba(255,255,255,.62);
+  color:inherit;
+  font-size:.58rem;
+  font-weight:850;
+  line-height:1.25;
+  opacity:.86;
+}

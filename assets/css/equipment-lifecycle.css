@@ -1,228 +1,102 @@
-/* Equipment lifecycle and cosmetics · v0.30.6 */
+/* Equipment lifecycle + reshaped setup · v0.30.7 */
 
 .equipment-item-card.is-current-equipment {
   border:2px solid #4b9688;
   border-top:6px solid #4b9688;
-  background:linear-gradient(180deg, #f2fbf8 0%, #ffffff 42%);
+  background:linear-gradient(180deg,#f2fbf8 0%,#fff 42%);
   box-shadow:0 10px 28px rgba(54,117,104,.14);
   transform:translateY(-2px);
 }
-
 .equipment-item-card.is-current-equipment h3 { color:#245f55; }
 .equipment-item-card.is-reserve-equipment { border-top-color:#aeb8c6; }
 .equipment-item-card.is-emergency-equipment {
   border-top-color:#c89a48;
-  background:linear-gradient(180deg, #fffaf0 0%, #ffffff 38%);
+  background:linear-gradient(180deg,#fffaf0 0%,#fff 38%);
 }
 .equipment-item-card.is-current-equipment .equipment-primary-chip {
-  background:#367f72;
-  color:#fff;
-  letter-spacing:.055em;
-  padding:5px 9px;
+  background:#367f72;color:#fff;letter-spacing:.055em;padding:5px 9px;
 }
 
-.equipment-string-live-summary {
-  display:grid;
-  justify-items:end;
-  gap:4px;
-  min-width:0;
-  text-align:right;
-}
+.equipment-string-live-summary { display:grid;justify-items:end;gap:4px;min-width:0;text-align:right; }
+.equipment-string-live-usage { display:grid;justify-items:end;gap:2px;color:var(--muted);font-size:.64rem;font-weight:650;line-height:1.35; }
 
-.equipment-string-live-usage {
-  display:grid;
-  justify-items:end;
-  gap:2px;
-  color:var(--muted);
-  font-size:.64rem;
-  font-weight:650;
-  line-height:1.35;
-}
-
-.equipment-lifecycle-block {
-  display:grid;
-  gap:7px;
-  margin:11px 0 13px;
-  padding:10px 11px;
-  border:1px solid #dce6e2;
-  border-radius:11px;
-  background:#f7fbfa;
-}
-
-.equipment-lifecycle-block.compact { margin-top:-4px; }
-.equipment-lifecycle-top {
-  display:flex;
-  justify-content:space-between;
-  align-items:baseline;
-  gap:10px;
-}
-.equipment-lifecycle-top span {
-  color:#536b65;
-  font-size:.68rem;
-  font-weight:800;
-}
-.equipment-lifecycle-top strong {
-  color:#294d46;
-  font-size:.72rem;
-  white-space:nowrap;
-}
-.equipment-lifecycle-track {
-  height:7px;
-  overflow:hidden;
-  border-radius:999px;
-  background:#e1e9e7;
-}
-.equipment-lifecycle-track > span {
-  display:block;
-  height:100%;
-  border-radius:inherit;
-  background:#5a9a8c;
-}
-.equipment-lifecycle-block.tone-warning {
-  border-color:#ead5a3;
-  background:#fffaf0;
-}
-.equipment-lifecycle-block.tone-warning .equipment-lifecycle-top span,
-.equipment-lifecycle-block.tone-warning .equipment-lifecycle-top strong { color:#795d20; }
+.equipment-lifecycle-block { display:grid;gap:7px;margin:11px 0 13px;padding:10px 11px;border:1px solid #dce6e2;border-radius:11px;background:#f7fbfa; }
+.equipment-lifecycle-block.compact { margin-top:6px; }
+.equipment-lifecycle-top { display:flex;justify-content:space-between;align-items:baseline;gap:10px; }
+.equipment-lifecycle-top span { color:#536b65;font-size:.68rem;font-weight:800; }
+.equipment-lifecycle-top strong { color:#294d46;font-size:.72rem;white-space:nowrap; }
+.equipment-lifecycle-track { height:7px;overflow:hidden;border-radius:999px;background:#e1e9e7; }
+.equipment-lifecycle-track>span { display:block;height:100%;border-radius:inherit;background:#5a9a8c; }
+.equipment-lifecycle-block.tone-warning { border-color:#ead5a3;background:#fffaf0; }
+.equipment-lifecycle-block.tone-warning .equipment-lifecycle-top span,.equipment-lifecycle-block.tone-warning .equipment-lifecycle-top strong { color:#795d20; }
 .equipment-lifecycle-block.tone-warning .equipment-lifecycle-track { background:#f0e3c2; }
-.equipment-lifecycle-block.tone-warning .equipment-lifecycle-track > span { background:#c89a48; }
-.equipment-lifecycle-block.tone-overdue {
-  border-color:#e8c4c9;
-  background:#fff6f7;
-}
-.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-top span,
-.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-top strong { color:#8b4650; }
+.equipment-lifecycle-block.tone-warning .equipment-lifecycle-track>span { background:#c89a48; }
+.equipment-lifecycle-block.tone-overdue { border-color:#e8c4c9;background:#fff6f7; }
+.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-top span,.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-top strong { color:#8b4650; }
 .equipment-lifecycle-block.tone-overdue .equipment-lifecycle-track { background:#efdadd; }
-.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-track > span { background:#b45e69; }
+.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-track>span { background:#b45e69; }
+.equipment-lifecycle-block.is-partial { border-style:dashed; }
 .equipment-dynamic-spec strong { color:#285f55; }
+.equipment-dynamic-spec small { display:block;grid-column:1/-1;color:#8b96a5;font-size:.58rem;line-height:1.35; }
 
-/* Setup attuale: cards più visive e commerciali */
-.equipment-current-card.equipment-setup-card {
-  position:relative;
-  overflow:hidden;
-  border:1px solid rgba(19,54,85,.12);
-  border-top-width:5px;
-  box-shadow:0 14px 34px rgba(15,42,67,.08);
-  background:#fff;
-}
-
-.equipment-current-card.equipment-setup-card .equipment-card-kicker,
-.equipment-current-card.equipment-setup-card h3 {
-  position:relative;
-  z-index:1;
-}
-
-.equipment-setup-hero {
-  position:absolute;
-  top:12px;
-  right:12px;
-  width:78px;
-  height:78px;
-  pointer-events:none;
-}
-
-.equipment-setup-icon {
-  position:absolute;
-  inset:0;
+.equipment-current-grid.equipment-setup-dashboard {
   display:grid;
-  place-items:center;
-  width:78px;
-  height:78px;
-  border-radius:24px;
-  backdrop-filter: blur(2px);
+  grid-template-columns:1fr;
+  gap:16px;
 }
+.equipment-racquet-system,.equipment-footwear-system {
+  overflow:hidden;
+  border:1px solid rgba(23,53,79,.11);
+  box-shadow:0 14px 34px rgba(15,42,67,.07);
+}
+.equipment-racquet-system { background:linear-gradient(135deg,#f5fbfc 0%,#fff 54%); }
+.equipment-footwear-system { background:linear-gradient(135deg,#fff9f4 0%,#fff 55%); }
+.equipment-setup-panel-head { display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:18px 20px;border-bottom:1px solid var(--line); }
+.equipment-setup-panel-head h3 { margin:3px 0 3px;font-size:1.15rem; }
+.equipment-setup-panel-head p { margin:0;color:var(--muted);font-size:.78rem;line-height:1.4;max-width:650px; }
+.equipment-setup-panel-mark { width:66px;height:66px;display:grid;place-items:center;border-radius:20px;color:#328e98;background:rgba(79,179,190,.12);flex:0 0 auto; }
+.equipment-setup-panel-mark.footwear { color:#d77b3e;background:rgba(231,145,85,.13); }
+.equipment-setup-panel-mark svg { width:44px;height:44px; }
+.equipment-manage-footwear { margin-top:11px; }
 
-.equipment-setup-icon svg {
-  width:52px;
-  height:52px;
-  display:block;
-}
+.equipment-racquet-system-grid { display:grid;grid-template-columns:1.05fr .95fr;gap:0; }
+.equipment-racquet-system-grid>.equipment-current-card { border:0;border-radius:0;box-shadow:none;background:transparent;min-height:260px;position:relative; }
+.equipment-racquet-system-grid>.equipment-current-card+ .equipment-current-card { border-left:1px solid var(--line); }
+.equipment-setup-subcard { position:relative;overflow:hidden; }
+.equipment-setup-icon-badge { position:absolute;top:15px;right:15px;width:58px;height:58px;border-radius:18px;display:grid;place-items:center;opacity:.92; }
+.equipment-setup-icon-badge svg { width:39px;height:39px; }
+.setup-kind-racket .equipment-setup-icon-badge { color:#328e98;background:rgba(79,179,190,.11); }
+.setup-kind-strings .equipment-setup-icon-badge { color:#6767cb;background:rgba(111,111,214,.11); }
+.equipment-setup-subcard .equipment-card-kicker,.equipment-setup-subcard .equipment-current-title { max-width:calc(100% - 72px); }
 
-.equipment-setup-glow {
-  position:absolute;
-  inset:auto -10px -12px auto;
-  width:70px;
-  height:70px;
-  border-radius:999px;
-  opacity:.35;
-  filter:blur(16px);
-}
+.equipment-footwear-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;padding:16px; }
+.equipment-footwear-mini { display:grid;gap:12px;padding:14px;border:1px solid #e4e8ee;border-radius:14px;background:#fff;min-width:0; }
+.equipment-footwear-mini.is-athletics { border-top:4px solid #8a77d9;background:linear-gradient(180deg,#f9f7ff 0%,#fff 34%); }
+.equipment-footwear-mini.is-tennis { border-top:4px solid #df9259;background:linear-gradient(180deg,#fff9f4 0%,#fff 34%); }
+.equipment-footwear-mini-head { display:flex;align-items:center;gap:10px;min-width:0; }
+.equipment-footwear-mini-icon { width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#cf7440;background:#fff0e5;flex:0 0 auto; }
+.equipment-footwear-mini.is-athletics .equipment-footwear-mini-icon { color:#7563c8;background:#eeeaff; }
+.equipment-footwear-mini-icon svg { width:30px;height:30px; }
+.equipment-footwear-mini-head>div:last-child { display:grid;gap:2px;min-width:0; }
+.equipment-footwear-mini-head span { color:var(--muted);font-size:.64rem;font-weight:850;text-transform:uppercase;letter-spacing:.05em; }
+.equipment-footwear-mini-head strong { font-size:.88rem;overflow-wrap:anywhere; }
+.equipment-footwear-mini-specs { display:grid;gap:6px; }
+.equipment-footwear-mini-specs>div:not(.equipment-footwear-partial-note) { display:flex;justify-content:space-between;gap:10px;font-size:.67rem;border-bottom:1px solid #edf0f4;padding-bottom:5px; }
+.equipment-footwear-mini-specs span { color:var(--muted); }
+.equipment-footwear-mini-specs strong { text-align:right; }
+.equipment-footwear-partial-note { color:#876c2a;background:#fff8e5;border-radius:8px;padding:7px 8px;font-size:.61rem;line-height:1.35; }
+.equipment-footwear-empty { padding:24px;text-align:center;color:var(--muted);border:1px dashed #d9e0e8;border-radius:12px; }
 
-.equipment-current-card.setup-kind-racket {
-  border-top-color:#56a9b1;
-  background:
-    radial-gradient(circle at 115% -10%, rgba(84,193,209,.15), transparent 34%),
-    linear-gradient(180deg, #f4fcfd 0%, #ffffff 38%);
+@media (max-width:850px) {
+  .equipment-racquet-system-grid { grid-template-columns:1fr; }
+  .equipment-racquet-system-grid>.equipment-current-card+ .equipment-current-card { border-left:0;border-top:1px solid var(--line); }
 }
-.equipment-current-card.setup-kind-racket .equipment-setup-icon {
-  color:#2f8f97;
-  background:linear-gradient(180deg, rgba(106,208,220,.18), rgba(106,208,220,.08));
-  border:1px solid rgba(72,171,183,.16);
-}
-.equipment-current-card.setup-kind-racket .equipment-setup-glow { background:#7be1ee; }
-
-.equipment-current-card.setup-kind-strings {
-  border-top-color:#7e7fe3;
-  background:
-    radial-gradient(circle at 115% -10%, rgba(126,127,227,.15), transparent 34%),
-    linear-gradient(180deg, #f7f7ff 0%, #ffffff 38%);
-}
-.equipment-current-card.setup-kind-strings .equipment-setup-icon {
-  color:#6467cf;
-  background:linear-gradient(180deg, rgba(129,132,231,.18), rgba(129,132,231,.08));
-  border:1px solid rgba(100,103,207,.16);
-}
-.equipment-current-card.setup-kind-strings .equipment-setup-glow { background:#9ca0ff; }
-
-.equipment-current-card.setup-kind-shoes {
-  border-top-color:#ee9b61;
-  background:
-    radial-gradient(circle at 115% -10%, rgba(238,155,97,.16), transparent 34%),
-    linear-gradient(180deg, #fff9f4 0%, #ffffff 38%);
-}
-.equipment-current-card.setup-kind-shoes .equipment-setup-icon {
-  color:#d87b3b;
-  background:linear-gradient(180deg, rgba(238,155,97,.2), rgba(238,155,97,.08));
-  border:1px solid rgba(216,123,59,.16);
-}
-.equipment-current-card.setup-kind-shoes .equipment-setup-glow { background:#f4b287; }
-
-.equipment-current-card.equipment-setup-card .equipment-spec-grid,
-.equipment-current-card.equipment-setup-card .equipment-inline-action,
-.equipment-current-card.equipment-setup-card .equipment-lifecycle-block {
-  position:relative;
-  z-index:1;
-}
-
-.equipment-current-card.equipment-setup-card .equipment-card-kicker {
-  color:#5d6c84;
-  letter-spacing:.08em;
-}
-
-.equipment-current-card.equipment-setup-card h3 {
-  max-width:calc(100% - 92px);
-}
-
 @media (max-width:620px) {
   .equipment-item-card.is-current-equipment { transform:none; }
-  .equipment-lifecycle-top {
-    align-items:flex-start;
-    flex-direction:column;
-    gap:3px;
-  }
-  .equipment-string-live-summary,
-  .equipment-string-live-usage { justify-items:end; }
-  .equipment-setup-hero {
-    width:64px;
-    height:64px;
-    top:10px;
-    right:10px;
-  }
-  .equipment-setup-icon {
-    width:64px;
-    height:64px;
-    border-radius:18px;
-  }
-  .equipment-setup-icon svg { width:44px; height:44px; }
-  .equipment-current-card.equipment-setup-card h3 { max-width:calc(100% - 74px); }
+  .equipment-lifecycle-top { align-items:flex-start;flex-direction:column;gap:3px; }
+  .equipment-string-live-summary,.equipment-string-live-usage { justify-items:end; }
+  .equipment-setup-panel-head { padding:15px; }
+  .equipment-setup-panel-mark { width:52px;height:52px;border-radius:16px; }
+  .equipment-setup-panel-mark svg { width:35px;height:35px; }
+  .equipment-footwear-grid { grid-template-columns:1fr;padding:12px; }
 }
