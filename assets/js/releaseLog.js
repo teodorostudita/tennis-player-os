@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.2',
+    date: '2026-09-27',
+    title: 'Body map: riallineamento fine dei reperi',
+    details: [
+      'Rifinito il posizionamento orizzontale dei reperi nella Body map di Body & Health.',
+      'Front: corretta la gamba destra (dalla coscia in giù) e riportato verso il centro il blocco tronco/arto superiore sinistro.',
+      'Back: spostati a destra i reperi della metà superiore e ulteriormente corretta la metà inferiore destra.',
+      'Nessuna modifica ai dati cloud o alla logica del tracker infortuni.',
+    ],
+  },
+  {
     version: '1.0.1',
     date: '2026-09-27',
     title: 'Companion: import Match dal profilo TennisTalker autenticato',
