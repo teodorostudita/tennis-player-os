@@ -1,11 +1,12 @@
 # Tennis Player OS — Release Log
 
-## v0.31.17 — Body map: targeted front/back X refinement
-- Sul front spostati verso sinistra i reperi del tronco e arto superiore nella metà sinistra visiva, oltre all’arto inferiore destro dalla coscia in giù.
-- Sul back spostata verso destra tutta la metà superiore dei reperi e, nella metà inferiore, solo i reperi del lato destro.
-- Mantenute invariate dimensioni e struttura della body map, intervenendo solo sul posizionamento fine degli hotspot.
-
-## v0.31.16 — Body map: additional micro-alignment
-- Applicato un ulteriore micro-spostamento orizzontale: front ancora un poco a sinistra e back ancora un poco a destra.
-- Rialzati ancora leggermente i marker dell’arto superiore su entrambe le viste.
-- Confermati layout e dimensioni del canvas senza altre modifiche strutturali.
+## v1.0.0 — Match operativo · prima baseline completa
+- Il modulo 05 diventa **Match**.
+- Registro partite con inserimento/modifica manuale, filtri e storico.
+- Debrief strutturato: Match Story, piano tattico, tecnico-tattico, Mental, fisico e Takeaways.
+- Insight descrittivi per superficie e medie dei debrief.
+- Import diretto dello storico partite tramite TennisTalker Companion.
+- Import dei match contro l’atleta già presenti nei profili Opponents.
+- Cloud Match tramite `athlete_module_state` / `competition`, senza migration SQL.
+- Correzione X mirata della Body map.
+- Passaggio a **1.0.0**: prima baseline con tutti i dodici domini core operativi.

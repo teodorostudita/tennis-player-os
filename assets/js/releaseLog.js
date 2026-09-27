@@ -1,5 +1,21 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.0',
+    date: '2026-09-27',
+    title: 'Match operativo · prima baseline completa di Tennis Player OS',
+    details: [
+      'Il modulo 05 diventa Match: registro partite, inserimento/modifica manuale, filtri e storico.',
+      'Aggiunto debrief post-match strutturato con Match Story, piano tattico, rating tecnico-tattici, Mental, fisico e Takeaways.',
+      'Aggiunti insight descrittivi per superficie e medie dei debrief, oltre alle priorità recenti.',
+      'Integrato TennisTalker Companion: lo storico partite del profilo atleta può essere importato direttamente in Match senza duplicare record già presenti.',
+      'Aggiunto recupero dei match contro l’atleta già presenti nei profili Opponents, con inversione W/L dal punto di vista dell’atleta attivo.',
+      'Match usa athlete_module_state con moduleKey competition: nessuna nuova migration SQL richiesta.',
+      'Rinominato a runtime il precedente modulo Competition in Match mantenendo invariato l’id tecnico competition e quindi i permessi esistenti.',
+      'Body map: ulteriore correzione X mirata secondo front/back e metà anatomiche, senza alterare dimensioni o Y.',
+      'La versione passa a 1.0.0 perché tutti i dodici domini core hanno ora una implementazione operativa: è la prima baseline completa, non la fine dello sviluppo.',
+    ],
+  },
+  {
     version: '0.31.17',
     date: '2026-09-27',
     title: 'Body map: targeted front/back X refinement',
