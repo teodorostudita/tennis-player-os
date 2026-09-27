@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.11',
+    date: '2026-09-27',
+    title: 'Body map: pelvis, glutes and upper-limb refinement',
+    details: [
+      'Nel front eliminata la fascia intermedia del bacino, creando una transizione più continua tra addome e cosce.',
+      'Nel back aggiunti glutei più leggibili sopra le cosce.',
+      'Braccia allontanate dal tronco e accorciate di circa il 10%, per evidenziare meglio polsi e mani.',
+    ],
+  },
+  {
     version: '0.31.10',
     date: '2026-09-27',
     title: 'Body & Health: silhouette refinement + Release Log fix',
