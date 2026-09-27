@@ -709,20 +709,128 @@ function bodyMapSvg(injuries) {
 
         <g class="health-body-silhouette front">
           <circle cx="69" cy="35" r="15"></circle>
-          <path d="M63 49 C63 57 61 60 57 64 L48 69 C43 72 40 78 38 88 L31 119 C29 128 30 136 33 144 L38 158 L45 156 L42 139 L47 112 L50 150 C51 158 49 166 46 175 L43 190 L52 195 L57 181 L60 171 L60 198 L55 235 L56 273 L51 309 L62 311 L68 277 L69 242 L70 242 L71 277 L77 311 L88 309 L83 273 L84 235 L79 198 L79 171 L82 181 L87 195 L96 190 L93 175 C90 166 88 158 89 150 L92 112 L97 139 L94 156 L101 158 L106 144 C109 136 110 128 108 119 L101 88 C99 78 96 72 91 69 L82 64 C78 60 76 57 76 49 Z"></path>
-          <path d="M54 68 C58 83 80 83 84 68" class="health-body-detail"></path>
-          <path d="M58 116 C64 121 74 121 80 116" class="health-body-detail"></path>
-          <path d="M58 158 C64 164 74 164 80 158" class="health-body-detail"></path>
+          <path d="M63 49
+            C62 56 59 61 55 65
+            L49 69
+            C44 72 41 79 40 89
+            L35 118
+            C34 126 34 134 36 141
+            L40 157
+            L46 155
+            L44 138
+            L48 112
+            L52 144
+            C53 153 52 162 49 171
+            L45 185
+            L53 189
+            L59 176
+            L62 165
+            L64 183
+            C65 192 65 201 63 210
+            L59 234
+            L58 270
+            L54 309
+            L63 311
+            L68 272
+            L69 237
+            L70 237
+            L71 272
+            L76 311
+            L85 309
+            L81 270
+            L80 234
+            L76 210
+            C74 201 74 192 75 183
+            L78 165
+            L81 176
+            L87 189
+            L95 185
+            L91 171
+            C88 162 87 153 88 144
+            L90 112
+            L94 138
+            L92 155
+            L98 157
+            L102 141
+            C104 134 104 126 103 118
+            L98 89
+            C97 79 94 72 89 69
+            L83 65
+            C79 61 76 56 75 49
+            Z"></path>
+          <path d="M55 69 C58 83 80 83 83 69" class="health-body-detail"></path>
+          <path d="M57 101 C63 108 75 108 81 101" class="health-body-detail"></path>
+          <path d="M58 127 C63 133 75 133 80 127" class="health-body-detail"></path>
+          <path d="M59 163 C63 169 75 169 79 163" class="health-body-detail"></path>
+          <path d="M63 184 C66 188 72 188 75 184" class="health-body-detail"></path>
           <path d="M69 83 L69 151" class="health-body-detail"></path>
+          <path d="M61 194 L61 238" class="health-body-detail"></path>
+          <path d="M77 194 L77 238" class="health-body-detail"></path>
+          <path d="M61 248 C61 259 60 268 59 279" class="health-body-detail"></path>
+          <path d="M77 248 C77 259 78 268 79 279" class="health-body-detail"></path>
         </g>
 
         <g class="health-body-silhouette back">
           <circle cx="179" cy="35" r="15"></circle>
-          <path d="M173 49 C173 57 171 60 167 64 L158 69 C153 72 150 78 148 88 L141 119 C139 128 140 136 143 144 L148 158 L155 156 L152 139 L157 112 L160 150 C161 158 159 166 156 175 L153 190 L162 195 L167 181 L170 171 L170 198 L165 235 L166 273 L161 309 L172 311 L178 277 L179 242 L180 242 L181 277 L187 311 L198 309 L193 273 L194 235 L189 198 L189 171 L192 181 L197 195 L206 190 L203 175 C200 166 198 158 199 150 L202 112 L207 139 L204 156 L211 158 L216 144 C219 136 220 128 218 119 L211 88 C209 78 206 72 201 69 L192 64 C188 60 186 57 186 49 Z"></path>
-          <path d="M164 72 C169 84 189 84 194 72" class="health-body-detail"></path>
-          <path d="M164 94 C171 101 187 101 194 94" class="health-body-detail"></path>
-          <path d="M166 154 C172 161 186 161 192 154" class="health-body-detail"></path>
-          <path d="M179 84 L179 150" class="health-body-detail"></path>
+          <path d="M173 49
+            C172 56 169 61 165 65
+            L159 69
+            C154 72 151 79 150 89
+            L145 118
+            C144 126 144 134 146 141
+            L150 157
+            L156 155
+            L154 138
+            L158 112
+            L162 144
+            C163 153 162 162 159 171
+            L155 185
+            L163 189
+            L169 176
+            L172 165
+            L174 183
+            C175 192 175 201 173 210
+            L169 234
+            L168 270
+            L164 309
+            L173 311
+            L178 272
+            L179 237
+            L180 237
+            L181 272
+            L186 311
+            L195 309
+            L191 270
+            L190 234
+            L186 210
+            C184 201 184 192 185 183
+            L188 165
+            L191 176
+            L197 189
+            L205 185
+            L201 171
+            C198 162 197 153 198 144
+            L200 112
+            L204 138
+            L202 155
+            L208 157
+            L212 141
+            C214 134 214 126 213 118
+            L208 89
+            C207 79 204 72 199 69
+            L193 65
+            C189 61 186 56 185 49
+            Z"></path>
+          <path d="M165 71 C169 83 189 83 193 71" class="health-body-detail"></path>
+          <path d="M166 95 C171 102 187 102 192 95" class="health-body-detail"></path>
+          <path d="M167 115 C172 121 186 121 191 115" class="health-body-detail"></path>
+          <path d="M169 154 C173 161 185 161 189 154" class="health-body-detail"></path>
+          <path d="M170 173 C173 177 185 177 188 173" class="health-body-detail"></path>
+          <path d="M179 84 L179 151" class="health-body-detail"></path>
+          <path d="M171 194 L171 240" class="health-body-detail"></path>
+          <path d="M187 194 L187 240" class="health-body-detail"></path>
+          <path d="M171 250 C170 259 169 269 168 281" class="health-body-detail"></path>
+          <path d="M187 250 C188 259 189 269 190 281" class="health-body-detail"></path>
         </g>
 
         ${markers}
