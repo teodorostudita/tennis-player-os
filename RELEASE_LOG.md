@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v0.31.9 — Anatomical lower-body body map
+- Rebuilt the lower body using the supplied anatomical reference rather than trouser-like geometric legs.
+- Front and back now share the same lower-limb proportions.
+- Thighs have separate medial/lateral contours and taper toward the knee.
+- Knees are explicitly marked; posterior view adds popliteal landmarks.
+- Calves now show proximal muscular fullness and taper anatomically toward the ankle.
+- Ankles are narrowed and feet are integrated into the limb silhouette.
+- Pelvis-to-thigh transition refined without a central appendage.
+- Release Log maintenance resumed as part of every subsequent patch.
+
 ## v0.31.8 — Body & Health refinement
 - Body map silhouette refined again.
 - Shoulders widened further to reduce the sloped posture look.
