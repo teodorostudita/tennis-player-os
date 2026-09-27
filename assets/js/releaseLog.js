@@ -1,5 +1,201 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.10',
+    date: '2026-09-27',
+    title: 'Body & Health: silhouette refinement + Release Log fix',
+    details: [
+      'Spalle ulteriormente allargate e addome ristretto per una silhouette più atletica.',
+      'Bacino allargato e cosce rese più larghe e più alte, a spese dell’addome.',
+      'Ripristinato e aggiornato assets/js/releaseLog.js, così il Release Log torna a mostrare anche tutte le versioni successive alla 0.28.3.',
+    ],
+  },
+  {
+    version: '0.31.9',
+    date: '2026-09-27',
+    title: 'Body map anatomica arti inferiori',
+    details: [
+      'Parte inferiore ridisegnata secondo una logica anatomica: coscia, ginocchio, polpaccio, caviglia e piede.',
+      'Front e back resi coerenti nelle proporzioni degli arti inferiori.',
+    ],
+  },
+  {
+    version: '0.31.8',
+    date: '2026-09-27',
+    title: 'Body map: spalle, addome, cosce',
+    details: [
+      'Spalle allargate, addome ristretto e cosce ampliate per una silhouette più sportiva.',
+      'Aggiunto anche un file RELEASE_LOG.md nel pacchetto patch.',
+    ],
+  },
+  {
+    version: '0.31.7',
+    date: '2026-09-27',
+    title: 'Body map: silhouette più atletica',
+    details: [
+      'Spalle più larghe, addome più stretto e bacino leggermente ampliato.',
+    ],
+  },
+  {
+    version: '0.31.6',
+    date: '2026-09-27',
+    title: 'Body map: revisione front/back',
+    details: [
+      'Front e back resi più coerenti; bacino, cosce e ginocchia corretti.',
+    ],
+  },
+  {
+    version: '0.31.5',
+    date: '2026-09-27',
+    title: 'Body map clinica ridisegnata',
+    details: [
+      'Nuova silhouette clinica con tronco, bacino, gambe, braccia, mani e piedi separati.',
+    ],
+  },
+  {
+    version: '0.31.4',
+    date: '2026-09-27',
+    title: 'Body map: lower-body revision',
+    details: [
+      'Migliorate pelvis, thighs, knees e calves della silhouette precedente.',
+    ],
+  },
+  {
+    version: '0.31.3',
+    date: '2026-09-27',
+    title: 'Hotfix Body & Health',
+    details: [
+      'Corretto il doppio let section = overview che impediva l’apertura del modulo Body & Health.',
+    ],
+  },
+  {
+    version: '0.31.2',
+    date: '2026-09-27',
+    title: 'Body & Health: tracker infortuni',
+    details: [
+      'Injuries trasformato in tracker espandibile con body map front/back e distretti a campo libero con suggerimenti.',
+    ],
+  },
+  {
+    version: '0.31.1',
+    date: '2026-09-27',
+    title: 'Athletics: trasferimento sessioni',
+    details: [
+      'Possibilità di esportare/importare una sessione di atletica da un atleta a un altro.',
+    ],
+  },
+  {
+    version: '0.31.0',
+    date: '2026-09-27',
+    title: 'Body & Health operativo',
+    details: [
+      'Aggiunti quadro fisio, tracker infortuni, certificato sportivo agonistico e basi per monitoraggi e protocolli.',
+    ],
+  },
+  {
+    version: '0.30.7',
+    date: '2026-09-27',
+    title: 'Equipment: scarpe atletica + planner superfici',
+    details: [
+      'Introdotte le scarpe da atletica e la specifica della superficie nel planner.',
+    ],
+  },
+  {
+    version: '0.30.6',
+    date: '2026-09-27',
+    title: 'Equipment: rifinitura estetica',
+    details: [
+      'Rimossa la sezione Principio del modulo e resa più accattivante la schermata Setup attuale.',
+    ],
+  },
+  {
+    version: '0.30.5',
+    date: '2026-09-27',
+    title: 'Equipment lifecycle',
+    details: [
+      'Racchetta in uso / riserva / muletto, usura scarpe e avvisi per corde e calzature.',
+    ],
+  },
+  {
+    version: '0.30.4',
+    date: '2026-09-27',
+    title: 'Materiali: ore corde',
+    details: [
+      'Le racchette mostrano ora data di montaggio e ore di gioco dell’incordatura calcolate dal planner.',
+    ],
+  },
+  {
+    version: '0.30.3',
+    date: '2026-09-26',
+    title: 'Perception: grafici Reflexion Go',
+    details: [
+      'Assi dei grafici resi espliciti con percentuali in Y e data mese/anno in X.',
+    ],
+  },
+  {
+    version: '0.30.2',
+    date: '2026-09-26',
+    title: 'Perception: protocolli personalizzabili',
+    details: [
+      'Reflexion Go tolto dalla panoramica se non valorizzato e protocolli ora aggiungibili/modificabili.',
+    ],
+  },
+  {
+    version: '0.30.1',
+    date: '2026-09-26',
+    title: 'Visual & Mental: titoli coerenti',
+    details: [
+      'Titoli dei moduli mantenuti in inglese per coerenza con il resto dell’app.',
+    ],
+  },
+  {
+    version: '0.30.0',
+    date: '2026-09-26',
+    title: 'Visual & Mental',
+    details: [
+      'Aggiunti i moduli Mental e Perception/Visual con protocolli, misurazioni e aree di lavoro.',
+    ],
+  },
+  {
+    version: '0.29.3',
+    date: '2026-09-25',
+    title: 'Recovery: default e concentrazione',
+    details: [
+      'Aggiunta la voce Concentrazione e definiti i valori di default salvabili anche senza modifiche.',
+    ],
+  },
+  {
+    version: '0.29.2',
+    date: '2026-09-25',
+    title: 'Recovery in italiano',
+    details: [
+      'Conflazione Sonno e Recupero, ore di sonno, Umore al posto di Stress e scala 1–5 esplicitata.',
+    ],
+  },
+  {
+    version: '0.29.1',
+    date: '2026-09-25',
+    title: 'Economics: budget stagionale',
+    details: [
+      'Il budget parte ora da un totale stagionale con ripartizione sulle singole aree.',
+    ],
+  },
+  {
+    version: '0.29.0',
+    date: '2026-09-25',
+    title: 'Economics: pagamenti e overview',
+    details: [
+      'Pagamenti collegabili ai costi esistenti e visione d’insieme stagionale migliorata.',
+    ],
+  },
+  {
+    version: '0.28.4',
+    date: '2026-09-25',
+    title: 'Economics hotfix',
+    details: [
+      'Corretto il blocco del modulo Economics che impallava il resto della dashboard.',
+    ],
+  },
+  {
     version: '0.28.3',
     date: '2026-09-25',
     title: 'Hotfix navigazione Dashboard',
@@ -15,11 +211,7 @@ export const RELEASE_LOG = [
     title: 'Economics: Sponsor e cloud',
     details: [
       'Aggiunta la sezione Sponsor in Economics per gestire prospect, trattative e partnership attive per stagione.',
-      'Ogni sponsor registra contatti, tipo di accordo, durata, cash concordato e ricevuto, valore in-kind, benefit, impegni dell’atleta e note.',
-      'Economics è ora sincronizzato nel cloud per atleta tramite athlete_module_state: aree di formazione, movimenti, budget e sponsor seguono lo stesso record cloud.',
-      'Alla prima apertura, i dati Economics già presenti localmente vengono migrati automaticamente nel cloud quando l’utente dispone dei permessi di scrittura.',
-      'La cache locale resta disponibile come fallback offline e lo stato di sincronizzazione viene mostrato nella barra superiore.',
-      'La sezione Sponsor e i comandi Economics rispettano i privilegi di sola lettura del modulo.',
+      'Economics è ora sincronizzato nel cloud per atleta tramite athlete_module_state, mantenendo la cache locale.',
     ],
   },
   {
@@ -27,12 +219,7 @@ export const RELEASE_LOG = [
     date: '2026-09-25',
     title: 'Utenti & Accessi: gestione workspace',
     details: [
-      'Il pannello Utenti & Accessi si apre ora sulla sola lista utenti; l’editor compare soltanto creando o selezionando un account.',
-      'Le righe utente sono direttamente selezionabili e mostrano gli atleti assegnati senza dipendere dall’atleta attualmente aperto nell’app.',
-      'Ogni utente espone le proprie assegnazioni per atleta, con ruolo e privilegi per modulo separati per ciascun atleta.',
-      'La configurazione esistente viene mostrata inizialmente in sola lettura; Modifica abilita l’editing, Annulla scarta le modifiche e Elimina rimuove le assegnazioni gestibili.',
-      'Aggiunte RPC workspace-level per leggere e sostituire in modo transazionale le assegnazioni e i privilegi che l’Owner è autorizzato a gestire.',
-      'Le assegnazioni Owner restano protette e non possono essere modificate o eliminate dal pannello.',
+      'Nuovo pannello utenti basato su lista selezionabile e colonna di dettaglio/azione.',
     ],
   },
   {
@@ -40,260 +227,7 @@ export const RELEASE_LOG = [
     date: '2026-09-25',
     title: 'Development: tecnica e tattica',
     details: [
-      'Development diventa operativo con due macro-aree parallele: Tecnica e Tattica.',
-      'Progressione comune in quattro stadi: Imparare, Rendere stabile, Variare e adattare, Usare in partita.',
-      'Il trasferimento in partita è il punto di arrivo naturale di ogni competenza e non viene trattato come target configurabile.',
-      'La roadmap usa ordine di lavoro, priorità, stato ed eventuale scadenza per esprimere cosa sviluppare prima e quando.',
-      'Ogni tema può essere collegato ai drills già presenti senza duplicare la libreria degli esercizi.',
-      'Indicatori personalizzati e rilevazioni quantitative permettono di misurare lo sviluppo direttamente nel tema tecnico o tattico.',
-      'Le valutazioni di sviluppo sono storicizzate con data, stadio e nota del coach.',
-      'Development è sincronizzato nel cloud per atleta tramite athlete_module_state, mantenendo la cache locale.',
-    ],
-  },
-  {
-    version: '0.27.1',
-    date: '2026-09-24',
-    title: 'Companion: preparazione Chrome Web Store',
-    details: [
-      'Aggiunta informativa privacy pubblica dedicata a Tennis Player OS Companion.',
-      'La pagina di onboarding Companion collega direttamente all’informativa privacy completa.',
-      'Preparato un pacchetto Chrome Web Store con permessi e host limitati esclusivamente agli ambienti di produzione.',
-    ],
-  },
-  {
-    version: '0.27.0',
-    date: '2026-09-24',
-    title: 'TennisTalker Companion: onboarding prodotto',
-    details: [
-      'Opponents mostra lo stato del Companion e una scorciatoia diretta alla classifica TennisTalker coerente con categoria e sesso dell’atleta.',
-      'Il Companion 1.0 aggiunge direttamente sulle pagine TennisTalker i comandi Importa Top 50, Aggiorna opponent e Importa storico match.',
-      'Il popup dell’estensione resta disponibile come fallback e diagnostica, ma non è più necessario nel flusso normale.',
-      'Aggiunta una pagina di installazione e guida integrata, predisposta per passare al Chrome Web Store modificando un solo file di configurazione.',
-      'I profili opponent e lo Storico match offrono scorciatoie dirette alle relative pagine TennisTalker.',
-      'TPOS rileva automaticamente versione e disponibilità del Companion senza richiedere configurazioni manuali.',
-    ],
-  },
-  {
-    version: '0.26.8',
-    date: '2026-09-24',
-    title: 'Opponents: profilo compatto',
-    details: [
-      'Storico match comprimibile nel profilo opponent per mantenere Scouting e Match Plan immediatamente accessibili.',
-      'Con più di 5 match lo storico parte chiuso; con uno storico breve resta aperto di default.',
-      'La testata mostra sempre numero di match e bilancio V/S dal punto di vista dell’opponent.',
-      'Quando espanso, lo storico ha altezza massima e scroll interno con intestazione tabella fissa.',
-      'Lo stato aperto/chiuso viene mantenuto per ciascun profilo durante la sessione.',
-    ],
-  },
-  {
-    version: '0.26.7',
-    date: '2026-09-24',
-    title: 'Opponents: storico match TennisTalker',
-    details: [
-      'Il Companion prova a leggere automaticamente la pagina Partite del profilo TennisTalker usando la sessione browser corrente.',
-      'Se la pagina completa non è riconoscibile, usa come fallback le Ultime partite visibili nella panoramica.',
-      'Importati soltanto match di singolare riconosciuti con sufficiente certezza.',
-      'Lo storico esterno viene fuso con quello TPOS senza cancellare match o note manuali.',
-      'Gli aggiornamenti successivi deduplicano i match già importati tramite chiave TennisTalker e fingerprint.',
-      'Quando un avversario importato coincide con l’atleta corrente, il match viene marcato automaticamente come H2H.',
-    ],
-  },
-  {
-    version: '0.26.6',
-    date: '2026-09-24',
-    title: 'Opponents: import profilo TennisTalker',
-    details: [
-      'Il Companion riconosce le pagine giocatore TennisTalker e invia un profilo strutturato a TPOS.',
-      'Importati nome, classifica e punti FITP, categoria, club, regione/provincia, mano, rovescio e superficie preferita.',
-      'Conservati separatamente W/L, win rate, massima classifica, brand e percentuali dei Punti di Forza TennisTalker.',
-      'TPOS aggiorna un opponent esistente tramite TennisTalker ID/link oppure propone la creazione di un nuovo profilo.',
-      'Scouting TPOS, match plan, watchlist e storico manuale non vengono sovrascritti dagli aggiornamenti esterni.',
-      'Per i nuovi profili viene recuperata automaticamente la ranking history già presente nelle snapshot Top 50.',
-    ],
-  },
-  {
-    version: '0.26.5',
-    date: '2026-09-24',
-    title: 'Companion: DOM mailbox bridge',
-    details: [
-      'Sostituito il trasferimento window.postMessage con una mailbox DOM condivisa tra estensione Chrome e webapp.',
-      'Il payload TennisTalker resta disponibile nella pagina finché TPOS non lo importa o lo annulla.',
-      'La webapp controlla la mailbox sia tramite MutationObserver sia con polling di sicurezza.',
-      'Eliminata la dipendenza dai tempi di caricamento e dall’isolated world dell’estensione Chrome.',
-    ],
-  },
-  {
-    version: '0.26.4',
-    date: '2026-09-24',
-    title: 'Companion bridge affidabile',
-    details: [
-      'Corretto il race condition che poteva perdere il ranking inviato dal Companion durante il caricamento di TPOS.',
-      'TPOS annuncia esplicitamente quando il bridge Opponents è pronto a ricevere dati.',
-      'Il Companion ritenta automaticamente la consegna finché la webapp non risponde.',
-      'Il payload resta in attesa nell’estensione finché TPOS non conferma importazione o annullamento.',
-    ],
-  },
-  {
-    version: '0.26.3',
-    date: '2026-09-24',
-    title: 'Opponents: Companion bridge',
-    details: [
-      'Tennis Player OS Companion può inviare direttamente il ranking letto da TennisTalker alla webapp.',
-      'TPOS mostra una conferma con anteprima prima di creare la snapshot Top 50.',
-      'Categoria e sesso vengono precompilati dal ranking e dal Player Profile; data, ambito e area restano modificabili prima del salvataggio.',
-      'ID e URL TennisTalker vengono conservati per collegare stabilmente ranking e profili opponent.',
-      'I profili già esistenti vengono aggiornati senza toccare scouting, storico personalizzato o match plan.',
-      'Disattivato il precedente flusso copia/incolla TennisTalker nell’interfaccia.',
-    ],
-  },
-  {
-    version: '0.26.2',
-    date: '2026-09-24',
-    title: 'Opponents: importazione assistita TennisTalker',
-    details: [
-      'Aggiunto il comando “Importa TennisTalker” nella sezione Rankings di Opponents.',
-      'Importazione tramite copia/incolla dalla pagina Classifiche già aperta nel browser, senza memorizzare credenziali TennisTalker.',
-      'Il parser recupera ranking, nome, classifica FITP, categoria, regione, provincia, club e, quando presente nell’HTML copiato, link e ID TennisTalker.',
-      'È possibile incollare più pagine consecutive: i giocatori vengono accumulati, deduplicati e ordinati fino alla Top 50.',
-      'Le snapshot importate usano lo stesso modello dati già esistente e aggiornano la ranking history dei profili opponent riconosciuti.',
-      'La snapshot manuale resta disponibile come fallback indipendente dalla fonte esterna.',
-    ],
-  },
-  {
-    version: '0.26.1',
-    date: '2026-09-24',
-    title: 'Player Profile cloud consolidato',
-    details: [
-      'Categoria e sesso competitivo entrano nel writer cloud standard del Player Profile.',
-      'Rimosso il secondo writer separato della sezione Competition, evitando aggiornamenti concorrenti sul metadata atleta.',
-      'Compatibilità mantenuta con i dati già salvati in tennisPlayerOS.competition.',
-      'Stato di salvataggio esplicito: Profilo → cloud, Profilo cloud ✓ oppure errore cloud.',
-      'Player Profile modificabile solo da Owner/Admin; gli altri account lo vedono in sola lettura.',
-    ],
-  },
-  {
-    version: '0.26.0',
-    date: '2026-09-24',
-    title: 'Opponents foundation',
-    details: [
-      'Nuovo modulo Opponents con Rankings, Watchlist, Profiles e Matchup.',
-      'Snapshot Top 50 con struttura pronta per integrazioni esterne e cronologia ranking per opponent.',
-      'Profili opponent con dati competitivi, fonte TennisTalker, storico match, scouting personalizzato e match plan.',
-      'Creazione rapida di un profilo opponent direttamente da una riga del ranking.',
-      'Persistenza cloud per atleta tramite athlete_module_state con cache locale e fallback offline.',
-      'Aggiunti Categoria competitiva e Sesso competitivo nel Player Profile.',
-    ],
-  },
-  {
-    version: '0.25.5',
-    date: '2026-09-23',
-    title: 'Athletics: responsabilità per record',
-    details: [
-      'Athletics passa da un unico blob condiviso a record individuali per test, misurazioni, sessioni e obiettivi.',
-      'Ogni record ha un responsabile: i preparatori leggono tutto ma possono modificare soltanto i propri contenuti.',
-      'Owner/Admin può riassegnare il responsabile dei record tramite il nuovo pannello “Responsabili”.',
-      'Il programma settimanale generale resta amministrativo e modificabile solo da Owner/Admin.',
-      'La sincronizzazione aggiorna solo i record cambiati, evitando sovrascritture tra due preparatori che lavorano contemporaneamente.',
-      'Il vecchio stato Athletics in athlete_module_state viene mantenuto intatto come backup storico.',
-    ],
-  },
-  {
-    version: '0.25.4',
-    date: '2026-09-23',
-    title: 'Sincronizzazione cross-device',
-    details: [
-      'Equipment viene caricato da Supabase durante il bootstrap prima di mostrare l’app.',
-      'In caso di errore di lettura cloud, Equipment non avvia la scrittura automatica e protegge il record remoto.',
-      'Il profilo atleta esteso viene salvato in athletes.metadata e sincronizzato tra dispositivi.',
-      'Migrazione automatica una tantum dei dati profilo già presenti nella cache locale.',
-    ],
-  },
-  {
-    version: '0.25.3',
-    date: '2026-09-23',
-    title: 'Equipment: identificazione telai e ore corde',
-    details: [
-      'In Incordature la racchetta viene selezionata tramite ID del singolo telaio, non tramite modello.',
-      'L’ID racchetta diventa esplicito e obbligatorio nella scheda del telaio.',
-      '“Ore di utilizzo” delle corde rinominato in “Ore di utilizzo previste”.',
-      'Corretto il numero visibile di Equipment dopo il riordino dei moduli.',
-    ],
-  },
-  {
-    version: '0.25.2',
-    date: '2026-09-23',
-    title: 'Equipment nel cloud',
-    details: [
-      'Inventario racchette, configurazione corrente, storico incordature e scarpe salvati in Supabase.',
-      'Migrazione automatica dei dati Equipment locali quando il cloud è ancora vuoto.',
-      'localStorage mantenuto come cache e fallback offline.',
-    ],
-  },
-  {
-    version: '0.25.1',
-    date: '2026-09-23',
-    title: 'Versioning visibile e release log',
-    details: [
-      'Versione corrente visibile direttamente nella Dashboard.',
-      'Release log accessibile dall’interfaccia solo all’Owner.',
-      'Storico iniziale delle release recenti.',
-    ],
-  },
-  {
-    version: '0.25.0',
-    date: '2026-09-23',
-    title: 'Athletics nel cloud',
-    details: [
-      'Tests & Assessments, misurazioni, programma settimanale, sessioni, blocchi/esercizi e obiettivi salvati in Supabase.',
-      'localStorage mantenuto come cache e fallback.',
-      'Migrazione automatica dei dati Athletics locali quando il cloud è ancora vuoto.',
-    ],
-  },
-  {
-    version: '0.24.1',
-    date: '2026-09-23',
-    title: 'Fix libreria test Athletics',
-    details: [
-      'Corretto il blocco della pagina all’apertura di “+ Nuovo test”.',
-      'La libreria dei protocolli viene preparata una sola volta per apertura.',
-    ],
-  },
-  {
-    version: '0.24.0',
-    date: '2026-09-23',
-    title: 'Protocolli test riutilizzabili',
-    details: [
-      'I protocolli di test Athletics possono essere richiamati da altri atleti.',
-      'Misurazioni e target personali restano specifici del singolo atleta.',
-    ],
-  },
-  {
-    version: '0.23.2',
-    date: '2026-09-23',
-    title: 'Riordino moduli',
-    details: [
-      'Calendar spostato al primo posto.',
-      'Athletics spostato prima di Development.',
-      'Rinumerazione conseguente di tutti i moduli.',
-    ],
-  },
-  {
-    version: '0.23.1',
-    date: '2026-09-23',
-    title: 'Calendar mobile sicuro',
-    details: [
-      'Drag e resize disabilitati su touch.',
-      'Long press per aprire la modifica di un evento.',
-      'Creazione su mobile affidata ai pulsanti +.',
-    ],
-  },
-  {
-    version: '0.23.0',
-    date: '2026-09-23',
-    title: 'Infrastruttura cloud moduli',
-    details: [
-      'Introdotto athlete_module_state con payload JSONB per i moduli ancora in evoluzione.',
-      'Aggiunto il provider ibrido local-first/cloud.',
+      'Development operativo con Tecnica e Tattica, progressione in quattro stadi e sincronizzazione cloud.',
     ],
   },
 ];
