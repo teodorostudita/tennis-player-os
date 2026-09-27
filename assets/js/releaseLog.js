@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.15',
+    date: '2026-09-27',
+    title: 'Body map: final fine alignment pass',
+    details: [
+      'Ridotto ancora, in modo lieve, lo shift orizzontale residuo: front un poco più a sinistra e back un poco più a destra.',
+      'Riallineati verso l’alto i marker dell’arto superiore su entrambe le viste, mantenendo invariato il resto della mappa.',
+      'Nessuna modifica alle dimensioni del canvas o alla struttura della body map.',
+    ],
+  },
+  {
     version: '0.31.14',
     date: '2026-09-27',
     title: 'Body map: fine X/Y hotspot calibration',
