@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.16',
+    date: '2026-09-27',
+    title: 'Body map: additional micro-alignment',
+    details: [
+      'Applicato un ulteriore micro-spostamento orizzontale: front ancora un poco a sinistra e back ancora un poco a destra.',
+      'Rialzati ancora leggermente i marker dell’arto superiore su entrambe le viste.',
+      'Confermati layout e dimensioni del canvas senza altre modifiche strutturali.',
+    ],
+  },
+  {
     version: '0.31.15',
     date: '2026-09-27',
     title: 'Body map: final fine alignment pass',
