@@ -1502,9 +1502,16 @@ function readCompanionPayload() {
 
   try {
     const payload = JSON.parse(box.textContent || '');
+    const isDedicatedMatches = payload?.kind === 'matches';
+    const isLegacyProfileMatches = (
+      payload?.kind === 'profile'
+      && Array.isArray(payload?.profile?.matches)
+      && payload.profile.matches.length
+    );
+
     if (
       !payload?.importId
-      || payload.kind !== 'profile'
+      || (!isDedicatedMatches && !isLegacyProfileMatches)
       || !payload.profile
       || !Array.isArray(payload.profile.matches)
       || !payload.profile.matches.length
@@ -1551,6 +1558,7 @@ function normalizeCompanionMatch(raw = {}, profile = {}) {
     score: raw.score,
     surface: raw.surface,
     tournament: raw.tournament,
+    round: raw.round,
     source: {
       provider: 'TennisTalker',
       externalKey: raw.externalKey,
@@ -1590,6 +1598,7 @@ async function openCompanionImport(payload) {
   );
 
   const dialog = document.createElement('dialog');
+  dialog.id = 'match-companion-import-dialog';
   dialog.className = 'planner-dialog match-dialog match-import-dialog';
 
   dialog.innerHTML = `

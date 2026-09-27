@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.1',
+    date: '2026-09-27',
+    title: 'Companion: import Match dal profilo TennisTalker autenticato',
+    details: [
+      'Corretto il Companion per riconoscere anche la pagina personale TennisTalker /profilo/partite, che non contiene un ID giocatore nell’URL.',
+      'Lo storico match usa ora un payload dedicato kind=matches e viene inviato direttamente al modulo Match, evitando che Opponents intercetti l’importazione.',
+      'Il parser usa il nome del profilo e una identità sintetica stabile per la pagina personale, mantenendo la deduplicazione dei match.',
+      'Match accetta sia il nuovo payload matches sia il formato profile+matches della v1.0.0 per compatibilità.',
+      'La diagnostica Companion ora rileva anche matchUI e il dialog di import Match.',
+      'Nessuna modifica alla Body map in questa patch.',
+    ],
+  },
+  {
     version: '1.0.0',
     date: '2026-09-27',
     title: 'Match operativo · prima baseline completa di Tennis Player OS',
