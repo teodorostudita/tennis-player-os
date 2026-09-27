@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.3',
+    date: '2026-09-27',
+    title: 'Companion 1.0.2: parser Match e reiniezione TPOS',
+    details: [
+      'Il parser Match accetta ora anche descrittori compatti come 3.3U12 POLIDORI IRENE.',
+      'Il riconoscimento della card non richiede più che V/S e punti siano il primo testo del riquadro.',
+      'Se TPOS era già aperto durante l’aggiornamento del Companion e il content script non è raggiungibile, il Companion forza un reload della scheda.',
+      'La diagnostica include ora pageScan con numero di match riconosciuti e primi record letti.',
+      'La patch mantiene anche le correzioni Body map della v1.0.2.',
+    ],
+  },
+  {
     version: '1.0.2',
     date: '2026-09-27',
     title: 'Body map: riallineamento fine dei reperi',

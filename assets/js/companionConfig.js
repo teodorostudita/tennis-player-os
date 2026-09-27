@@ -1,9 +1,9 @@
 export const TENNISTALKER_COMPANION = Object.freeze({
   expectedMajor: 1,
-  currentVersion: '1.0.1',
+  currentVersion: '1.0.2',
   chromeWebStoreUrl: '',
   setupPath: 'companion.html',
-  downloadPath: 'downloads/Tennis_Player_OS_Companion_v1.0.1_STORE_READY.zip',
+  downloadPath: 'downloads/Tennis_Player_OS_Companion_v1.0.2_STORE_READY.zip',
 });
 
 export function appAssetUrl(path) {
