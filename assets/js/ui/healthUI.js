@@ -689,148 +689,236 @@ function bodyMapSvg(injuries) {
     <div class="health-body-map-shell">
       <svg
         class="health-body-map"
-        viewBox="0 0 240 326"
+        viewBox="0 0 240 330"
         role="img"
         aria-label="Body map anteriore e posteriore degli infortuni attivi"
       >
         <defs>
           <linearGradient id="healthBodyFront" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#dfe9f0"></stop>
-            <stop offset="100%" stop-color="#c7d4de"></stop>
+            <stop offset="0%" stop-color="#e4edf3"></stop>
+            <stop offset="100%" stop-color="#cbd8e1"></stop>
           </linearGradient>
           <linearGradient id="healthBodyBack" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#e8edf2"></stop>
-            <stop offset="100%" stop-color="#d2dae2"></stop>
+            <stop offset="0%" stop-color="#e9eef3"></stop>
+            <stop offset="100%" stop-color="#d2dbe3"></stop>
           </linearGradient>
         </defs>
 
-        <text x="69" y="15" text-anchor="middle" class="health-body-view-label">FRONT</text>
-        <text x="179" y="15" text-anchor="middle" class="health-body-view-label">BACK</text>
+        <text x="66" y="15" text-anchor="middle" class="health-body-view-label">FRONT</text>
+        <text x="174" y="15" text-anchor="middle" class="health-body-view-label">BACK</text>
 
         <g class="health-body-silhouette front">
-          <circle cx="69" cy="35" r="15"></circle>
-          <path d="M63 49
-            C62 56 59 61 55 65
-            L49 69
-            C44 72 41 79 40 89
-            L35 118
-            C34 126 34 134 36 141
-            L40 157
-            L46 155
-            L44 138
-            L48 112
-            L52 144
-            C53 153 52 162 49 171
-            L45 185
-            L53 189
-            L59 176
-            L62 165
-            L64 183
-            C65 192 65 201 63 210
-            L59 234
-            L58 270
-            L54 309
-            L63 311
-            L68 272
-            L69 237
-            L70 237
-            L71 272
-            L76 311
-            L85 309
-            L81 270
-            L80 234
-            L76 210
-            C74 201 74 192 75 183
-            L78 165
-            L81 176
-            L87 189
-            L95 185
-            L91 171
-            C88 162 87 153 88 144
-            L90 112
-            L94 138
-            L92 155
-            L98 157
-            L102 141
-            C104 134 104 126 103 118
-            L98 89
-            C97 79 94 72 89 69
-            L83 65
-            C79 61 76 56 75 49
-            Z"></path>
-          <path d="M55 69 C58 83 80 83 83 69" class="health-body-detail"></path>
-          <path d="M57 101 C63 108 75 108 81 101" class="health-body-detail"></path>
-          <path d="M58 127 C63 133 75 133 80 127" class="health-body-detail"></path>
-          <path d="M59 163 C63 169 75 169 79 163" class="health-body-detail"></path>
-          <path d="M63 184 C66 188 72 188 75 184" class="health-body-detail"></path>
-          <path d="M69 83 L69 151" class="health-body-detail"></path>
-          <path d="M61 194 L61 238" class="health-body-detail"></path>
-          <path d="M77 194 L77 238" class="health-body-detail"></path>
-          <path d="M61 248 C61 259 60 268 59 279" class="health-body-detail"></path>
-          <path d="M77 248 C77 259 78 268 79 279" class="health-body-detail"></path>
+          <!-- Head and neck -->
+          <ellipse cx="66" cy="36" rx="15" ry="17"></ellipse>
+          <path d="M60 51 L60 62 C58 67 54 69 49 72 L43 77 L89 77 L83 72 C78 69 74 67 72 62 L72 51 Z"></path>
+
+          <!-- Torso -->
+          <path d="M43 77
+                   C47 73 53 72 58 72
+                   C61 76 63 78 66 78
+                   C69 78 71 76 74 72
+                   C79 72 85 73 89 77
+                   C92 84 94 94 94 105
+                   L92 135
+                   C91 148 88 158 84 166
+                   C80 173 76 177 72 180
+                   L60 180
+                   C56 177 52 173 48 166
+                   C44 158 41 148 40 135
+                   L38 105
+                   C38 94 40 84 43 77 Z"></path>
+
+          <!-- Left arm -->
+          <path d="M43 79
+                   C36 83 32 90 30 99
+                   L25 124
+                   C23 134 22 145 24 155
+                   L28 177
+                   C29 183 31 189 34 194
+                   L41 191
+                   C39 183 38 177 38 170
+                   L37 151
+                   L40 127
+                   L46 100
+                   C47 91 47 84 43 79 Z"></path>
+
+          <!-- Right arm -->
+          <path d="M89 79
+                   C96 83 100 90 102 99
+                   L107 124
+                   C109 134 110 145 108 155
+                   L104 177
+                   C103 183 101 189 98 194
+                   L91 191
+                   C93 183 94 177 94 170
+                   L95 151
+                   L92 127
+                   L86 100
+                   C85 91 85 84 89 79 Z"></path>
+
+          <!-- Hands -->
+          <path d="M34 194 L31 201 L32 211 L35 209 L36 215 L39 212 L40 217 L43 214 L42 204 L41 191 Z"></path>
+          <path d="M98 194 L101 201 L100 211 L97 209 L96 215 L93 212 L92 217 L89 214 L90 204 L91 191 Z"></path>
+
+          <!-- Pelvis -->
+          <path d="M48 166
+                   C51 172 55 178 60 181
+                   C62 184 63 188 63 193
+                   L69 193
+                   C69 188 70 184 72 181
+                   C77 178 81 172 84 166
+                   C80 173 77 180 76 188
+                   L74 200
+                   L58 200
+                   L56 188
+                   C55 180 52 173 48 166 Z"></path>
+
+          <!-- Left leg -->
+          <path d="M58 198
+                   C56 207 54 216 54 226
+                   L55 246
+                   C55 254 53 263 51 274
+                   L48 302
+                   C48 310 49 315 51 318
+                   L60 318
+                   C62 312 63 305 64 296
+                   L65 270
+                   L65 248
+                   L65 224
+                   L65 201 Z"></path>
+
+          <!-- Right leg -->
+          <path d="M74 198
+                   C76 207 78 216 78 226
+                   L77 246
+                   C77 254 79 263 81 274
+                   L84 302
+                   C84 310 83 315 81 318
+                   L72 318
+                   C70 312 69 305 68 296
+                   L67 270
+                   L67 248
+                   L67 224
+                   L67 201 Z"></path>
+
+          <!-- Feet -->
+          <path d="M51 318 C49 321 47 324 44 326 L59 326 C60 324 60 321 60 318 Z"></path>
+          <path d="M72 318 C72 321 72 324 73 326 L88 326 C85 324 83 321 81 318 Z"></path>
+
+          <!-- Anatomical guide lines -->
+          <path d="M49 82 C54 91 59 95 66 95 C73 95 78 91 83 82" class="health-body-detail"></path>
+          <path d="M50 111 C55 116 61 118 66 118 C71 118 77 116 82 111" class="health-body-detail"></path>
+          <path d="M52 140 C57 144 61 145 66 145 C71 145 75 144 80 140" class="health-body-detail"></path>
+          <path d="M66 96 L66 160" class="health-body-detail"></path>
+          <path d="M55 246 C58 249 62 250 65 248" class="health-body-detail"></path>
+          <path d="M67 248 C70 250 74 249 77 246" class="health-body-detail"></path>
         </g>
 
         <g class="health-body-silhouette back">
-          <circle cx="179" cy="35" r="15"></circle>
-          <path d="M173 49
-            C172 56 169 61 165 65
-            L159 69
-            C154 72 151 79 150 89
-            L145 118
-            C144 126 144 134 146 141
-            L150 157
-            L156 155
-            L154 138
-            L158 112
-            L162 144
-            C163 153 162 162 159 171
-            L155 185
-            L163 189
-            L169 176
-            L172 165
-            L174 183
-            C175 192 175 201 173 210
-            L169 234
-            L168 270
-            L164 309
-            L173 311
-            L178 272
-            L179 237
-            L180 237
-            L181 272
-            L186 311
-            L195 309
-            L191 270
-            L190 234
-            L186 210
-            C184 201 184 192 185 183
-            L188 165
-            L191 176
-            L197 189
-            L205 185
-            L201 171
-            C198 162 197 153 198 144
-            L200 112
-            L204 138
-            L202 155
-            L208 157
-            L212 141
-            C214 134 214 126 213 118
-            L208 89
-            C207 79 204 72 199 69
-            L193 65
-            C189 61 186 56 185 49
-            Z"></path>
-          <path d="M165 71 C169 83 189 83 193 71" class="health-body-detail"></path>
-          <path d="M166 95 C171 102 187 102 192 95" class="health-body-detail"></path>
-          <path d="M167 115 C172 121 186 121 191 115" class="health-body-detail"></path>
-          <path d="M169 154 C173 161 185 161 189 154" class="health-body-detail"></path>
-          <path d="M170 173 C173 177 185 177 188 173" class="health-body-detail"></path>
-          <path d="M179 84 L179 151" class="health-body-detail"></path>
-          <path d="M171 194 L171 240" class="health-body-detail"></path>
-          <path d="M187 194 L187 240" class="health-body-detail"></path>
-          <path d="M171 250 C170 259 169 269 168 281" class="health-body-detail"></path>
-          <path d="M187 250 C188 259 189 269 190 281" class="health-body-detail"></path>
+          <!-- Head and neck -->
+          <ellipse cx="174" cy="36" rx="15" ry="17"></ellipse>
+          <path d="M168 51 L168 62 C166 67 162 69 157 72 L151 77 L197 77 L191 72 C186 69 182 67 180 62 L180 51 Z"></path>
+
+          <!-- Torso -->
+          <path d="M151 77
+                   C155 73 161 72 166 72
+                   C169 76 171 78 174 78
+                   C177 78 179 76 182 72
+                   C187 72 193 73 197 77
+                   C200 84 202 94 202 105
+                   L200 135
+                   C199 148 196 158 192 166
+                   C188 173 184 177 180 180
+                   L168 180
+                   C164 177 160 173 156 166
+                   C152 158 149 148 148 135
+                   L146 105
+                   C146 94 148 84 151 77 Z"></path>
+
+          <!-- Left arm -->
+          <path d="M151 79
+                   C144 83 140 90 138 99
+                   L133 124
+                   C131 134 130 145 132 155
+                   L136 177
+                   C137 183 139 189 142 194
+                   L149 191
+                   C147 183 146 177 146 170
+                   L145 151
+                   L148 127
+                   L154 100
+                   C155 91 155 84 151 79 Z"></path>
+
+          <!-- Right arm -->
+          <path d="M197 79
+                   C204 83 208 90 210 99
+                   L215 124
+                   C217 134 218 145 216 155
+                   L212 177
+                   C211 183 209 189 206 194
+                   L199 191
+                   C201 183 202 177 202 170
+                   L203 151
+                   L200 127
+                   L194 100
+                   C193 91 193 84 197 79 Z"></path>
+
+          <!-- Hands -->
+          <path d="M142 194 L139 201 L140 211 L143 209 L144 215 L147 212 L148 217 L151 214 L150 204 L149 191 Z"></path>
+          <path d="M206 194 L209 201 L208 211 L205 209 L204 215 L201 212 L200 217 L197 214 L198 204 L199 191 Z"></path>
+
+          <!-- Pelvis / gluteal contour -->
+          <path d="M156 166
+                   C159 172 163 177 168 180
+                   C171 182 172 186 172 192
+                   L176 192
+                   C176 186 177 182 180 180
+                   C185 177 189 172 192 166
+                   C190 176 189 185 188 198
+                   L160 198
+                   C159 185 158 176 156 166 Z"></path>
+          <path d="M160 187 C164 192 169 194 174 194 C179 194 184 192 188 187" class="health-body-detail"></path>
+          <path d="M174 181 L174 197" class="health-body-detail"></path>
+
+          <!-- Left leg -->
+          <path d="M160 196
+                   C158 206 157 216 158 227
+                   L159 247
+                   C159 256 157 266 155 277
+                   L152 302
+                   C152 310 153 315 155 318
+                   L164 318
+                   C166 312 167 305 168 296
+                   L169 270
+                   L170 248
+                   L170 224
+                   L172 199 Z"></path>
+
+          <!-- Right leg -->
+          <path d="M188 196
+                   C190 206 191 216 190 227
+                   L189 247
+                   C189 256 191 266 193 277
+                   L196 302
+                   C196 310 195 315 193 318
+                   L184 318
+                   C182 312 181 305 180 296
+                   L179 270
+                   L178 248
+                   L178 224
+                   L176 199 Z"></path>
+
+          <!-- Feet -->
+          <path d="M155 318 C153 321 151 324 148 326 L163 326 C164 324 164 321 164 318 Z"></path>
+          <path d="M184 318 C184 321 184 324 185 326 L200 326 C197 324 195 321 193 318 Z"></path>
+
+          <!-- Anatomical guide lines -->
+          <path d="M157 82 C162 88 168 91 174 91 C180 91 186 88 191 82" class="health-body-detail"></path>
+          <path d="M159 104 C164 99 169 98 174 98 C179 98 184 99 189 104" class="health-body-detail"></path>
+          <path d="M174 92 L174 157" class="health-body-detail"></path>
+          <path d="M162 151 C166 155 170 157 174 157 C178 157 182 155 186 151" class="health-body-detail"></path>
+          <path d="M159 247 C163 250 167 250 170 248" class="health-body-detail"></path>
+          <path d="M178 248 C181 250 185 250 189 247" class="health-body-detail"></path>
         </g>
 
         ${markers}
