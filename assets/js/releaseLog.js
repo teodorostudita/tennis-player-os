@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.17',
+    date: '2026-09-27',
+    title: 'Body map: targeted front/back X refinement',
+    details: [
+      'Sul front spostati verso sinistra i reperi del tronco e arto superiore nella metà sinistra visiva, oltre all’arto inferiore destro dalla coscia in giù.',
+      'Sul back spostata verso destra tutta la metà superiore dei reperi e, nella metà inferiore, solo i reperi del lato destro.',
+      'Mantenute invariate dimensioni e struttura della body map, intervenendo solo sul posizionamento fine degli hotspot.',
+    ],
+  },
+  {
     version: '0.31.16',
     date: '2026-09-27',
     title: 'Body map: additional micro-alignment',
