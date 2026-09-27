@@ -21,45 +21,205 @@ import {
 } from './inAppMessages.js';
 
 
-const BODY_AREA_SUGGESTIONS = [
-  'Testa / collo',
-  'Cervicale',
-  'Spalla',
-  'Scapola',
-  'Braccio',
-  'Bicipite',
-  'Tricipite',
-  'Gomito',
-  'Avambraccio',
-  'Polso',
-  'Mano / dita',
-  'Torace / pettorale',
-  'Coste / intercostali',
-  'Addome',
-  'Schiena / dorsale',
-  'Lombare',
-  'Anca',
-  'Inguine',
-  'Gluteo',
-  'Adduttori',
-  'Coscia anteriore / quadricipite',
-  'Coscia posteriore / hamstring',
-  'Ginocchio',
-  'Polpaccio',
-  'Tibia / gamba',
-  'Caviglia',
-  'Tendine d’Achille',
-  'Piede / dita',
+const MUSCULOSKELETAL_DISTRICTS = [
+  {
+    key: 'cervical',
+    label: 'Collo / cervicale',
+    views: ['front', 'back'],
+    sides: ['center'],
+    subdistricts: ['Sternocleidomastoideo', 'Trapezio superiore', 'Paravertebrali cervicali'],
+  },
+  {
+    key: 'shoulder',
+    label: 'Spalla',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: [
+      'Sovraspinato',
+      'Infraspinato',
+      'Sottoscapolare',
+      'Piccolo rotondo',
+      'Deltoide',
+      'Cuffia dei rotatori',
+      'Tendine del capo lungo del bicipite',
+      'Articolazione acromion-claveare',
+    ],
+  },
+  {
+    key: 'pectoral',
+    label: 'Torace / pettorale',
+    views: ['front'],
+    sides: ['left', 'right', 'center'],
+    subdistricts: ['Grande pettorale', 'Piccolo pettorale', 'Sterno-costale'],
+  },
+  {
+    key: 'lateral-abdomen',
+    label: 'Addome laterale / obliqui',
+    views: ['front'],
+    sides: ['left', 'right'],
+    subdistricts: ['Obliquo esterno', 'Obliquo interno', 'Trasverso', 'Intercostali'],
+  },
+  {
+    key: 'abdomen',
+    label: 'Addome',
+    views: ['front'],
+    sides: ['center'],
+    subdistricts: ['Retto dell’addome', 'Linea alba'],
+  },
+  {
+    key: 'hip-groin',
+    label: 'Anca / inguine',
+    views: ['front'],
+    sides: ['left', 'right'],
+    subdistricts: ['Ileopsoas', 'Flessori dell’anca', 'Regione inguinale'],
+  },
+  {
+    key: 'hip-abductors',
+    label: 'Anca laterale / abduttori',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Gluteo medio', 'Gluteo minimo', 'Tensore della fascia lata'],
+  },
+  {
+    key: 'upper-arm',
+    label: 'Braccio',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Bicipite brachiale', 'Tricipite brachiale', 'Brachiale'],
+  },
+  {
+    key: 'elbow',
+    label: 'Gomito',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Epicondilo laterale', 'Epicondilo mediale', 'Olecrano', 'Tendine distale del bicipite'],
+  },
+  {
+    key: 'forearm',
+    label: 'Avambraccio',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Flessori', 'Estensori', 'Pronatori', 'Supinatori'],
+  },
+  {
+    key: 'wrist-hand',
+    label: 'Polso / mano',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Polso', 'Palmo', 'Dorso della mano', 'Dita / pollice'],
+  },
+  {
+    key: 'anterior-thigh',
+    label: 'Coscia anteriore / quadricipite',
+    views: ['front'],
+    sides: ['left', 'right'],
+    subdistricts: ['Retto femorale', 'Vasto mediale', 'Vasto laterale', 'Vasto intermedio'],
+  },
+  {
+    key: 'adductors',
+    label: 'Coscia mediale / adduttori',
+    views: ['front'],
+    sides: ['left', 'right'],
+    subdistricts: ['Adduttore lungo', 'Adduttore breve', 'Adduttore grande', 'Gracile', 'Pettineo'],
+  },
+  {
+    key: 'knee',
+    label: 'Ginocchio',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Rotula / femoro-rotulea', 'Tendine rotuleo', 'Legamenti collaterali', 'Cavo popliteo'],
+  },
+  {
+    key: 'anterior-lower-leg',
+    label: 'Gamba anteriore / tibiale',
+    views: ['front'],
+    sides: ['left', 'right'],
+    subdistricts: ['Tibiale anteriore', 'Peronieri', 'Regione tibiale'],
+  },
+  {
+    key: 'ankle',
+    label: 'Caviglia',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Caviglia mediale', 'Caviglia laterale', 'Legamenti laterali', 'Tibio-tarsica'],
+  },
+  {
+    key: 'foot',
+    label: 'Piede',
+    views: ['front', 'back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Avampiede', 'Mesopiede', 'Tallone', 'Fascia plantare', 'Dita'],
+  },
+  {
+    key: 'scapular',
+    label: 'Regione scapolare',
+    views: ['back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Trapezio', 'Romboidi', 'Elevatore della scapola', 'Regione periscapolare'],
+  },
+  {
+    key: 'thoracic-back',
+    label: 'Dorso toracico',
+    views: ['back'],
+    sides: ['center'],
+    subdistricts: ['Paravertebrali toracici', 'Grande dorsale'],
+  },
+  {
+    key: 'lumbar',
+    label: 'Lombare',
+    views: ['back'],
+    sides: ['center'],
+    subdistricts: ['Paravertebrali lombari', 'Quadrato dei lombi'],
+  },
+  {
+    key: 'gluteal',
+    label: 'Gluteo',
+    views: ['back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Grande gluteo', 'Gluteo medio', 'Piriforme'],
+  },
+  {
+    key: 'posterior-thigh',
+    label: 'Coscia posteriore / hamstring',
+    views: ['back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Bicipite femorale', 'Semitendinoso', 'Semimembranoso'],
+  },
+  {
+    key: 'calf',
+    label: 'Polpaccio',
+    views: ['back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Gastrocnemio mediale', 'Gastrocnemio laterale', 'Soleo'],
+  },
+  {
+    key: 'achilles',
+    label: 'Tendine d’Achille',
+    views: ['back'],
+    sides: ['left', 'right'],
+    subdistricts: ['Tendine d’Achille', 'Inserzione calcaneare'],
+  },
+  {
+    key: 'other',
+    label: 'Altro / non in elenco',
+    views: ['front', 'back'],
+    sides: ['left', 'right', 'center', 'bilateral'],
+    subdistricts: [],
+  },
 ];
 
+const DISTRICT_BY_KEY = new Map(
+  MUSCULOSKELETAL_DISTRICTS.map(item => [item.key, item]),
+);
+
 const LEGACY_BODY_AREA_LABELS = {
-  'head-neck': 'Testa / collo',
+  'head-neck': 'Collo / cervicale',
   shoulder: 'Spalla',
   'upper-arm': 'Braccio',
   elbow: 'Gomito',
   forearm: 'Avambraccio',
   'wrist-hand': 'Polso / mano',
-  back: 'Schiena',
+  back: 'Dorso / lombare',
   'hip-groin': 'Anca / inguine',
   thigh: 'Coscia',
   knee: 'Ginocchio',
@@ -68,29 +228,20 @@ const LEGACY_BODY_AREA_LABELS = {
   foot: 'Piede',
 };
 
-const BODY_MAP_AREAS = {
-  'head-neck': 'Testa / collo',
-  shoulder: 'Spalla / scapola',
-  chest: 'Torace / pettorale',
-  'ribs-intercostal': 'Coste / intercostali',
-  abdomen: 'Addome',
-  'upper-arm': 'Braccio',
-  elbow: 'Gomito',
-  forearm: 'Avambraccio',
-  'wrist-hand': 'Polso / mano',
-  back: 'Schiena / lombare',
-  'hip-groin': 'Anca / inguine',
-  glute: 'Gluteo',
-  thigh: 'Coscia',
-  knee: 'Ginocchio',
-  calf: 'Polpaccio',
-  'lower-leg': 'Tibia / gamba',
-  'ankle-achilles': 'Caviglia / Achille',
-  foot: 'Piede',
+const TISSUE_TYPES = {
+  '': '— Non specificato —',
+  muscular: 'Muscolare',
+  tendinous: 'Tendineo',
+  joint: 'Articolare',
+  ligamentous: 'Legamentoso',
+  bone: 'Osseo',
+  nervous: 'Nervoso',
+  other: 'Altro',
 };
 
 const SIDES = {
   none: '—',
+  center: 'Centrale',
   right: 'Destra',
   left: 'Sinistra',
   bilateral: 'Bilaterale',
@@ -138,26 +289,74 @@ const MONITORING_SOURCES = [
   'Altro',
 ];
 
-const BODY_MAP_POINTS = {
-  'head-neck': { view: 'front', x: 66, y: 38 },
-  shoulder: { view: 'front', x: 51, y: 78 },
-  chest: { view: 'front', x: 66, y: 96 },
-  'ribs-intercostal': { view: 'front', x: 66, y: 114 },
-  abdomen: { view: 'front', x: 66, y: 133 },
-  'upper-arm': { view: 'front', x: 43, y: 110 },
-  elbow: { view: 'front', x: 37, y: 140 },
-  forearm: { view: 'front', x: 34, y: 167 },
-  'wrist-hand': { view: 'front', x: 33, y: 192 },
-  'hip-groin': { view: 'front', x: 66, y: 171 },
-  thigh: { view: 'front', x: 59, y: 215 },
-  knee: { view: 'front', x: 59, y: 247 },
-  calf: { view: 'back', x: 173, y: 278 },
-  'lower-leg': { view: 'front', x: 57, y: 281 },
-  'ankle-achilles': { view: 'back', x: 173, y: 303 },
-  foot: { view: 'front', x: 54, y: 321 },
-  back: { view: 'back', x: 174, y: 112 },
-  glute: { view: 'back', x: 174, y: 173 },
-};
+// Coordinates are percentages over the CC0 front/back body chart used below.
+// In the anterior view, athlete left appears on the viewer's right.
+const BODY_HOTSPOTS = [
+  { districtKey: 'cervical', view: 'front', side: 'center', x: 27, y: 18 },
+  { districtKey: 'shoulder', view: 'front', side: 'right', x: 20, y: 25 },
+  { districtKey: 'shoulder', view: 'front', side: 'left', x: 34, y: 25 },
+  { districtKey: 'pectoral', view: 'front', side: 'right', x: 23, y: 31 },
+  { districtKey: 'pectoral', view: 'front', side: 'left', x: 31, y: 31 },
+  { districtKey: 'lateral-abdomen', view: 'front', side: 'right', x: 22, y: 42 },
+  { districtKey: 'lateral-abdomen', view: 'front', side: 'left', x: 32, y: 42 },
+  { districtKey: 'abdomen', view: 'front', side: 'center', x: 27, y: 41 },
+  { districtKey: 'hip-groin', view: 'front', side: 'right', x: 24, y: 52 },
+  { districtKey: 'hip-groin', view: 'front', side: 'left', x: 30, y: 52 },
+  { districtKey: 'hip-abductors', view: 'front', side: 'right', x: 20, y: 53 },
+  { districtKey: 'hip-abductors', view: 'front', side: 'left', x: 34, y: 53 },
+  { districtKey: 'upper-arm', view: 'front', side: 'right', x: 16, y: 35 },
+  { districtKey: 'upper-arm', view: 'front', side: 'left', x: 38, y: 35 },
+  { districtKey: 'elbow', view: 'front', side: 'right', x: 13, y: 45 },
+  { districtKey: 'elbow', view: 'front', side: 'left', x: 41, y: 45 },
+  { districtKey: 'forearm', view: 'front', side: 'right', x: 11, y: 54 },
+  { districtKey: 'forearm', view: 'front', side: 'left', x: 43, y: 54 },
+  { districtKey: 'wrist-hand', view: 'front', side: 'right', x: 9, y: 62 },
+  { districtKey: 'wrist-hand', view: 'front', side: 'left', x: 45, y: 62 },
+  { districtKey: 'anterior-thigh', view: 'front', side: 'right', x: 23, y: 66 },
+  { districtKey: 'anterior-thigh', view: 'front', side: 'left', x: 31, y: 66 },
+  { districtKey: 'adductors', view: 'front', side: 'right', x: 25.5, y: 62 },
+  { districtKey: 'adductors', view: 'front', side: 'left', x: 28.5, y: 62 },
+  { districtKey: 'knee', view: 'front', side: 'right', x: 23, y: 76 },
+  { districtKey: 'knee', view: 'front', side: 'left', x: 31, y: 76 },
+  { districtKey: 'anterior-lower-leg', view: 'front', side: 'right', x: 23, y: 85 },
+  { districtKey: 'anterior-lower-leg', view: 'front', side: 'left', x: 31, y: 85 },
+  { districtKey: 'ankle', view: 'front', side: 'right', x: 23, y: 94 },
+  { districtKey: 'ankle', view: 'front', side: 'left', x: 31, y: 94 },
+  { districtKey: 'foot', view: 'front', side: 'right', x: 22, y: 97 },
+  { districtKey: 'foot', view: 'front', side: 'left', x: 32, y: 97 },
+
+  { districtKey: 'cervical', view: 'back', side: 'center', x: 73, y: 18 },
+  { districtKey: 'shoulder', view: 'back', side: 'left', x: 66, y: 25 },
+  { districtKey: 'shoulder', view: 'back', side: 'right', x: 80, y: 25 },
+  { districtKey: 'scapular', view: 'back', side: 'left', x: 68, y: 32 },
+  { districtKey: 'scapular', view: 'back', side: 'right', x: 78, y: 32 },
+  { districtKey: 'thoracic-back', view: 'back', side: 'center', x: 73, y: 37 },
+  { districtKey: 'lumbar', view: 'back', side: 'center', x: 73, y: 47 },
+  { districtKey: 'hip-abductors', view: 'back', side: 'left', x: 66, y: 52 },
+  { districtKey: 'hip-abductors', view: 'back', side: 'right', x: 80, y: 52 },
+  { districtKey: 'gluteal', view: 'back', side: 'left', x: 69, y: 56 },
+  { districtKey: 'gluteal', view: 'back', side: 'right', x: 77, y: 56 },
+  { districtKey: 'upper-arm', view: 'back', side: 'left', x: 62, y: 35 },
+  { districtKey: 'upper-arm', view: 'back', side: 'right', x: 84, y: 35 },
+  { districtKey: 'elbow', view: 'back', side: 'left', x: 59, y: 45 },
+  { districtKey: 'elbow', view: 'back', side: 'right', x: 87, y: 45 },
+  { districtKey: 'forearm', view: 'back', side: 'left', x: 57, y: 54 },
+  { districtKey: 'forearm', view: 'back', side: 'right', x: 89, y: 54 },
+  { districtKey: 'wrist-hand', view: 'back', side: 'left', x: 55, y: 62 },
+  { districtKey: 'wrist-hand', view: 'back', side: 'right', x: 91, y: 62 },
+  { districtKey: 'posterior-thigh', view: 'back', side: 'left', x: 69, y: 66 },
+  { districtKey: 'posterior-thigh', view: 'back', side: 'right', x: 77, y: 66 },
+  { districtKey: 'knee', view: 'back', side: 'left', x: 69, y: 76 },
+  { districtKey: 'knee', view: 'back', side: 'right', x: 77, y: 76 },
+  { districtKey: 'calf', view: 'back', side: 'left', x: 69, y: 85 },
+  { districtKey: 'calf', view: 'back', side: 'right', x: 77, y: 85 },
+  { districtKey: 'achilles', view: 'back', side: 'left', x: 69, y: 92 },
+  { districtKey: 'achilles', view: 'back', side: 'right', x: 77, y: 92 },
+  { districtKey: 'ankle', view: 'back', side: 'left', x: 69, y: 94 },
+  { districtKey: 'ankle', view: 'back', side: 'right', x: 77, y: 94 },
+  { districtKey: 'foot', view: 'back', side: 'left', x: 69, y: 97 },
+  { districtKey: 'foot', view: 'back', side: 'right', x: 77, y: 97 },
+];
 
 let section = 'overview';
 let cloudState = {
@@ -226,38 +425,93 @@ function bodyAreaLabel(value) {
   return LEGACY_BODY_AREA_LABELS[raw] || raw || '—';
 }
 
-function inferBodyMapArea(value) {
+function districtDefinition(key) {
+  return DISTRICT_BY_KEY.get(String(key || '').trim()) || null;
+}
+
+function inferDistrictKey(value) {
   const raw = String(value || '').trim();
 
   if (!raw) return '';
-  if (BODY_MAP_AREAS[raw]) return raw;
+  if (DISTRICT_BY_KEY.has(raw)) return raw;
 
   const label = bodyAreaLabel(raw).toLocaleLowerCase('it');
 
-  if (/testa|collo|cervic/.test(label)) return 'head-neck';
-  if (/spalla|scapol/.test(label)) return 'shoulder';
-  if (/intercost|costol|coste|costale/.test(label)) return 'ribs-intercostal';
-  if (/torace|pettoral|petto/.test(label)) return 'chest';
+  if (/sovraspin|infraspin|spalla|cuffia|deltoid/.test(label)) return 'shoulder';
+  if (/scapol|romboid/.test(label)) return 'scapular';
+  if (/intercost|obliqu|addome laterale/.test(label)) return 'lateral-abdomen';
   if (/addom/.test(label)) return 'abdomen';
-  if (/schiena|dorsal|lombar/.test(label)) return 'back';
-  if (/avambraccio/.test(label)) return 'forearm';
-  if (/gomito/.test(label)) return 'elbow';
+  if (/pettoral|torace|petto/.test(label)) return 'pectoral';
+  if (/cervic|collo/.test(label)) return 'cervical';
+  if (/lombar|quadrato dei lombi/.test(label)) return 'lumbar';
+  if (/dorso|toracic|paravertebral/.test(label)) return 'thoracic-back';
+  if (/avambraccio|flessor|estensori/.test(label)) return 'forearm';
+  if (/gomito|epicond/.test(label)) return 'elbow';
   if (/polso|mano|dita/.test(label)) return 'wrist-hand';
   if (/braccio|bicipit|tricipit/.test(label)) return 'upper-arm';
-  if (/glute/.test(label)) return 'glute';
-  if (/anca|inguine|addutt/.test(label)) return 'hip-groin';
-  if (/ginocchio/.test(label)) return 'knee';
+  if (/gluteo medio|gluteo minimo|tensore della fascia lata|abdutt/.test(label)) return 'hip-abductors';
+  if (/glute|piriform/.test(label)) return 'gluteal';
+  if (/addutt|gracile|pettineo/.test(label)) return 'adductors';
+  if (/inguine|ileopsoas|anca|flessor.*anca/.test(label)) return 'hip-groin';
+  if (/hamstring|bicipite femorale|semitend|semimembr|coscia post/.test(label)) return 'posterior-thigh';
+  if (/quadricip|retto femorale|vasto|coscia ant/.test(label)) return 'anterior-thigh';
+  if (/ginocchio|rotul|poplite/.test(label)) return 'knee';
   if (/polpaccio|gastrocnem|soleo/.test(label)) return 'calf';
-  if (/caviglia|achille/.test(label)) return 'ankle-achilles';
-  if (/piede/.test(label)) return 'foot';
-  if (/tibia|gamba/.test(label)) return 'lower-leg';
-  if (/coscia|quadricip|hamstring|ischiocrural/.test(label)) return 'thigh';
+  if (/achille/.test(label)) return 'achilles';
+  if (/tibial|peronier|gamba/.test(label)) return 'anterior-lower-leg';
+  if (/caviglia/.test(label)) return 'ankle';
+  if (/piede|tallone|plantar/.test(label)) return 'foot';
 
-  return '';
+  return 'other';
 }
 
-function mapAreaLabel(value) {
-  return BODY_MAP_AREAS[value] || 'Non posizionato';
+function injuryDistrictKey(injury) {
+  return injury?.districtKey || inferDistrictKey(injury?.bodyArea || injury?.mapArea);
+}
+
+function injuryDistrictLabel(injury) {
+  const district = districtDefinition(injuryDistrictKey(injury));
+
+  if (district?.key === 'other') {
+    return String(injury?.customDistrict || injury?.bodyArea || '').trim() || district.label;
+  }
+
+  return district?.label || bodyAreaLabel(injury?.bodyArea);
+}
+
+function injuryView(injury) {
+  const explicit = String(injury?.view || '').trim();
+  if (['front', 'back'].includes(explicit)) return explicit;
+
+  const district = districtDefinition(injuryDistrictKey(injury));
+  return district?.views?.[0] || 'front';
+}
+
+function hotspotStatus(hotspot, injuries) {
+  const matches = injuries.filter(injury => {
+    if (injuryDistrictKey(injury) !== hotspot.districtKey) return false;
+    if (injuryView(injury) !== hotspot.view) return false;
+
+    const side = injury.side || 'none';
+    if (['center', 'none'].includes(hotspot.side)) {
+      return ['center', 'none', 'bilateral'].includes(side);
+    }
+
+    return side === hotspot.side || side === 'bilateral';
+  });
+
+  if (!matches.length) return '';
+  if (matches.some(item => ['active', 'recurrence'].includes(item.status))) return 'active';
+  if (matches.some(item => ['improving', 'rtp'].includes(item.status))) return 'improving';
+  return 'resolved';
+}
+
+function districtOptions(selected = '') {
+  return MUSCULOSKELETAL_DISTRICTS.map(item => `
+    <option value="${escapeAttr(item.key)}" ${item.key === selected ? 'selected' : ''}>
+      ${escapeHtml(item.label)}
+    </option>
+  `).join('');
 }
 
 function applyModuleMetadata() {
@@ -460,7 +714,7 @@ function restrictionSummary(health) {
   for (const injury of activeInjuries(health)) {
     if (injury.restrictionLevel !== 'none' || injury.restrictions) {
       rows.push({
-        source: injury.diagnosis || bodyAreaLabel(injury.bodyArea),
+        source: injury.diagnosis || injury.subdistrict || injuryDistrictLabel(injury),
         text: injury.restrictions
           || RESTRICTIONS[injury.restrictionLevel]
           || injury.restrictionLevel,
@@ -602,8 +856,8 @@ function renderOverview(container, health, host) {
                   >
                     <span class="health-dot status-${escapeAttr(injury.status)}"></span>
                     <span>
-                      <strong>${escapeHtml(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}</strong>
-                      <small>${escapeHtml(bodyAreaLabel(injury.bodyArea))}${injury.side !== 'none' ? ` · ${escapeHtml(SIDES[injury.side] || injury.side)}` : ''}</small>
+                      <strong>${escapeHtml(injury.diagnosis || injury.subdistrict || injuryDistrictLabel(injury))}</strong>
+                      <small>${escapeHtml(injuryDistrictLabel(injury))}${injury.subdistrict ? ` · ${escapeHtml(injury.subdistrict)}` : ''}${!['none', 'center'].includes(injury.side) ? ` · ${escapeHtml(SIDES[injury.side] || injury.side)}` : ''}</small>
                     </span>
                     <b>${escapeHtml(INJURY_STATUSES[injury.status] || injury.status)}</b>
                   </button>
@@ -653,301 +907,69 @@ function renderOverview(container, health, host) {
       if (injury) openInjuryDialog(host, health, injury.id);
     });
   });
+
+  if (canWriteModule('health')) {
+    container.querySelectorAll('[data-health-hotspot]').forEach(button => {
+      button.addEventListener('click', () => {
+        openInjuryDialog(host, health, '', {
+          districtKey: button.dataset.districtKey,
+          view: button.dataset.view,
+          side: button.dataset.side,
+        });
+      });
+    });
+  }
 }
 
 
 function bodyMapSvg(injuries) {
-  const markers = injuries
-    .map((injury, index) => {
-      const mapArea = injury.mapArea || inferBodyMapArea(injury.bodyArea);
-      const point = BODY_MAP_POINTS[mapArea];
+  const hotspots = BODY_HOTSPOTS.map(hotspot => {
+    const district = districtDefinition(hotspot.districtKey);
+    if (!district) return '';
 
-      if (!point) return '';
+    const status = hotspotStatus(hotspot, injuries);
+    const statusClass = status ? ` status-${status}` : '';
+    const disabled = canWriteModule('health') ? '' : 'disabled';
+    const sideLabel = ['center', 'none'].includes(hotspot.side)
+      ? ''
+      : ` · ${SIDES[hotspot.side] || hotspot.side}`;
 
-      const sideOffset = injury.side === 'left'
-        ? -8
-        : injury.side === 'right'
-          ? 8
-          : 0;
-
-      const x = point.x + sideOffset;
-
-      return `
-        <g
-          class="health-body-marker status-${escapeAttr(injury.status)}"
-          aria-label="${escapeAttr(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}"
-        >
-          <circle cx="${x}" cy="${point.y}" r="6"></circle>
-          <circle cx="${x}" cy="${point.y}" r="9.5" class="health-body-marker-halo"></circle>
-          <text x="${x}" y="${point.y + 2}" text-anchor="middle">${index + 1}</text>
-        </g>
-      `;
-    })
-    .join('');
+    return `
+      <button
+        class="health-msk-hotspot${statusClass}"
+        type="button"
+        style="left:${hotspot.x}%;top:${hotspot.y}%"
+        data-health-hotspot
+        data-district-key="${escapeAttr(hotspot.districtKey)}"
+        data-view="${escapeAttr(hotspot.view)}"
+        data-side="${escapeAttr(hotspot.side)}"
+        aria-label="${escapeAttr(`${district.label}${sideLabel}`)}"
+        title="${escapeAttr(`${district.label}${sideLabel}`)}"
+        ${disabled}
+      ><span></span></button>
+    `;
+  }).join('');
 
   return `
-    <div class="health-body-map-shell">
-      <svg
-        class="health-body-map"
-        viewBox="0 0 240 332"
-        role="img"
-        aria-label="Body map anteriore e posteriore degli infortuni attivi"
-      >
-        <defs>
-          <linearGradient id="healthBodyFront" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#e4edf3"></stop>
-            <stop offset="100%" stop-color="#cbd8e1"></stop>
-          </linearGradient>
-          <linearGradient id="healthBodyBack" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#e9eef3"></stop>
-            <stop offset="100%" stop-color="#d2dbe3"></stop>
-          </linearGradient>
-        </defs>
+    <div class="health-msk-map-shell">
+      <div class="health-msk-map-canvas">
+        <img
+          class="health-msk-reference"
+          src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Silhouette_humain_asexue_anterieur_posterieur.svg"
+          alt="Body chart anteriore e posteriore"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+        />
+        ${hotspots}
+      </div>
 
-        <text x="66" y="15" text-anchor="middle" class="health-body-view-label">FRONT</text>
-        <text x="174" y="15" text-anchor="middle" class="health-body-view-label">BACK</text>
-
-        <g class="health-body-silhouette front">
-          <ellipse cx="66" cy="36" rx="14" ry="17"></ellipse>
-          <path d="M61 51 L61 63 C59 67 55 70 51 73 L45 77 L87 77 L81 73 C77 70 73 67 71 63 L71 51 Z"></path>
-
-          <path d="M35 77
-                   C42 70 52 66 61 67
-                   C63 71 64 73 66 73
-                   C68 73 69 71 71 67
-                   C80 66 90 70 97 77
-                   L102 89
-                   C104 97 105 106 104 114
-                   L102 128
-                   C101 139 98 148 92 156
-                   C85 163 77 168 66 172
-                   C55 168 47 163 40 156
-                   C34 148 31 139 30 128
-                   L28 114
-                   C27 106 28 97 30 89 Z"></path>
-
-          <path d="M34 80
-                   C28 88 24 97 23 107
-                   L22 121
-                   C21 131 21 141 22 150
-                   L24 163
-                   C25 171 28 179 31 186
-                   L39 185
-                   C37 178 36 171 36 165
-                   L36 149
-                   L38 128
-                   L41 109
-                   C42 99 41 89 34 80 Z"></path>
-          <path d="M98 80
-                   C104 88 108 97 109 107
-                   L110 121
-                   C111 131 111 141 110 150
-                   L108 163
-                   C107 171 104 179 101 186
-                   L93 185
-                   C95 178 96 171 96 165
-                   L96 149
-                   L94 128
-                   L91 109
-                   C90 99 91 89 98 80 Z"></path>
-
-          <path d="M31 186 L27 194 L28 202 L31 201 L32 206 L35 203 L36 208 L39 205 L38 196 L37 185 Z"></path>
-          <path d="M101 186 L105 194 L104 202 L101 201 L100 206 L97 203 L96 208 L93 205 L94 196 L95 185 Z"></path>
-
-          <!-- Pelvis: broad iliac contour, no central appendage -->
-          <path d="M39 148
-                   C45 157 55 164 66 167
-                   C77 164 87 157 93 148
-                   C92 160 89 173 84 184
-                   C78 190 72 194 66 195
-                   C60 194 54 190 48 184
-                   C43 173 40 160 39 148 Z"></path>
-
-
-          <!-- Left thigh + knee + calf + ankle + foot -->
-          <path d="M40 173
-                   C34 185 32 198 32 211
-                   C32 224 36 235 42 244
-                   C41 248 40 253 41 258
-                   C43 265 43 272 41 282
-                   C39 292 39 302 41 312
-                   C42 316 45 319 49 321
-                   C47 323 44 326 41 328
-                   L57 328
-                   C59 325 60 322 59 318
-                   C60 311 61 302 61 293
-                   C61 282 59 272 59 264
-                   C59 258 61 253 62 249
-                   C65 240 68 229 70 216
-                   C71 202 70 187 67 175
-                   C58 172 49 171 40 173 Z"></path>
-
-          <!-- Right thigh + knee + calf + ankle + foot -->
-          <path d="M92 173
-                   C98 185 100 198 100 211
-                   C100 224 96 235 90 244
-                   C91 248 92 253 91 258
-                   C89 265 89 272 91 282
-                   C93 292 93 302 91 312
-                   C90 316 87 319 83 321
-                   C85 323 88 326 91 328
-                   L75 328
-                   C73 325 72 322 73 318
-                   C72 311 71 302 71 293
-                   C71 282 73 272 73 264
-                   C73 258 71 253 70 249
-                   C67 240 64 229 62 216
-                   C61 202 62 187 65 175
-                   C74 172 83 171 92 173 Z"></path>
-
-          <!-- Upper-body and limb landmarks -->
-          <path d="M48 82 C53 88 58 91 66 91 C74 91 79 88 84 82" class="health-body-detail"></path>
-          <path d="M54 105 C58 109 61 111 66 111 C71 111 74 109 78 105" class="health-body-detail"></path>
-          <path d="M58 132 C61 135 63 136 66 136 C69 136 71 135 74 132" class="health-body-detail"></path>
-          <path d="M66 92 L66 158" class="health-body-detail"></path>
-          <path d="M40 132 C41 136 42 140 43 144" class="health-body-detail"></path>
-          <path d="M92 132 C91 136 90 140 89 144" class="health-body-detail"></path>
-
-          <!-- Knees -->
-          <path d="M45 245 C49 248 55 249 61 246" class="health-body-detail"></path>
-          <path d="M71 246 C77 249 83 248 87 245" class="health-body-detail"></path>
-          <ellipse cx="54" cy="248" rx="5.6" ry="7.2" class="health-body-joint"></ellipse>
-          <ellipse cx="78" cy="248" rx="5.6" ry="7.2" class="health-body-joint"></ellipse>
-
-          <!-- Calf / ankle contours -->
-          <path d="M46 273 C49 279 53 282 58 283" class="health-body-detail"></path>
-          <path d="M86 273 C83 279 79 282 74 283" class="health-body-detail"></path>
-          <path d="M46 309 C50 311 54 311 58 309" class="health-body-detail"></path>
-          <path d="M74 309 C78 311 82 311 86 309" class="health-body-detail"></path>
-        </g>
-
-        <g class="health-body-silhouette back">
-          <ellipse cx="174" cy="36" rx="14" ry="17"></ellipse>
-          <path d="M169 51 L169 63 C167 67 163 70 159 73 L153 77 L195 77 L189 73 C185 70 181 67 179 63 L179 51 Z"></path>
-
-          <path d="M143 77
-                   C150 70 160 66 169 67
-                   C171 71 172 73 174 73
-                   C176 73 177 71 179 67
-                   C188 66 198 70 205 77
-                   L210 89
-                   C212 97 213 106 212 114
-                   L210 128
-                   C209 139 206 148 200 156
-                   C193 163 185 168 174 172
-                   C163 168 155 163 148 156
-                   C142 148 139 139 138 128
-                   L136 114
-                   C135 106 136 97 138 89 Z"></path>
-
-          <path d="M142 80
-                   C136 88 132 97 131 107
-                   L130 121
-                   C129 131 129 141 130 150
-                   L132 163
-                   C133 171 136 179 139 186
-                   L147 185
-                   C145 178 144 171 144 165
-                   L144 149
-                   L146 128
-                   L149 109
-                   C150 99 149 89 142 80 Z"></path>
-          <path d="M206 80
-                   C212 88 216 97 217 107
-                   L218 121
-                   C219 131 219 141 218 150
-                   L216 163
-                   C215 171 212 179 209 186
-                   L201 185
-                   C203 178 204 171 204 165
-                   L204 149
-                   L202 128
-                   L199 109
-                   C198 99 199 89 206 80 Z"></path>
-
-          <path d="M139 186 L135 194 L136 202 L139 201 L140 206 L143 203 L144 208 L147 205 L146 196 L145 185 Z"></path>
-          <path d="M209 186 L213 194 L212 202 L209 201 L208 206 L205 203 L204 208 L201 205 L202 196 L203 185 Z"></path>
-
-          <!-- Pelvis / gluteal contour -->
-          <path d="M147 148
-                   C154 158 163 165 174 168
-                   C185 165 194 158 201 148
-                   C201 158 200 169 197 179
-                   C194 186 190 191 185 194
-                   C181 191 178 184 174 181
-                   C170 184 167 191 163 194
-                   C158 191 154 186 151 179
-                   C148 169 147 158 147 148 Z"></path>
-          <path d="M154 168 C159 176 165 181 171 183" class="health-body-detail"></path>
-          <path d="M194 168 C189 176 183 181 177 183" class="health-body-detail"></path>
-          <path d="M167 188 C169 184 171 182 174 181 C177 182 179 184 181 188" class="health-body-detail"></path>
-          <path d="M174 181 L174 198" class="health-body-detail"></path>
-
-          <!-- Left posterior thigh + knee + calf + ankle + foot -->
-          <path d="M149 175
-                   C143 187 141 200 141 213
-                   C141 226 145 236 150 244
-                   C149 248 148 253 149 258
-                   C151 265 151 272 149 282
-                   C147 292 147 302 149 312
-                   C150 316 153 319 157 321
-                   C155 323 152 326 149 328
-                   L165 328
-                   C167 325 168 322 167 318
-                   C168 311 169 302 169 293
-                   C169 282 167 272 167 264
-                   C167 258 169 253 170 249
-                   C173 239 176 228 178 215
-                   C179 201 178 188 175 177
-                   C166 174 157 173 149 175 Z"></path>
-
-          <!-- Right posterior thigh + knee + calf + ankle + foot -->
-          <path d="M199 175
-                   C205 187 207 200 207 213
-                   C207 226 203 236 198 244
-                   C199 248 200 253 199 258
-                   C197 265 197 272 199 282
-                   C201 292 201 302 199 312
-                   C198 316 195 319 191 321
-                   C193 323 196 326 199 328
-                   L183 328
-                   C181 325 180 322 181 318
-                   C180 311 179 302 179 293
-                   C179 282 181 272 181 264
-                   C181 258 179 253 178 249
-                   C175 239 172 228 170 215
-                   C169 201 170 188 173 177
-                   C182 174 191 173 199 175 Z"></path>
-
-          <!-- Upper-body guide lines -->
-          <path d="M156 82 C161 88 166 91 174 91 C182 91 187 88 192 82" class="health-body-detail"></path>
-          <path d="M162 98 C166 95 169 94 174 94 C179 94 182 95 186 98" class="health-body-detail"></path>
-          <path d="M174 92 L174 158" class="health-body-detail"></path>
-          <path d="M165 119 C168 116 171 114 174 114 C177 114 180 116 183 119" class="health-body-detail"></path>
-          <path d="M161 146 C165 152 169 155 174 155 C179 155 183 152 187 146" class="health-body-detail"></path>
-          <path d="M148 132 C149 136 150 140 151 144" class="health-body-detail"></path>
-          <path d="M200 132 C199 136 198 140 197 144" class="health-body-detail"></path>
-
-          <!-- Popliteal / knee landmarks -->
-          <path d="M153 245 C157 248 163 249 169 246" class="health-body-detail"></path>
-          <path d="M179 246 C185 249 191 248 195 245" class="health-body-detail"></path>
-          <path d="M157 249 C160 252 164 253 168 251" class="health-body-detail"></path>
-          <path d="M180 251 C184 253 188 252 191 249" class="health-body-detail"></path>
-
-          <!-- Calves: proximal fullness, distal taper, ankle -->
-          <path d="M154 271 C157 278 162 282 167 284" class="health-body-detail"></path>
-          <path d="M194 271 C191 278 186 282 181 284" class="health-body-detail"></path>
-          <path d="M154 309 C158 311 162 311 166 309" class="health-body-detail"></path>
-          <path d="M182 309 C186 311 190 311 194 309" class="health-body-detail"></path>
-        </g>
-
-        ${markers}
-      </svg>
-
-      <div class="health-body-map-legend">
-        <span><i class="legend-active"></i> attivo</span>
-        <span><i class="legend-improving"></i> in miglioramento / RTP</span>
-        <span><i class="legend-resolved"></i> risolto</span>
+      <div class="health-msk-map-caption">
+        <span>Clicca un distretto per aprire un nuovo episodio già localizzato.</span>
+        <div class="health-body-map-legend">
+          <span><i class="legend-active"></i> attivo</span>
+          <span><i class="legend-improving"></i> in miglioramento / RTP</span>
+          <span><i class="legend-resolved"></i> risolto</span>
+        </div>
       </div>
     </div>
   `;
@@ -1173,9 +1195,9 @@ function injuryTrackerRow(injury) {
         </span>
 
         <span class="health-tracker-problem">
-          <strong>${escapeHtml(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}</strong>
+          <strong>${escapeHtml(injury.diagnosis || injury.subdistrict || injuryDistrictLabel(injury))}</strong>
           <small>
-            ${escapeHtml(bodyAreaLabel(injury.bodyArea))}
+            ${escapeHtml(injuryDistrictLabel(injury))}${injury.subdistrict ? ` · ${escapeHtml(injury.subdistrict)}` : ''}
             ${injury.side !== 'none' ? ` · ${escapeHtml(SIDES[injury.side] || injury.side)}` : ''}
           </small>
         </span>
@@ -1208,8 +1230,16 @@ function injuryTrackerRow(injury) {
             <strong>${escapeHtml(injury.professional || '—')}</strong>
           </div>
           <div>
-            <span>Body map</span>
-            <strong>${escapeHtml(mapAreaLabel(injury.mapArea || inferBodyMapArea(injury.bodyArea)))}</strong>
+            <span>Struttura specifica</span>
+            <strong>${escapeHtml(injury.subdistrict || '—')}</strong>
+          </div>
+          <div>
+            <span>Tessuto</span>
+            <strong>${escapeHtml(TISSUE_TYPES[injury.tissueType] || injury.tissueType || '—')}</strong>
+          </div>
+          <div>
+            <span>Distretto</span>
+            <strong>${escapeHtml(injuryDistrictLabel(injury))}</strong>
           </div>
           <div>
             <span>Risoluzione</span>
@@ -1272,17 +1302,27 @@ function injuryTrackerRow(injury) {
 }
 
 
-function openInjuryDialog(host, health, injuryId = '') {
+function openInjuryDialog(host, health, injuryId = '', preset = {}) {
   const existing = injuryId
     ? health.injuries.find(item => item.id === injuryId)
     : null;
 
+  const presetDistrict = districtDefinition(preset.districtKey);
+  const existingDistrictKey = existing ? injuryDistrictKey(existing) : '';
+  const selectedDistrictKey = existingDistrictKey || preset.districtKey || 'other';
+  const selectedDistrict = districtDefinition(selectedDistrictKey) || districtDefinition('other');
+
   const injury = existing || {
     id: uid('injury'),
     onsetDate: todayKey(),
-    bodyArea: '',
+    districtKey: selectedDistrictKey,
+    view: preset.view || selectedDistrict.views[0] || 'front',
+    side: preset.side || selectedDistrict.sides[0] || 'center',
+    bodyArea: selectedDistrict.key === 'other' ? '' : selectedDistrict.label,
+    customDistrict: '',
+    subdistrict: '',
+    tissueType: '',
     mapArea: '',
-    side: 'none',
     diagnosis: '',
     onsetType: 'progressive',
     status: 'active',
@@ -1296,6 +1336,13 @@ function openInjuryDialog(host, health, injuryId = '') {
     timeline: [],
     resolvedDate: '',
   };
+
+  const districtKey = injuryDistrictKey(injury) || selectedDistrictKey;
+  const district = districtDefinition(districtKey) || districtDefinition('other');
+  const customDistrict = injury.customDistrict
+    || (district.key === 'other' ? bodyAreaLabel(injury.bodyArea).replace('—', '') : '');
+  const currentView = injury.view || district.views[0] || 'front';
+  const currentSide = injury.side || district.sides[0] || 'center';
 
   const dialog = document.createElement('dialog');
   dialog.className = 'planner-dialog health-dialog health-injury-dialog';
@@ -1313,33 +1360,40 @@ function openInjuryDialog(host, health, injuryId = '') {
           <div class="field"><label>Stato</label><select name="status">${options(INJURY_STATUSES, injury.status)}</select></div>
 
           <div class="field">
-            <label>Distretto / area</label>
-            <input
-              name="bodyArea"
-              list="health-body-area-suggestions"
-              value="${escapeAttr(bodyAreaLabel(injury.bodyArea) === '—' ? '' : bodyAreaLabel(injury.bodyArea))}"
-              placeholder="Scrivi liberamente, es. polpaccio, intercostale…"
-              required
-            />
-            <datalist id="health-body-area-suggestions">
-              ${BODY_AREA_SUGGESTIONS.map(label => `<option value="${escapeAttr(label)}"></option>`).join('')}
-            </datalist>
-            <span class="training-field-hint">Campo libero: i suggerimenti servono solo per velocizzare l’inserimento.</span>
+            <label>Distretto muscolo-scheletrico</label>
+            <select name="districtKey" required>${districtOptions(districtKey)}</select>
+          </div>
+
+          <div class="field" data-custom-district-field ${district.key === 'other' ? '' : 'hidden'}>
+            <label>Distretto libero</label>
+            <input name="customDistrict" value="${escapeAttr(customDistrict)}" placeholder="Descrivi il distretto" />
           </div>
 
           <div class="field">
-            <label>Posizione body map</label>
-            <select name="mapArea">
-              <option value="">Auto dal distretto</option>
-              ${Object.entries(BODY_MAP_AREAS).map(([id, label]) => `
-                <option value="${id}" ${(injury.mapArea || inferBodyMapArea(injury.bodyArea)) === id ? 'selected' : ''}>
-                  ${escapeHtml(label)}
-                </option>
-              `).join('')}
+            <label>Vista</label>
+            <select name="view">
+              <option value="front" ${currentView === 'front' ? 'selected' : ''}>Front</option>
+              <option value="back" ${currentView === 'back' ? 'selected' : ''}>Back</option>
             </select>
           </div>
 
-          <div class="field"><label>Lato</label><select name="side">${options(SIDES, injury.side)}</select></div>
+          <div class="field"><label>Lato</label><select name="side"></select></div>
+
+          <div class="field">
+            <label>Struttura specifica</label>
+            <input
+              name="subdistrict"
+              list="health-subdistrict-suggestions"
+              value="${escapeAttr(injury.subdistrict || '')}"
+              placeholder="es. infraspinato, adduttore lungo, soleo…"
+            />
+            <datalist id="health-subdistrict-suggestions"></datalist>
+          </div>
+
+          <div class="field">
+            <label>Tipo tessuto</label>
+            <select name="tissueType">${options(TISSUE_TYPES, injury.tissueType || '')}</select>
+          </div>
 
           <div class="field full"><label>Diagnosi / descrizione</label><input name="diagnosis" value="${escapeAttr(injury.diagnosis)}" placeholder="Descrizione clinica o problema riferito" /></div>
 
@@ -1409,22 +1463,78 @@ function openInjuryDialog(host, health, injuryId = '') {
 
   host.appendChild(dialog);
 
+  const form = dialog.querySelector('#health-injury-form');
+  const districtSelect = form.elements.districtKey;
+  const viewSelect = form.elements.view;
+  const sideSelect = form.elements.side;
+  const customField = dialog.querySelector('[data-custom-district-field]');
+  const subdistrictList = dialog.querySelector('#health-subdistrict-suggestions');
+
+  const syncDistrictControls = ({ preserveView = true, preserveSide = true } = {}) => {
+    const selected = districtDefinition(districtSelect.value) || districtDefinition('other');
+
+    customField.hidden = selected.key !== 'other';
+
+    [...viewSelect.options].forEach(option => {
+      option.hidden = !selected.views.includes(option.value);
+    });
+
+    if (!preserveView || !selected.views.includes(viewSelect.value)) {
+      viewSelect.value = selected.views[0] || 'front';
+    }
+
+    const previousSide = sideSelect.value || currentSide;
+    sideSelect.innerHTML = selected.sides.map(side => `
+      <option value="${escapeAttr(side)}">${escapeHtml(SIDES[side] || side)}</option>
+    `).join('');
+
+    if (preserveSide && selected.sides.includes(previousSide)) {
+      sideSelect.value = previousSide;
+    } else if (selected.sides.includes(currentSide)) {
+      sideSelect.value = currentSide;
+    } else {
+      sideSelect.value = selected.sides[0] || 'center';
+    }
+
+    subdistrictList.innerHTML = selected.subdistricts.map(label => `
+      <option value="${escapeAttr(label)}"></option>
+    `).join('');
+  };
+
+  syncDistrictControls();
+  sideSelect.value = district.sides.includes(currentSide)
+    ? currentSide
+    : district.sides[0] || 'center';
+
+  districtSelect.addEventListener('change', () => {
+    syncDistrictControls({ preserveView: false, preserveSide: false });
+  });
+
   dialog.querySelectorAll('[data-close]').forEach(button => {
     button.addEventListener('click', () => dialog.close());
   });
 
-  dialog.querySelector('#health-injury-form').addEventListener('submit', event => {
+  form.addEventListener('submit', event => {
     event.preventDefault();
 
-    const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form).entries());
+    const selected = districtDefinition(data.districtKey) || districtDefinition('other');
+    const custom = String(data.customDistrict || '').trim();
+    const districtLabel = selected.key === 'other'
+      ? custom || selected.label
+      : selected.label;
 
     const nextInjury = {
       ...injury,
       onsetDate: data.onsetDate,
-      bodyArea: String(data.bodyArea || '').trim(),
-      mapArea: data.mapArea || inferBodyMapArea(data.bodyArea),
-      side: data.side,
+      districtKey: selected.key,
+      view: data.view || selected.views[0] || 'front',
+      side: data.side || selected.sides[0] || 'center',
+      bodyArea: districtLabel,
+      customDistrict: selected.key === 'other' ? custom : '',
+      subdistrict: String(data.subdistrict || '').trim(),
+      tissueType: data.tissueType || '',
+      mapArea: '',
       diagnosis: String(data.diagnosis || '').trim(),
       onsetType: data.onsetType,
       status: data.status,
@@ -1493,7 +1603,7 @@ function openInjuryUpdateDialog(host, health, injuryId) {
   dialog.innerHTML = `
     <form method="dialog" id="health-injury-update-form">
       <div class="dialog-head">
-        <div><div class="eyebrow">Injury update</div><h3>${escapeHtml(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}</h3></div>
+        <div><div class="eyebrow">Injury update</div><h3>${escapeHtml(injury.diagnosis || injury.subdistrict || injuryDistrictLabel(injury))}</h3></div>
         <button class="dialog-close" type="button" data-close>×</button>
       </div>
 
@@ -1650,7 +1760,7 @@ function physioSessionRow(session, health) {
       <time>${escapeHtml(formatDate(session.date))}</time>
       <span>
         <strong>${escapeHtml(session.summary || 'Seduta physio')}</strong>
-        <small>${injury ? escapeHtml(injury.diagnosis || bodyAreaLabel(injury.bodyArea)) : 'Seduta generale'}</small>
+        <small>${injury ? escapeHtml(injury.diagnosis || injury.subdistrict || injuryDistrictLabel(injury)) : 'Seduta generale'}</small>
       </span>
       <b>Apri →</b>
     </button>
@@ -1765,7 +1875,7 @@ function openPhysioSessionDialog(host, health, sessionId = '') {
             <option value="">Seduta generale</option>
             ${health.injuries.map(injury => `
               <option value="${injury.id}" ${session.injuryId === injury.id ? 'selected' : ''}>
-                ${escapeHtml(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}
+                ${escapeHtml(injury.diagnosis || injury.subdistrict || injuryDistrictLabel(injury))}
               </option>
             `).join('')}
           </select>

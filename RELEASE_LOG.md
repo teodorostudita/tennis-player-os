@@ -1,11 +1,13 @@
 # Tennis Player OS — Release Log
 
-## v0.31.11 — Body map: pelvis, glutes and upper-limb refinement
-- Nel front eliminata la fascia intermedia del bacino, creando una transizione più continua tra addome e cosce.
-- Nel back aggiunti glutei più leggibili sopra le cosce.
-- Braccia allontanate dal tronco e accorciate di circa il 10%, per evidenziare meglio polsi e mani.
+## v0.31.12 — Body & Health: musculoskeletal body chart
+- La body map passa a una base anatomica front/back CC0 con hotspot muscolo-scheletrici cliccabili.
+- Aggiunti addome laterale/obliqui, adduttori e abduttori dell’anca.
+- La spalla dispone di sottodistretti suggeriti: sovraspinato, infraspinato, sottoscapolare, piccolo rotondo, deltoide e altri.
+- Ogni injury può registrare distretto strutturato, vista, lato, struttura specifica e tipo di tessuto.
+- I record precedenti restano leggibili tramite mapping di compatibilità.
 
-## v0.31.10 — Body & Health: silhouette refinement + Release Log fix
-- Spalle ulteriormente allargate e addome ristretto per una silhouette più atletica.
-- Bacino allargato e cosce rese più larghe e più alte, a spese dell’addome.
-- Ripristinato e aggiornato `assets/js/releaseLog.js`, così il Release Log torna a mostrare anche tutte le versioni successive alla 0.28.3.
+## v0.31.11 — Body map: pelvis, glutes and upper-limb refinement
+- Nel front eliminata la fascia intermedia del bacino.
+- Nel back aggiunti glutei più leggibili sopra le cosce.
+- Braccia allontanate dal tronco e accorciate.

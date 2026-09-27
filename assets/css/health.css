@@ -1276,3 +1276,107 @@
     justify-content:flex-start;
   }
 }
+/* v0.31.12 · musculoskeletal body chart */
+.health-msk-map-shell {
+  display:grid;
+  gap:10px;
+}
+
+.health-msk-map-canvas {
+  position:relative;
+  width:100%;
+  max-width:540px;
+  margin:0 auto;
+  aspect-ratio:437 / 442;
+  overflow:hidden;
+  border:1px solid #e2e8ee;
+  border-radius:18px;
+  background:linear-gradient(180deg,#fbfdfe,#f5f8fb);
+}
+
+.health-msk-reference {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  opacity:.78;
+  filter:saturate(.55) contrast(.92);
+  user-select:none;
+  pointer-events:none;
+}
+
+.health-msk-hotspot {
+  position:absolute;
+  width:13px;
+  height:13px;
+  padding:0;
+  border:2px solid rgba(75,105,132,.55);
+  border-radius:50%;
+  background:rgba(255,255,255,.88);
+  box-shadow:0 1px 4px rgba(20,44,67,.18);
+  transform:translate(-50%,-50%);
+  cursor:pointer;
+  transition:transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+  z-index:2;
+}
+
+.health-msk-hotspot > span {
+  position:absolute;
+  inset:2px;
+  border-radius:50%;
+  background:#8ba4b8;
+  opacity:.45;
+}
+
+.health-msk-hotspot:hover,
+.health-msk-hotspot:focus-visible {
+  transform:translate(-50%,-50%) scale(1.45);
+  border-color:#476d8f;
+  box-shadow:0 0 0 5px rgba(71,109,143,.12), 0 2px 6px rgba(20,44,67,.2);
+  outline:none;
+}
+
+.health-msk-hotspot.status-active {
+  border-color:#c96d64;
+  background:#fff7f6;
+}
+.health-msk-hotspot.status-active > span { background:#c96d64; opacity:.95; }
+
+.health-msk-hotspot.status-improving {
+  border-color:#c7a13f;
+  background:#fffaf0;
+}
+.health-msk-hotspot.status-improving > span { background:#c7a13f; opacity:.95; }
+
+.health-msk-hotspot.status-resolved {
+  border-color:#6fa188;
+  background:#f4fbf7;
+}
+.health-msk-hotspot.status-resolved > span { background:#6fa188; opacity:.95; }
+
+.health-msk-hotspot:disabled {
+  cursor:default;
+}
+
+.health-msk-map-caption {
+  display:grid;
+  gap:6px;
+  justify-items:center;
+}
+
+.health-msk-map-caption > span {
+  color:var(--muted);
+  font-size:.64rem;
+  text-align:center;
+}
+
+.health-injury-dialog [data-custom-district-field][hidden] {
+  display:none !important;
+}
+
+@media (max-width:650px) {
+  .health-msk-hotspot {
+    width:12px;
+    height:12px;
+  }
+}

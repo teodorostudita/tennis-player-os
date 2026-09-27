@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.12',
+    date: '2026-09-27',
+    title: 'Body & Health: musculoskeletal body chart',
+    details: [
+      'La body map passa a una base anatomica front/back CC0 con hotspot muscolo-scheletrici cliccabili, evitando reperi ossei non utili al tracker.',
+      'Aggiunti distretti dedicati per addome laterale/obliqui, adduttori e abduttori dell’anca.',
+      'La spalla dispone ora di sottodistretti suggeriti come sovraspinato, infraspinato, sottoscapolare, piccolo rotondo e deltoide.',
+      'Ogni injury può registrare distretto strutturato, vista, lato, struttura specifica e tipo di tessuto, mantenendo compatibilità con i record precedenti.',
+    ],
+  },
+  {
     version: '0.31.11',
     date: '2026-09-27',
     title: 'Body map: pelvis, glutes and upper-limb refinement',
