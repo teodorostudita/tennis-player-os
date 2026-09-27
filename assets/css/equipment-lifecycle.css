@@ -1,0 +1,151 @@
+/* Equipment lifecycle · v0.30.5 */
+
+.equipment-item-card.is-current-equipment {
+  border:2px solid #4b9688;
+  border-top:6px solid #4b9688;
+  background:linear-gradient(180deg, #f2fbf8 0%, #ffffff 42%);
+  box-shadow:0 10px 28px rgba(54,117,104,.14);
+  transform:translateY(-2px);
+}
+
+.equipment-item-card.is-current-equipment h3 {
+  color:#245f55;
+}
+
+.equipment-item-card.is-reserve-equipment {
+  border-top-color:#aeb8c6;
+}
+
+.equipment-item-card.is-emergency-equipment {
+  border-top-color:#c89a48;
+  background:linear-gradient(180deg, #fffaf0 0%, #ffffff 38%);
+}
+
+.equipment-item-card.is-current-equipment .equipment-primary-chip {
+  background:#367f72;
+  color:#fff;
+  letter-spacing:.055em;
+  padding:5px 9px;
+}
+
+.equipment-string-live-summary {
+  display:grid;
+  justify-items:end;
+  gap:4px;
+  min-width:0;
+  text-align:right;
+}
+
+.equipment-string-live-usage {
+  display:grid;
+  justify-items:end;
+  gap:2px;
+  color:var(--muted);
+  font-size:.64rem;
+  font-weight:650;
+  line-height:1.35;
+}
+
+.equipment-lifecycle-block {
+  display:grid;
+  gap:7px;
+  margin:11px 0 13px;
+  padding:10px 11px;
+  border:1px solid #dce6e2;
+  border-radius:11px;
+  background:#f7fbfa;
+}
+
+.equipment-lifecycle-block.compact {
+  margin-top:-4px;
+}
+
+.equipment-lifecycle-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:10px;
+}
+
+.equipment-lifecycle-top span {
+  color:#536b65;
+  font-size:.68rem;
+  font-weight:800;
+}
+
+.equipment-lifecycle-top strong {
+  color:#294d46;
+  font-size:.72rem;
+  white-space:nowrap;
+}
+
+.equipment-lifecycle-track {
+  height:7px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#e1e9e7;
+}
+
+.equipment-lifecycle-track > span {
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:#5a9a8c;
+}
+
+.equipment-lifecycle-block.tone-warning {
+  border-color:#ead5a3;
+  background:#fffaf0;
+}
+
+.equipment-lifecycle-block.tone-warning .equipment-lifecycle-top span,
+.equipment-lifecycle-block.tone-warning .equipment-lifecycle-top strong {
+  color:#795d20;
+}
+
+.equipment-lifecycle-block.tone-warning .equipment-lifecycle-track {
+  background:#f0e3c2;
+}
+
+.equipment-lifecycle-block.tone-warning .equipment-lifecycle-track > span {
+  background:#c89a48;
+}
+
+.equipment-lifecycle-block.tone-overdue {
+  border-color:#e8c4c9;
+  background:#fff6f7;
+}
+
+.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-top span,
+.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-top strong {
+  color:#8b4650;
+}
+
+.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-track {
+  background:#efdadd;
+}
+
+.equipment-lifecycle-block.tone-overdue .equipment-lifecycle-track > span {
+  background:#b45e69;
+}
+
+.equipment-dynamic-spec strong {
+  color:#285f55;
+}
+
+@media (max-width:620px) {
+  .equipment-item-card.is-current-equipment {
+    transform:none;
+  }
+
+  .equipment-lifecycle-top {
+    align-items:flex-start;
+    flex-direction:column;
+    gap:3px;
+  }
+
+  .equipment-string-live-summary,
+  .equipment-string-live-usage {
+    justify-items:end;
+  }
+}
