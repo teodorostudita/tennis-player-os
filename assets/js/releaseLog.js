@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.13',
+    date: '2026-09-27',
+    title: 'Body map: hotspot alignment and larger canvas',
+    details: [
+      'Riposizionati gli hotspot della body map per correggere la traslazione percepita: front spostato verso sinistra, back verso destra.',
+      'Aumentata la separazione laterale tra destra e sinistra per rendere più leggibili i distretti simmetrici.',
+      'Ingrandito il riquadro della body map e ampliata la colonna grafica nella Overview, sfruttando meglio lo spazio disponibile.',
+    ],
+  },
+  {
     version: '0.31.12',
     date: '2026-09-27',
     title: 'Body & Health: musculoskeletal body chart',
