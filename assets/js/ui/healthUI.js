@@ -160,7 +160,6 @@ const BODY_MAP_POINTS = {
 };
 
 let section = 'overview';
-let section = 'overview';
 let cloudState = {
   athleteId: '',
   loaded: false,
