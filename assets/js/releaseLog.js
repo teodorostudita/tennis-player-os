@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '0.31.14',
+    date: '2026-09-27',
+    title: 'Body map: fine X/Y hotspot calibration',
+    details: [
+      'Corretto ancora lo shift orizzontale della body map: il front è stato leggermente traslato a sinistra e il back a destra.',
+      'I punti dell’arto superiore sono stati rialzati sulle Y per allinearli meglio a spalla, braccio, avambraccio e mano.',
+      'Mantenute invariate le dimensioni della body map, già giudicate adeguate.',
+    ],
+  },
+  {
     version: '0.31.13',
     date: '2026-09-27',
     title: 'Body map: hotspot alignment and larger canvas',
