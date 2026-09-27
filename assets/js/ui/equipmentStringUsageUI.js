@@ -177,12 +177,7 @@ function createSpec(label, value) {
   return item;
 }
 
-function createLifecycleBlock({
-  actualMinutes,
-  plannedHours,
-  noun,
-  compact = false,
-}) {
+function createLifecycleBlock({ actualMinutes, plannedHours, noun, compact = false }) {
   const info = lifecycleInfo(actualMinutes, plannedHours, noun);
   if (!info) return null;
 
@@ -237,14 +232,8 @@ function normalizeRacketCard(card, racket, primaryId) {
   const isCurrent = racket.id === primaryId;
 
   card.classList.toggle('is-current-equipment', isCurrent);
-  card.classList.toggle(
-    'is-emergency-equipment',
-    !isCurrent && racket.status === 'test',
-  );
-  card.classList.toggle(
-    'is-reserve-equipment',
-    !isCurrent && racket.status !== 'test' && racket.status !== 'retired',
-  );
+  card.classList.toggle('is-emergency-equipment', !isCurrent && racket.status === 'test');
+  card.classList.toggle('is-reserve-equipment', !isCurrent && racket.status !== 'test' && racket.status !== 'retired');
 
   const status = card.querySelector('.equipment-status');
   const primaryChip = card.querySelector('.equipment-primary-chip');
@@ -275,15 +264,68 @@ function normalizeRacketCard(card, racket, primaryId) {
   }
 }
 
+function setupIconSvg(kind) {
+  if (kind === 'racket') {
+    return `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <ellipse cx="26" cy="23" rx="16" ry="20" fill="none" stroke="currentColor" stroke-width="4"></ellipse>
+        <path d="M18 14h16M14 22h24M14 30h24M18 38h16" stroke="currentColor" stroke-width="2.2" opacity=".55"></path>
+        <path d="M18 8v30M26 4v38M34 4v38" stroke="currentColor" stroke-width="2" opacity=".45"></path>
+        <path d="M38 40l10 10" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
+        <rect x="46" y="48" width="10" height="6" rx="3" transform="rotate(45 46 48)" fill="currentColor" opacity=".9"></rect>
+      </svg>`;
+  }
+
+  if (kind === 'strings') {
+    return `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="10" y="10" width="44" height="44" rx="10" fill="none" stroke="currentColor" stroke-width="4"></rect>
+        <path d="M20 14v36M30 14v36M40 14v36M50 18H14M50 28H14M50 38H14M46 48H18" stroke="currentColor" stroke-width="2.4" opacity=".7"></path>
+      </svg>`;
+  }
+
+  return `
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M11 39c6 0 9-3 14-9 3-4 7-6 11-6 5 0 8 2 12 5l6 5c2 2 2 5 0 7s-5 3-8 3H34c-4 0-7 2-10 5-3 4-6 6-10 6-4 0-7-2-8-5-2-4 1-11 5-11z" fill="currentColor"></path>
+      <path d="M23 28l6-8m5 10l5-7m6 10l4-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"></path>
+    </svg>`;
+}
+
+function ensureSetupCardDecoration(card, kind) {
+  card.classList.add('equipment-setup-card', `setup-kind-${kind}`);
+
+  const existing = card.querySelector('.equipment-setup-hero');
+  if (existing) existing.remove();
+
+  const hero = document.createElement('div');
+  hero.className = `equipment-setup-hero icon-${kind}`;
+  hero.innerHTML = `
+    <div class="equipment-setup-icon">${setupIconSvg(kind)}</div>
+    <div class="equipment-setup-glow"></div>
+  `;
+
+  card.prepend(hero);
+}
+
+function removeModulePrinciplePanel() {
+  const candidates = [...document.querySelectorAll('h1,h2,h3,h4,.panel-title,.panel-header h3,.equipment-card-kicker')];
+
+  candidates.forEach(node => {
+    const text = (node.textContent || '').trim().toLowerCase();
+    if (text !== 'principio del modulo') return;
+
+    const block = node.closest('.panel') || node.closest('section') || node.closest('article');
+    if (block) {
+      block.remove();
+    }
+  });
+}
+
 function enhanceRacketCards(state, now) {
   const equipment = state.equipment || {};
   const planner = state.planner || {};
-  const rackets = Array.isArray(equipment.rackets)
-    ? equipment.rackets
-    : [];
-  const jobs = Array.isArray(equipment.stringJobs)
-    ? equipment.stringJobs
-    : [];
+  const rackets = Array.isArray(equipment.rackets) ? equipment.rackets : [];
+  const jobs = Array.isArray(equipment.stringJobs) ? equipment.stringJobs : [];
 
   document
     .querySelectorAll('.equipment-item-card [data-edit-racket]')
@@ -305,12 +347,7 @@ function enhanceRacketCards(state, now) {
       const currentString = getCurrentStringJob(racket.id, jobs);
       if (!currentString) return;
 
-      const actualMinutes = tennisMinutesSince(
-        currentString.date,
-        planner,
-        now,
-      );
-
+      const actualMinutes = tennisMinutesSince(currentString.date, planner, now);
       const strong = stringRow.querySelector(':scope > strong');
       if (!strong) return;
 
@@ -336,28 +373,16 @@ function enhanceRacketCards(state, now) {
       details.append(mounted, actual, planned);
       wrapper.append(details);
 
-      const lifecycle = createLifecycleBlock({
-        actualMinutes,
-        plannedHours: currentString.hoursUsed,
-        noun: 'Corde',
-        compact: true,
-      });
-
-      if (lifecycle) {
-        stringRow.insertAdjacentElement('afterend', lifecycle);
-      }
+      const lifecycle = createLifecycleBlock({ actualMinutes, plannedHours: currentString.hoursUsed, noun: 'Corde', compact: true });
+      if (lifecycle) stringRow.insertAdjacentElement('afterend', lifecycle);
     });
 }
 
 function enhanceCurrentSetup(state, now) {
   const equipment = state.equipment || {};
   const planner = state.planner || {};
-  const jobs = Array.isArray(equipment.stringJobs)
-    ? equipment.stringJobs
-    : [];
-  const shoes = Array.isArray(equipment.shoes)
-    ? equipment.shoes
-    : [];
+  const jobs = Array.isArray(equipment.stringJobs) ? equipment.stringJobs : [];
+  const shoes = Array.isArray(equipment.shoes) ? equipment.shoes : [];
 
   document.querySelectorAll('.equipment-current-card').forEach(card => {
     cleanupDynamic(card);
@@ -365,94 +390,62 @@ function enhanceCurrentSetup(state, now) {
     const kicker = card.querySelector('.equipment-card-kicker');
     if (!kicker) return;
 
+    const originalTitle = kicker.textContent.trim();
+
+    if (originalTitle === 'Racchetta principale') kicker.textContent = 'Racchetta in uso';
+    if (originalTitle === 'Scarpe principali') kicker.textContent = 'Scarpe in uso';
+
     const title = kicker.textContent.trim();
 
-    if (title === 'Racchetta principale') {
-      kicker.textContent = 'Racchetta in uso';
-    }
-
-    if (title === 'Scarpe principali') {
-      kicker.textContent = 'Scarpe in uso';
+    if (title === 'Racchetta in uso') {
+      ensureSetupCardDecoration(card, 'racket');
+    } else if (title === 'Incordatura corrente') {
+      ensureSetupCardDecoration(card, 'strings');
+    } else if (title === 'Scarpe in uso') {
+      ensureSetupCardDecoration(card, 'shoes');
     }
 
     if (title === 'Incordatura corrente') {
-      const job = getCurrentStringJob(
-        equipment.primaryRacketId,
-        jobs,
-      );
-
+      const job = getCurrentStringJob(equipment.primaryRacketId, jobs);
       if (!job) return;
 
       const specs = card.querySelector('.equipment-spec-grid');
       if (!specs) return;
 
-      // Il vecchio campo "Ore uso" contiene già le ore previste.
       card.querySelectorAll('.equipment-spec > span').forEach(label => {
         if (['Ore uso', 'Ore previste'].includes(label.textContent.trim())) {
           label.textContent = 'Ore previste';
         }
       });
 
-      const actualMinutes = tennisMinutesSince(
-        job.date,
-        planner,
-        now,
-      );
+      const actualMinutes = tennisMinutesSince(job.date, planner, now);
+      specs.append(createSpec('Tennis dal montaggio', formatHoursFromMinutes(actualMinutes)));
 
-      specs.append(
-        createSpec(
-          'Tennis dal montaggio',
-          formatHoursFromMinutes(actualMinutes),
-        ),
-      );
-
-      const lifecycle = createLifecycleBlock({
-        actualMinutes,
-        plannedHours: job.hoursUsed,
-        noun: 'Corde',
-      });
-
+      const lifecycle = createLifecycleBlock({ actualMinutes, plannedHours: job.hoursUsed, noun: 'Corde' });
       if (lifecycle) {
         const action = card.querySelector('.equipment-inline-action');
-        if (action) action.before(lifecycle);
-        else card.append(lifecycle);
+        if (action) action.before(lifecycle); else card.append(lifecycle);
       }
     }
 
-    if (title === 'Scarpe principali' || kicker.textContent.trim() === 'Scarpe in uso') {
+    if (title === 'Scarpe in uso') {
       const shoe = shoes.find(item => item.id === equipment.primaryShoeId);
       if (!shoe) return;
 
       const specs = card.querySelector('.equipment-spec-grid');
       if (!specs) return;
 
-      const actualMinutes = tennisMinutesSince(
-        shoe.startDate,
-        planner,
-        now,
-      );
+      const actualMinutes = tennisMinutesSince(shoe.startDate, planner, now);
 
       specs.append(
-        createSpec(
-          'Tennis dal primo uso',
-          formatHoursFromMinutes(actualMinutes),
-        ),
-        createSpec(
-          'Ore previste',
-          formatHoursValue(shoe.hoursUsed),
-        ),
+        createSpec('Tennis dal primo uso', formatHoursFromMinutes(actualMinutes)),
+        createSpec('Ore previste', formatHoursValue(shoe.hoursUsed)),
       );
 
-      const lifecycle = createLifecycleBlock({
-        actualMinutes,
-        plannedHours: shoe.hoursUsed,
-        noun: 'Scarpe',
-      });
-
+      const lifecycle = createLifecycleBlock({ actualMinutes, plannedHours: shoe.hoursUsed, noun: 'Scarpe' });
       if (lifecycle) {
         const action = card.querySelector('.equipment-inline-action');
-        if (action) action.before(lifecycle);
-        else card.append(lifecycle);
+        if (action) action.before(lifecycle); else card.append(lifecycle);
       }
     }
   });
@@ -461,9 +454,7 @@ function enhanceCurrentSetup(state, now) {
 function enhanceShoeCards(state, now) {
   const equipment = state.equipment || {};
   const planner = state.planner || {};
-  const shoes = Array.isArray(equipment.shoes)
-    ? equipment.shoes
-    : [];
+  const shoes = Array.isArray(equipment.shoes) ? equipment.shoes : [];
 
   document
     .querySelectorAll('.equipment-item-card [data-edit-shoe]')
@@ -480,48 +471,25 @@ function enhanceShoeCards(state, now) {
       card.classList.toggle('is-current-equipment', isCurrent);
 
       const primaryChip = card.querySelector('.equipment-primary-chip');
-      if (primaryChip) {
-        primaryChip.textContent = 'IN USO';
-      }
+      if (primaryChip) primaryChip.textContent = 'IN USO';
 
       const setCurrent = card.querySelector('[data-set-primary-shoe]');
-      if (setCurrent) {
-        setCurrent.textContent = 'Metti in uso';
-      }
+      if (setCurrent) setCurrent.textContent = 'Metti in uso';
 
       const specs = card.querySelector('.equipment-spec-grid');
       if (!specs) return;
 
-      // Il campo persistito hoursUsed viene reinterpretato come durata prevista.
       card.querySelectorAll('.equipment-spec > span').forEach(label => {
-        if (label.textContent.trim() === 'Ore uso') {
-          label.textContent = 'Ore previste';
-        }
+        if (label.textContent.trim() === 'Ore uso') label.textContent = 'Ore previste';
       });
 
-      const actualMinutes = tennisMinutesSince(
-        shoe.startDate,
-        planner,
-        now,
-      );
+      const actualMinutes = tennisMinutesSince(shoe.startDate, planner, now);
+      specs.append(createSpec('Tennis dal primo uso', formatHoursFromMinutes(actualMinutes)));
 
-      specs.append(
-        createSpec(
-          'Tennis dal primo uso',
-          formatHoursFromMinutes(actualMinutes),
-        ),
-      );
-
-      const lifecycle = createLifecycleBlock({
-        actualMinutes,
-        plannedHours: shoe.hoursUsed,
-        noun: 'Scarpe',
-      });
-
+      const lifecycle = createLifecycleBlock({ actualMinutes, plannedHours: shoe.hoursUsed, noun: 'Scarpe' });
       if (lifecycle) {
         const note = card.querySelector('.equipment-note');
-        if (note) note.before(lifecycle);
-        else card.append(lifecycle);
+        if (note) note.before(lifecycle); else card.append(lifecycle);
       }
     });
 }
@@ -533,7 +501,6 @@ function enhanceForms() {
 
   if (racketForm) {
     const select = racketForm.elements.status;
-
     if (select) {
       for (const option of select.options) {
         if (option.value === 'active') option.textContent = 'In uso';
@@ -545,46 +512,34 @@ function enhanceForms() {
 
     const primary = racketForm.elements.makePrimary;
     const label = primary?.closest('label');
-
-    if (label) {
-      label.lastChild.textContent = ' Metti questa racchetta in uso';
-    }
+    if (label && label.lastChild) label.lastChild.textContent = ' Metti questa racchetta in uso';
   }
 
   if (stringForm) {
     const input = stringForm.elements.hoursUsed;
     const label = input?.closest('.field')?.querySelector('label');
-
-    if (label) {
-      label.textContent = 'Ore di utilizzo previste';
-    }
+    if (label) label.textContent = 'Ore di utilizzo previste';
   }
 
   if (shoeForm) {
     const input = shoeForm.elements.hoursUsed;
     const label = input?.closest('.field')?.querySelector('label');
-
-    if (label) {
-      label.textContent = 'Ore di utilizzo previste';
-    }
+    if (label) label.textContent = 'Ore di utilizzo previste';
 
     const primary = shoeForm.elements.makePrimary;
     const currentLabel = primary?.closest('label');
-
-    if (currentLabel) {
-      currentLabel.lastChild.textContent = ' Metti queste scarpe in uso';
-    }
+    if (currentLabel && currentLabel.lastChild) currentLabel.lastChild.textContent = ' Metti queste scarpe in uso';
   }
 }
 
 function applyEquipmentLifecycle() {
   pending = false;
-
   if (currentRoute() !== 'equipment') return;
 
   const state = store.getState();
   const now = new Date();
 
+  removeModulePrinciplePanel();
   enhanceForms();
   enhanceCurrentSetup(state, now);
   enhanceRacketCards(state, now);
@@ -593,38 +548,24 @@ function applyEquipmentLifecycle() {
 
 function scheduleApply() {
   if (pending) return;
-
   pending = true;
-
-  window.queueMicrotask(() => {
-    applyEquipmentLifecycle();
-  });
+  window.queueMicrotask(() => { applyEquipmentLifecycle(); });
 }
 
 document.addEventListener('click', event => {
   if (currentRoute() !== 'equipment') return;
 
   const target = event.target.closest?.(
-    '[data-equipment-section], [data-module-workspace], [data-set-primary-racket], [data-set-primary-shoe], [data-edit-string], [data-edit-racket], [data-edit-shoe], #new-racket, #new-racket-empty, #new-string, #new-string-empty, #new-shoe, #new-shoe-empty',
+    '[data-equipment-section], [data-module-workspace], [data-set-primary-racket], [data-set-primary-shoe], [data-edit-string], [data-edit-racket], [data-edit-shoe], #new-racket, #new-racket-empty, #new-string, #new-string-empty, #new-shoe, #new-shoe-empty'
   );
-
   if (!target) return;
 
-  // Le funzioni native aprono/ridisegnano sincronicamente; applichiamo
-  // le etichette e i dati derivati subito dopo.
   window.queueMicrotask(() => {
-    // Se stiamo aprendo una racchetta non corrente che ha ancora il vecchio
-    // status "active", presentiamola come Riserva senza toccare i dati
-    // finché l'utente non salva.
     if (target.matches('[data-edit-racket]')) {
       const form = document.querySelector('#racket-form');
       const currentId = store.getState().equipment?.primaryRacketId || '';
 
-      if (
-        form
-        && target.dataset.editRacket !== currentId
-        && form.elements.status?.value === 'active'
-      ) {
+      if (form && target.dataset.editRacket !== currentId && form.elements.status?.value === 'active') {
         form.elements.status.value = 'spare';
       }
     }
@@ -635,11 +576,8 @@ document.addEventListener('click', event => {
 
 window.addEventListener('hashchange', scheduleApply);
 window.addEventListener('focus', scheduleApply);
-
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) scheduleApply();
 });
-
 store.subscribe(scheduleApply);
-
 scheduleApply();
