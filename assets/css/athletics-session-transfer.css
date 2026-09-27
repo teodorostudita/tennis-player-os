@@ -1,0 +1,186 @@
+/* Athletics session transfer · v0.31.1 */
+
+.athletics-session-transfer-dialog {
+  width:min(860px,calc(100% - 24px));
+}
+
+.athletics-session-transfer-method,
+.athletics-session-transfer-file {
+  display:grid;
+  gap:12px;
+}
+
+.athletics-session-transfer-method > div:first-child,
+.athletics-session-transfer-file > div:first-child {
+  display:grid;
+  gap:3px;
+}
+
+.athletics-session-transfer-method strong,
+.athletics-session-transfer-file strong {
+  font-size:.8rem;
+}
+
+.athletics-session-transfer-method span,
+.athletics-session-transfer-file span {
+  color:var(--muted);
+  font-size:.69rem;
+  line-height:1.4;
+}
+
+.athletics-session-transfer-controls {
+  display:grid;
+  grid-template-columns:minmax(180px,.9fr) minmax(0,1.6fr);
+  gap:9px;
+}
+
+.athletics-session-transfer-controls input,
+.athletics-session-transfer-controls select {
+  min-width:0;
+  width:100%;
+  border:1px solid #d7dfeb;
+  border-radius:10px;
+  background:#fbfcfe;
+  padding:10px 11px;
+  color:var(--text);
+}
+
+.athletics-session-transfer-preview {
+  min-height:120px;
+  padding:12px;
+  border:1px solid #e1e7ef;
+  border-radius:12px;
+  background:#f8fafc;
+}
+
+.athletics-session-transfer-preview-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:8px;
+}
+
+.athletics-session-transfer-preview-head > div {
+  display:grid;
+  gap:3px;
+}
+
+.athletics-session-transfer-preview-head strong {
+  font-size:.85rem;
+}
+
+.athletics-session-transfer-preview-head span,
+.athletics-session-transfer-source {
+  color:var(--muted);
+  font-size:.66rem;
+}
+
+.athletics-session-transfer-preview-head b {
+  flex:0 0 auto;
+  padding:4px 7px;
+  border-radius:999px;
+  background:#eaf0f7;
+  color:#5e6d83;
+  font-size:.61rem;
+}
+
+.athletics-session-transfer-source {
+  margin-bottom:9px;
+}
+
+.athletics-session-transfer-blocks {
+  display:grid;
+  gap:6px;
+}
+
+.athletics-session-transfer-blocks > div {
+  display:grid;
+  gap:2px;
+  padding:7px 8px;
+  border:1px solid #e6eaf0;
+  border-radius:8px;
+  background:#fff;
+}
+
+.athletics-session-transfer-blocks strong {
+  font-size:.7rem;
+}
+
+.athletics-session-transfer-blocks span {
+  color:#6e7a8c;
+  font-size:.63rem;
+}
+
+.athletics-session-transfer-empty {
+  display:grid;
+  place-items:center;
+  min-height:92px;
+  color:var(--muted);
+  font-size:.72rem;
+  text-align:center;
+}
+
+.athletics-session-transfer-status {
+  min-height:18px;
+  color:var(--muted);
+  font-size:.65rem;
+}
+
+.athletics-session-transfer-status.success {
+  color:#4b7b67;
+}
+
+.athletics-session-transfer-status.error {
+  color:#9a4d57;
+}
+
+.athletics-session-transfer-divider {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:18px 0;
+  color:#8a95a6;
+  font-size:.63rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.athletics-session-transfer-divider::before,
+.athletics-session-transfer-divider::after {
+  content:"";
+  flex:1;
+  height:1px;
+  background:#e3e8ef;
+}
+
+.athletics-session-imported-note {
+  display:grid;
+  gap:3px;
+  margin-bottom:14px;
+  padding:10px 11px;
+  border:1px solid #cfe3d9;
+  border-radius:10px;
+  background:#f3faf6;
+}
+
+.athletics-session-imported-note strong {
+  color:#426d5c;
+  font-size:.72rem;
+}
+
+.athletics-session-imported-note span {
+  color:#65776f;
+  font-size:.67rem;
+  line-height:1.4;
+}
+
+@media (max-width:650px) {
+  .athletics-session-transfer-controls {
+    grid-template-columns:1fr;
+  }
+
+  .athletics-session-transfer-preview-head {
+    flex-direction:column;
+  }
+}
