@@ -20,21 +20,74 @@ import {
   showInAppConfirm,
 } from './inAppMessages.js';
 
-const BODY_AREAS = [
-  ['head-neck', 'Testa / collo'],
-  ['shoulder', 'Spalla'],
-  ['upper-arm', 'Braccio'],
-  ['elbow', 'Gomito'],
-  ['forearm', 'Avambraccio'],
-  ['wrist-hand', 'Polso / mano'],
-  ['back', 'Schiena'],
-  ['hip-groin', 'Anca / inguine'],
-  ['thigh', 'Coscia'],
-  ['knee', 'Ginocchio'],
-  ['lower-leg', 'Gamba'],
-  ['ankle', 'Caviglia'],
-  ['foot', 'Piede'],
+
+const BODY_AREA_SUGGESTIONS = [
+  'Testa / collo',
+  'Cervicale',
+  'Spalla',
+  'Scapola',
+  'Braccio',
+  'Bicipite',
+  'Tricipite',
+  'Gomito',
+  'Avambraccio',
+  'Polso',
+  'Mano / dita',
+  'Torace / pettorale',
+  'Coste / intercostali',
+  'Addome',
+  'Schiena / dorsale',
+  'Lombare',
+  'Anca',
+  'Inguine',
+  'Gluteo',
+  'Adduttori',
+  'Coscia anteriore / quadricipite',
+  'Coscia posteriore / hamstring',
+  'Ginocchio',
+  'Polpaccio',
+  'Tibia / gamba',
+  'Caviglia',
+  'Tendine d’Achille',
+  'Piede / dita',
 ];
+
+const LEGACY_BODY_AREA_LABELS = {
+  'head-neck': 'Testa / collo',
+  shoulder: 'Spalla',
+  'upper-arm': 'Braccio',
+  elbow: 'Gomito',
+  forearm: 'Avambraccio',
+  'wrist-hand': 'Polso / mano',
+  back: 'Schiena',
+  'hip-groin': 'Anca / inguine',
+  thigh: 'Coscia',
+  knee: 'Ginocchio',
+  'lower-leg': 'Gamba',
+  ankle: 'Caviglia',
+  foot: 'Piede',
+};
+
+const BODY_MAP_AREAS = {
+  'head-neck': 'Testa / collo',
+  shoulder: 'Spalla / scapola',
+  chest: 'Torace / pettorale',
+  'ribs-intercostal': 'Coste / intercostali',
+  abdomen: 'Addome',
+  'upper-arm': 'Braccio',
+  elbow: 'Gomito',
+  forearm: 'Avambraccio',
+  'wrist-hand': 'Polso / mano',
+  back: 'Schiena / lombare',
+  'hip-groin': 'Anca / inguine',
+  glute: 'Gluteo',
+  thigh: 'Coscia',
+  knee: 'Ginocchio',
+  calf: 'Polpaccio',
+  'lower-leg': 'Tibia / gamba',
+  'ankle-achilles': 'Caviglia / Achille',
+  foot: 'Piede',
+};
 
 const SIDES = {
   none: '—',
@@ -86,21 +139,27 @@ const MONITORING_SOURCES = [
 ];
 
 const BODY_MAP_POINTS = {
-  'head-neck': { x: 50, y: 13 },
-  shoulder: { x: 36, y: 25 },
-  'upper-arm': { x: 30, y: 34 },
-  elbow: { x: 25, y: 43 },
-  forearm: { x: 22, y: 51 },
-  'wrist-hand': { x: 18, y: 59 },
-  back: { x: 50, y: 39 },
-  'hip-groin': { x: 50, y: 54 },
-  thigh: { x: 44, y: 67 },
-  knee: { x: 43, y: 78 },
-  'lower-leg': { x: 42, y: 87 },
-  ankle: { x: 42, y: 95 },
-  foot: { x: 39, y: 99 },
+  'head-neck': { view: 'front', x: 69, y: 37 },
+  shoulder: { view: 'front', x: 55, y: 78 },
+  chest: { view: 'front', x: 69, y: 96 },
+  'ribs-intercostal': { view: 'front', x: 69, y: 112 },
+  abdomen: { view: 'front', x: 69, y: 132 },
+  'upper-arm': { view: 'front', x: 45, y: 103 },
+  elbow: { view: 'front', x: 39, y: 132 },
+  forearm: { view: 'front', x: 35, y: 158 },
+  'wrist-hand': { view: 'front', x: 31, y: 183 },
+  'hip-groin': { view: 'front', x: 69, y: 165 },
+  thigh: { view: 'front', x: 61, y: 216 },
+  knee: { view: 'front', x: 60, y: 248 },
+  calf: { view: 'back', x: 169, y: 275 },
+  'lower-leg': { view: 'front', x: 59, y: 279 },
+  'ankle-achilles': { view: 'back', x: 169, y: 300 },
+  foot: { view: 'front', x: 56, y: 309 },
+  back: { view: 'back', x: 179, y: 111 },
+  glute: { view: 'back', x: 179, y: 168 },
 };
 
+let section = 'overview';
 let section = 'overview';
 let cloudState = {
   athleteId: '',
@@ -163,8 +222,43 @@ function formatValue(value, unit = '') {
   return unit ? `${formatted} ${unit}` : formatted;
 }
 
-function bodyAreaLabel(id) {
-  return BODY_AREAS.find(([value]) => value === id)?.[1] || id || '—';
+function bodyAreaLabel(value) {
+  const raw = String(value || '').trim();
+  return LEGACY_BODY_AREA_LABELS[raw] || raw || '—';
+}
+
+function inferBodyMapArea(value) {
+  const raw = String(value || '').trim();
+
+  if (!raw) return '';
+  if (BODY_MAP_AREAS[raw]) return raw;
+
+  const label = bodyAreaLabel(raw).toLocaleLowerCase('it');
+
+  if (/testa|collo|cervic/.test(label)) return 'head-neck';
+  if (/spalla|scapol/.test(label)) return 'shoulder';
+  if (/intercost|costol|coste|costale/.test(label)) return 'ribs-intercostal';
+  if (/torace|pettoral|petto/.test(label)) return 'chest';
+  if (/addom/.test(label)) return 'abdomen';
+  if (/schiena|dorsal|lombar/.test(label)) return 'back';
+  if (/avambraccio/.test(label)) return 'forearm';
+  if (/gomito/.test(label)) return 'elbow';
+  if (/polso|mano|dita/.test(label)) return 'wrist-hand';
+  if (/braccio|bicipit|tricipit/.test(label)) return 'upper-arm';
+  if (/glute/.test(label)) return 'glute';
+  if (/anca|inguine|addutt/.test(label)) return 'hip-groin';
+  if (/ginocchio/.test(label)) return 'knee';
+  if (/polpaccio|gastrocnem|soleo/.test(label)) return 'calf';
+  if (/caviglia|achille/.test(label)) return 'ankle-achilles';
+  if (/piede/.test(label)) return 'foot';
+  if (/tibia|gamba/.test(label)) return 'lower-leg';
+  if (/coscia|quadricip|hamstring|ischiocrural/.test(label)) return 'thigh';
+
+  return '';
+}
+
+function mapAreaLabel(value) {
+  return BODY_MAP_AREAS[value] || 'Non posizionato';
 }
 
 function applyModuleMetadata() {
@@ -562,33 +656,88 @@ function renderOverview(container, health, host) {
   });
 }
 
+
 function bodyMapSvg(injuries) {
   const markers = injuries
-    .filter(injury => BODY_MAP_POINTS[injury.bodyArea])
     .map((injury, index) => {
-      const point = BODY_MAP_POINTS[injury.bodyArea];
-      const offset = injury.side === 'left' ? -7 : injury.side === 'right' ? 7 : 0;
-      const x = point.x + offset;
+      const mapArea = injury.mapArea || inferBodyMapArea(injury.bodyArea);
+      const point = BODY_MAP_POINTS[mapArea];
+
+      if (!point) return '';
+
+      const sideOffset = injury.side === 'left'
+        ? -8
+        : injury.side === 'right'
+          ? 8
+          : 0;
+
+      const x = point.x + sideOffset;
 
       return `
-        <g class="health-body-marker">
-          <circle cx="${x}" cy="${point.y}" r="4.3"></circle>
-          <text x="${x}" y="${point.y + 1.3}" text-anchor="middle">${index + 1}</text>
+        <g
+          class="health-body-marker status-${escapeAttr(injury.status)}"
+          aria-label="${escapeAttr(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}"
+        >
+          <circle cx="${x}" cy="${point.y}" r="6"></circle>
+          <circle cx="${x}" cy="${point.y}" r="9.5" class="health-body-marker-halo"></circle>
+          <text x="${x}" y="${point.y + 2}" text-anchor="middle">${index + 1}</text>
         </g>
       `;
     })
     .join('');
 
   return `
-    <svg class="health-body-map" viewBox="0 0 100 110" role="img" aria-label="Mappa corporea degli infortuni attivi">
-      <circle cx="50" cy="10" r="7"></circle>
-      <path d="M47 17 L38 27 L34 48 L42 58 L41 78 L38 102 M53 17 L62 27 L66 48 L58 58 L59 78 L62 102"></path>
-      <path d="M39 27 L24 37 L18 57 M61 27 L76 37 L82 57"></path>
-      <path d="M42 58 L58 58 M38 29 L62 29"></path>
-      ${markers}
-    </svg>
+    <div class="health-body-map-shell">
+      <svg
+        class="health-body-map"
+        viewBox="0 0 240 326"
+        role="img"
+        aria-label="Body map anteriore e posteriore degli infortuni attivi"
+      >
+        <defs>
+          <linearGradient id="healthBodyFront" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#dfe9f0"></stop>
+            <stop offset="100%" stop-color="#c7d4de"></stop>
+          </linearGradient>
+          <linearGradient id="healthBodyBack" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e8edf2"></stop>
+            <stop offset="100%" stop-color="#d2dae2"></stop>
+          </linearGradient>
+        </defs>
+
+        <text x="69" y="15" text-anchor="middle" class="health-body-view-label">FRONT</text>
+        <text x="179" y="15" text-anchor="middle" class="health-body-view-label">BACK</text>
+
+        <g class="health-body-silhouette front">
+          <circle cx="69" cy="35" r="15"></circle>
+          <path d="M63 49 C63 57 61 60 57 64 L48 69 C43 72 40 78 38 88 L31 119 C29 128 30 136 33 144 L38 158 L45 156 L42 139 L47 112 L50 150 C51 158 49 166 46 175 L43 190 L52 195 L57 181 L60 171 L60 198 L55 235 L56 273 L51 309 L62 311 L68 277 L69 242 L70 242 L71 277 L77 311 L88 309 L83 273 L84 235 L79 198 L79 171 L82 181 L87 195 L96 190 L93 175 C90 166 88 158 89 150 L92 112 L97 139 L94 156 L101 158 L106 144 C109 136 110 128 108 119 L101 88 C99 78 96 72 91 69 L82 64 C78 60 76 57 76 49 Z"></path>
+          <path d="M54 68 C58 83 80 83 84 68" class="health-body-detail"></path>
+          <path d="M58 116 C64 121 74 121 80 116" class="health-body-detail"></path>
+          <path d="M58 158 C64 164 74 164 80 158" class="health-body-detail"></path>
+          <path d="M69 83 L69 151" class="health-body-detail"></path>
+        </g>
+
+        <g class="health-body-silhouette back">
+          <circle cx="179" cy="35" r="15"></circle>
+          <path d="M173 49 C173 57 171 60 167 64 L158 69 C153 72 150 78 148 88 L141 119 C139 128 140 136 143 144 L148 158 L155 156 L152 139 L157 112 L160 150 C161 158 159 166 156 175 L153 190 L162 195 L167 181 L170 171 L170 198 L165 235 L166 273 L161 309 L172 311 L178 277 L179 242 L180 242 L181 277 L187 311 L198 309 L193 273 L194 235 L189 198 L189 171 L192 181 L197 195 L206 190 L203 175 C200 166 198 158 199 150 L202 112 L207 139 L204 156 L211 158 L216 144 C219 136 220 128 218 119 L211 88 C209 78 206 72 201 69 L192 64 C188 60 186 57 186 49 Z"></path>
+          <path d="M164 72 C169 84 189 84 194 72" class="health-body-detail"></path>
+          <path d="M164 94 C171 101 187 101 194 94" class="health-body-detail"></path>
+          <path d="M166 154 C172 161 186 161 192 154" class="health-body-detail"></path>
+          <path d="M179 84 L179 150" class="health-body-detail"></path>
+        </g>
+
+        ${markers}
+      </svg>
+
+      <div class="health-body-map-legend">
+        <span><i class="legend-active"></i> attivo</span>
+        <span><i class="legend-improving"></i> in miglioramento / RTP</span>
+        <span><i class="legend-resolved"></i> risolto</span>
+      </div>
+    </div>
   `;
 }
+
 
 function certificateCard(health, certificate) {
   return `
@@ -716,20 +865,26 @@ function openCertificateDialog(host, health) {
   dialog.showModal();
 }
 
+
 function renderInjuries(container, health, host) {
   const injuries = [...health.injuries]
     .sort((a, b) => {
       const statusA = a.status === 'resolved' ? 1 : 0;
       const statusB = b.status === 'resolved' ? 1 : 0;
-      return statusA - statusB || String(b.onsetDate).localeCompare(String(a.onsetDate));
+
+      return statusA - statusB
+        || String(b.onsetDate).localeCompare(String(a.onsetDate));
     });
+
+  const openCount = injuries.filter(item => item.status !== 'resolved').length;
+  const resolvedCount = injuries.length - openCount;
 
   container.innerHTML = `
     <section class="health-subhead">
       <div>
-        <div class="eyebrow">Injury register</div>
+        <div class="eyebrow">Injury tracker</div>
         <h2>Infortuni e problemi fisici</h2>
-        <p>Ogni problema viene gestito come episodio, con stato, limitazioni, return to play e aggiornamenti.</p>
+        <p>Un tracker compatto: una riga per episodio, espandibile quando servono dettagli, timeline e return to play.</p>
       </div>
 
       ${canWriteModule('health')
@@ -737,9 +892,40 @@ function renderInjuries(container, health, host) {
         : ''}
     </section>
 
-    ${injuries.length
-      ? `<section class="health-injury-grid">${injuries.map(injury => injuryCard(injury)).join('')}</section>`
-      : '<section class="panel health-empty-panel"><div class="health-empty">Nessun infortunio registrato.</div></section>'}
+    <section class="panel health-injury-tracker">
+      <div class="panel-header health-card-header">
+        <div>
+          <h3>Tracker</h3>
+          <p>${openCount} ${openCount === 1 ? 'episodio aperto' : 'episodi aperti'} · ${resolvedCount} ${resolvedCount === 1 ? 'risolto' : 'risolti'}</p>
+        </div>
+
+        <div class="health-tracker-legend">
+          <span><i class="status-active"></i> Attivo</span>
+          <span><i class="status-improving"></i> Improving / RTP</span>
+          <span><i class="status-resolved"></i> Risolto</span>
+        </div>
+      </div>
+
+      <div class="panel-body health-injury-tracker-body">
+        ${injuries.length
+          ? `
+            <div class="health-injury-tracker-head" aria-hidden="true">
+              <span>Stato</span>
+              <span>Problema</span>
+              <span>Insorgenza</span>
+              <span>Dolore</span>
+              <span>Limitazione</span>
+              <span>RTP</span>
+              <span></span>
+            </div>
+
+            <div class="health-injury-tracker-list">
+              ${injuries.map(injury => injuryTrackerRow(injury)).join('')}
+            </div>
+          `
+          : '<div class="health-empty">Nessun infortunio registrato.</div>'}
+      </div>
+    </section>
   `;
 
   container.querySelector('#health-new-injury')?.addEventListener('click', () => {
@@ -759,46 +945,103 @@ function renderInjuries(container, health, host) {
   });
 }
 
-function injuryCard(injury) {
+function injuryTrackerRow(injury) {
   const completed = RTP_CHECKLIST.filter(item => injury.rtpChecklist[item.id]).length;
+  const rtpPercent = Math.round(completed / RTP_CHECKLIST.length * 100);
+  const lastUpdate = injury.timeline[0];
 
   return `
-    <article class="panel health-injury-card status-${escapeAttr(injury.status)}">
-      <div class="panel-body">
-        <div class="health-injury-head">
+    <details class="health-injury-tracker-row status-${escapeAttr(injury.status)}">
+      <summary>
+        <span class="health-tracker-status">
+          <i></i>
+          <b>${escapeHtml(INJURY_STATUSES[injury.status] || injury.status)}</b>
+        </span>
+
+        <span class="health-tracker-problem">
+          <strong>${escapeHtml(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}</strong>
+          <small>
+            ${escapeHtml(bodyAreaLabel(injury.bodyArea))}
+            ${injury.side !== 'none' ? ` · ${escapeHtml(SIDES[injury.side] || injury.side)}` : ''}
+          </small>
+        </span>
+
+        <span class="health-tracker-date">${escapeHtml(formatDate(injury.onsetDate))}</span>
+
+        <span class="health-tracker-pain">
+          <b>${Number(injury.pain || 0)}</b><small>/10</small>
+        </span>
+
+        <span class="health-tracker-restriction">
+          ${escapeHtml(RESTRICTIONS[injury.restrictionLevel] || injury.restrictionLevel)}
+        </span>
+
+        <span class="health-tracker-rtp">
+          ${escapeHtml(RTP_STAGES[injury.rtpStage] || injury.rtpStage)}
+        </span>
+
+        <span class="health-tracker-chevron">⌄</span>
+      </summary>
+
+      <div class="health-injury-tracker-expanded">
+        <div class="health-tracker-expanded-grid">
           <div>
-            <span class="health-status-chip">${escapeHtml(INJURY_STATUSES[injury.status] || injury.status)}</span>
-            <h3>${escapeHtml(injury.diagnosis || bodyAreaLabel(injury.bodyArea))}</h3>
-            <p>${escapeHtml(bodyAreaLabel(injury.bodyArea))}${injury.side !== 'none' ? ` · ${escapeHtml(SIDES[injury.side] || injury.side)}` : ''}</p>
+            <span>Modalità</span>
+            <strong>${escapeHtml(ONSET_TYPES[injury.onsetType] || injury.onsetType)}</strong>
           </div>
-
-          <div class="health-pain-badge">
-            <span>Dolore</span>
-            <strong>${Number(injury.pain || 0)}/10</strong>
+          <div>
+            <span>Professionista</span>
+            <strong>${escapeHtml(injury.professional || '—')}</strong>
           </div>
-        </div>
-
-        <div class="health-detail-list">
-          <div><span>Insorgenza</span><strong>${escapeHtml(formatDate(injury.onsetDate))}</strong></div>
-          <div><span>Modalità</span><strong>${escapeHtml(ONSET_TYPES[injury.onsetType] || injury.onsetType)}</strong></div>
-          <div><span>Limitazione</span><strong>${escapeHtml(RESTRICTIONS[injury.restrictionLevel] || injury.restrictionLevel)}</strong></div>
-          <div><span>Return to play</span><strong>${escapeHtml(RTP_STAGES[injury.rtpStage] || injury.rtpStage)}</strong></div>
+          <div>
+            <span>Body map</span>
+            <strong>${escapeHtml(mapAreaLabel(injury.mapArea || inferBodyMapArea(injury.bodyArea)))}</strong>
+          </div>
+          <div>
+            <span>Risoluzione</span>
+            <strong>${escapeHtml(formatDate(injury.resolvedDate))}</strong>
+          </div>
         </div>
 
         ${injury.restrictions
-          ? `<div class="health-callout warning"><strong>Indicazioni</strong><span>${escapeHtml(injury.restrictions)}</span></div>`
+          ? `<div class="health-callout warning"><strong>Indicazioni / restrizioni</strong><span>${escapeHtml(injury.restrictions)}</span></div>`
           : ''}
 
-        <div class="health-rtp-progress">
+        ${injury.notes
+          ? `<div class="health-callout"><strong>Note</strong><span>${escapeHtml(injury.notes)}</span></div>`
+          : ''}
+
+        <div class="health-tracker-rtp-progress">
           <div>
-            <span>Checklist RTP</span>
+            <span>Return to play checklist</span>
             <strong>${completed}/${RTP_CHECKLIST.length}</strong>
           </div>
-          <div class="health-progress-track"><span style="width:${Math.round(completed / RTP_CHECKLIST.length * 100)}%"></span></div>
+          <div class="health-progress-track"><span style="width:${rtpPercent}%"></span></div>
         </div>
 
+        ${lastUpdate
+          ? `
+            <div class="health-tracker-last-update">
+              <span>Ultimo aggiornamento</span>
+              <strong>${escapeHtml(formatDate(lastUpdate.date))} · ${escapeHtml(lastUpdate.title || lastUpdate.notes || 'Aggiornamento')}</strong>
+            </div>
+          `
+          : ''}
+
         ${injury.timeline.length
-          ? `<div class="health-last-update"><span>Ultimo aggiornamento</span><strong>${escapeHtml(formatDate(injury.timeline[0].date))} · ${escapeHtml(injury.timeline[0].title || injury.timeline[0].notes || 'Aggiornamento')}</strong></div>`
+          ? `
+            <div class="health-tracker-mini-timeline">
+              ${injury.timeline.slice(0, 4).map(item => `
+                <div>
+                  <time>${escapeHtml(formatDate(item.date))}</time>
+                  <span>
+                    <strong>${escapeHtml(item.title || 'Aggiornamento')}</strong>
+                    ${item.notes ? `<small>${escapeHtml(item.notes)}</small>` : ''}
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          `
           : ''}
 
         ${canWriteModule('health')
@@ -810,9 +1053,10 @@ function injuryCard(injury) {
           `
           : ''}
       </div>
-    </article>
+    </details>
   `;
 }
+
 
 function openInjuryDialog(host, health, injuryId = '') {
   const existing = injuryId
@@ -823,6 +1067,7 @@ function openInjuryDialog(host, health, injuryId = '') {
     id: uid('injury'),
     onsetDate: todayKey(),
     bodyArea: '',
+    mapArea: '',
     side: 'none',
     diagnosis: '',
     onsetType: 'progressive',
@@ -853,10 +1098,30 @@ function openInjuryDialog(host, health, injuryId = '') {
           <div class="field"><label>Data insorgenza</label><input type="date" name="onsetDate" value="${escapeAttr(injury.onsetDate)}" required /></div>
           <div class="field"><label>Stato</label><select name="status">${options(INJURY_STATUSES, injury.status)}</select></div>
 
-          <div class="field"><label>Distretto</label>
-            <select name="bodyArea" required>
-              <option value="">— Seleziona —</option>
-              ${BODY_AREAS.map(([id, label]) => `<option value="${id}" ${injury.bodyArea === id ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}
+          <div class="field">
+            <label>Distretto / area</label>
+            <input
+              name="bodyArea"
+              list="health-body-area-suggestions"
+              value="${escapeAttr(bodyAreaLabel(injury.bodyArea) === '—' ? '' : bodyAreaLabel(injury.bodyArea))}"
+              placeholder="Scrivi liberamente, es. polpaccio, intercostale…"
+              required
+            />
+            <datalist id="health-body-area-suggestions">
+              ${BODY_AREA_SUGGESTIONS.map(label => `<option value="${escapeAttr(label)}"></option>`).join('')}
+            </datalist>
+            <span class="training-field-hint">Campo libero: i suggerimenti servono solo per velocizzare l’inserimento.</span>
+          </div>
+
+          <div class="field">
+            <label>Posizione body map</label>
+            <select name="mapArea">
+              <option value="">Auto dal distretto</option>
+              ${Object.entries(BODY_MAP_AREAS).map(([id, label]) => `
+                <option value="${id}" ${(injury.mapArea || inferBodyMapArea(injury.bodyArea)) === id ? 'selected' : ''}>
+                  ${escapeHtml(label)}
+                </option>
+              `).join('')}
             </select>
           </div>
 
@@ -943,7 +1208,8 @@ function openInjuryDialog(host, health, injuryId = '') {
     const nextInjury = {
       ...injury,
       onsetDate: data.onsetDate,
-      bodyArea: data.bodyArea,
+      bodyArea: String(data.bodyArea || '').trim(),
+      mapArea: data.mapArea || inferBodyMapArea(data.bodyArea),
       side: data.side,
       diagnosis: String(data.diagnosis || '').trim(),
       onsetType: data.onsetType,

@@ -820,3 +820,459 @@
     gap:3px;
   }
 }
+
+/* Body & Health refinements · v0.31.2 */
+
+/* Injury tracker: compact horizontal rows */
+.health-injury-tracker .panel-body {
+  padding:0;
+}
+
+.health-injury-tracker-body {
+  overflow:hidden;
+}
+
+.health-tracker-legend {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.health-tracker-legend span {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:var(--muted);
+  font-size:.61rem;
+  font-weight:750;
+}
+
+.health-tracker-legend i,
+.health-tracker-status i {
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#cb7a6d;
+}
+
+.health-tracker-legend i.status-improving,
+.health-injury-tracker-row.status-improving .health-tracker-status i,
+.health-injury-tracker-row.status-rtp .health-tracker-status i {
+  background:#d1aa47;
+}
+
+.health-tracker-legend i.status-resolved,
+.health-injury-tracker-row.status-resolved .health-tracker-status i {
+  background:#78aa91;
+}
+
+.health-injury-tracker-row.status-recurrence .health-tracker-status i {
+  background:#b85864;
+}
+
+.health-injury-tracker-head,
+.health-injury-tracker-row > summary {
+  display:grid;
+  grid-template-columns:118px minmax(190px,1.55fr) 105px 70px minmax(130px,.9fr) minmax(130px,.9fr) 28px;
+  gap:10px;
+  align-items:center;
+}
+
+.health-injury-tracker-head {
+  padding:8px 14px;
+  border-bottom:1px solid #e7ebf0;
+  background:#f7f9fb;
+  color:#7b8799;
+  font-size:.58rem;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.045em;
+}
+
+.health-injury-tracker-row {
+  border-bottom:1px solid #e8ecf1;
+  background:#fff;
+}
+
+.health-injury-tracker-row:last-child {
+  border-bottom:0;
+}
+
+.health-injury-tracker-row[open] {
+  background:#fbfcfd;
+}
+
+.health-injury-tracker-row > summary {
+  padding:12px 14px;
+  cursor:pointer;
+  list-style:none;
+  transition:background .15s ease;
+}
+
+.health-injury-tracker-row > summary::-webkit-details-marker {
+  display:none;
+}
+
+.health-injury-tracker-row > summary:hover {
+  background:#f8fafc;
+}
+
+.health-tracker-status {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+
+.health-tracker-status b {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.65rem;
+}
+
+.health-tracker-problem {
+  display:grid;
+  gap:2px;
+  min-width:0;
+}
+
+.health-tracker-problem strong {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.76rem;
+}
+
+.health-tracker-problem small,
+.health-tracker-date,
+.health-tracker-restriction,
+.health-tracker-rtp {
+  color:#6e7b8e;
+  font-size:.65rem;
+}
+
+.health-tracker-pain {
+  display:flex;
+  align-items:baseline;
+  gap:1px;
+}
+
+.health-tracker-pain b {
+  font-size:.85rem;
+}
+
+.health-tracker-pain small {
+  color:var(--muted);
+  font-size:.59rem;
+}
+
+.health-tracker-chevron {
+  color:#8e99a8;
+  font-size:1rem;
+  text-align:right;
+  transition:transform .18s ease;
+}
+
+.health-injury-tracker-row[open] .health-tracker-chevron {
+  transform:rotate(180deg);
+}
+
+.health-injury-tracker-expanded {
+  padding:0 14px 14px 142px;
+}
+
+.health-tracker-expanded-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.health-tracker-expanded-grid > div {
+  display:grid;
+  gap:3px;
+  padding:8px 9px;
+  border:1px solid #e6eaf0;
+  border-radius:9px;
+  background:#fff;
+}
+
+.health-tracker-expanded-grid span,
+.health-tracker-rtp-progress span,
+.health-tracker-last-update span {
+  color:var(--muted);
+  font-size:.6rem;
+  font-weight:800;
+}
+
+.health-tracker-expanded-grid strong {
+  font-size:.68rem;
+}
+
+.health-tracker-rtp-progress {
+  display:grid;
+  gap:6px;
+  margin-top:10px;
+}
+
+.health-tracker-rtp-progress > div:first-child {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.health-tracker-rtp-progress strong {
+  font-size:.66rem;
+}
+
+.health-tracker-last-update {
+  display:grid;
+  gap:3px;
+  margin-top:10px;
+  padding:9px 10px;
+  border-radius:9px;
+  background:#f5f7fa;
+}
+
+.health-tracker-last-update strong {
+  font-size:.67rem;
+}
+
+.health-tracker-mini-timeline {
+  display:grid;
+  gap:0;
+  margin-top:10px;
+  border:1px solid #e5e9ee;
+  border-radius:10px;
+  overflow:hidden;
+  background:#fff;
+}
+
+.health-tracker-mini-timeline > div {
+  display:grid;
+  grid-template-columns:105px minmax(0,1fr);
+  gap:10px;
+  padding:8px 10px;
+  border-bottom:1px solid #edf0f3;
+}
+
+.health-tracker-mini-timeline > div:last-child {
+  border-bottom:0;
+}
+
+.health-tracker-mini-timeline time {
+  color:var(--muted);
+  font-size:.61rem;
+}
+
+.health-tracker-mini-timeline span {
+  display:grid;
+  gap:2px;
+}
+
+.health-tracker-mini-timeline strong {
+  font-size:.66rem;
+}
+
+.health-tracker-mini-timeline small {
+  color:var(--muted);
+  font-size:.62rem;
+  line-height:1.35;
+}
+
+/* Body map: cleaner front/back vector silhouette */
+.health-body-map-shell {
+  display:grid;
+  gap:8px;
+}
+
+.health-body-map {
+  width:100%;
+  max-height:390px;
+  padding:6px;
+  border:1px solid #e6ebf0;
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 28% 34%, rgba(116,170,191,.09), transparent 35%),
+    radial-gradient(circle at 75% 34%, rgba(137,151,183,.08), transparent 35%),
+    linear-gradient(180deg,#fbfdfe,#f6f9fb);
+}
+
+.health-body-silhouette {
+  stroke:#b7c4cf;
+  stroke-width:1.35;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.health-body-silhouette.front {
+  fill:url(#healthBodyFront);
+}
+
+.health-body-silhouette.back {
+  fill:url(#healthBodyBack);
+}
+
+.health-body-detail {
+  fill:none;
+  stroke:#aebbc7;
+  stroke-width:1.1;
+  opacity:.68;
+}
+
+.health-body-view-label {
+  fill:#8491a3;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:1.1px;
+}
+
+.health-body-marker {
+  cursor:default;
+}
+
+.health-body-marker > circle:first-child {
+  fill:#cb7065;
+  stroke:#fff;
+  stroke-width:2;
+}
+
+.health-body-marker.status-improving > circle:first-child,
+.health-body-marker.status-rtp > circle:first-child {
+  fill:#c9a23f;
+}
+
+.health-body-marker.status-resolved > circle:first-child {
+  fill:#6fa489;
+}
+
+.health-body-marker.status-recurrence > circle:first-child {
+  fill:#ad4f5d;
+}
+
+.health-body-marker-halo {
+  fill:none !important;
+  stroke:#cb7065 !important;
+  stroke-width:1.2 !important;
+  opacity:.22;
+}
+
+.health-body-marker.status-improving .health-body-marker-halo,
+.health-body-marker.status-rtp .health-body-marker-halo {
+  stroke:#c9a23f !important;
+}
+
+.health-body-marker.status-resolved .health-body-marker-halo {
+  stroke:#6fa489 !important;
+}
+
+.health-body-marker text {
+  fill:#fff;
+  stroke:none;
+  font-size:5px;
+  font-weight:900;
+  pointer-events:none;
+}
+
+.health-body-map-legend {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:center;
+  color:var(--muted);
+  font-size:.59rem;
+}
+
+.health-body-map-legend span {
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.health-body-map-legend i {
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#cb7065;
+}
+
+.health-body-map-legend .legend-improving {
+  background:#c9a23f;
+}
+
+.health-body-map-legend .legend-resolved {
+  background:#6fa489;
+}
+
+@media (max-width:980px) {
+  .health-injury-tracker-head {
+    display:none;
+  }
+
+  .health-injury-tracker-row > summary {
+    grid-template-columns:105px minmax(0,1fr) 75px 28px;
+  }
+
+  .health-tracker-date,
+  .health-tracker-pain {
+    display:flex;
+  }
+
+  .health-tracker-restriction,
+  .health-tracker-rtp {
+    display:none;
+  }
+
+  .health-injury-tracker-expanded {
+    padding-left:14px;
+  }
+}
+
+@media (max-width:650px) {
+  .health-injury-tracker-row > summary {
+    grid-template-columns:1fr auto;
+    gap:6px 10px;
+  }
+
+  .health-tracker-status {
+    grid-column:1;
+    grid-row:1;
+  }
+
+  .health-tracker-problem {
+    grid-column:1;
+    grid-row:2;
+  }
+
+  .health-tracker-date {
+    grid-column:1;
+    grid-row:3;
+  }
+
+  .health-tracker-pain {
+    grid-column:2;
+    grid-row:2;
+    justify-self:end;
+  }
+
+  .health-tracker-chevron {
+    grid-column:2;
+    grid-row:1;
+  }
+
+  .health-tracker-expanded-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .health-tracker-mini-timeline > div {
+    grid-template-columns:1fr;
+    gap:3px;
+  }
+
+  .health-tracker-legend {
+    justify-content:flex-start;
+  }
+}

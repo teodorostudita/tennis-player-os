@@ -118,6 +118,7 @@ function normalizeInjury(injury, index = 0) {
     id: text(injury?.id) || uid('injury'),
     onsetDate: text(injury?.onsetDate),
     bodyArea: text(injury?.bodyArea),
+    mapArea: text(injury?.mapArea),
     side: text(injury?.side) || 'none',
     diagnosis: text(injury?.diagnosis),
     onsetType: text(injury?.onsetType) || 'progressive',
