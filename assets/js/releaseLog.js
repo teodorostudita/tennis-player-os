@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.11',
+    date: '2026-09-28',
+    title: 'Icone rifinite + Athletics product polish',
+    details: [
+      'Equipment mostra ora una vera icona racchetta nel menu laterale, distinguendosi chiaramente da Drills.',
+      'Economics usa una moneta con simbolo euro sia nella navigazione laterale sia nella card della Dashboard.',
+      'Calendar riceve una nuova icona lineare dedicata, più leggibile e coerente con la nuova facies dell’app.',
+      'Athletics entra nel design system premium con palette indaco/teal, hero header, tab, KPI e pannelli più caratterizzati.',
+      'Rifiniti visivamente Overview, Tests & Assessments, Programma settimanale, Obiettivi e Current Athletic Assessment senza cambiare dati o logica.',
+      'La patch mantiene integralmente la Full cloud coverage della v1.0.10.',
+    ],
+  },
+  {
     version: '1.0.10',
     date: '2026-09-28',
     title: 'Full cloud coverage',

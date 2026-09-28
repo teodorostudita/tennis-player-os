@@ -4,6 +4,7 @@ function currentRoute() {
 
 const SHOWCASE_ROUTES = new Set([
   'calendar',
+  'training',
   'equipment',
   'development',
   'economics',
