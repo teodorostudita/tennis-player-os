@@ -132,18 +132,18 @@ Per sicurezza Tennis Player OS pubblica solo nuove migrazioni SQL; non riscrive 
   echo "Nuove migrazioni Supabase rilevate:"
   echo "$MIGRATION_STATUS"
   echo
-  read -r -p "Applicarle ora al database remoto? [s/N]: " APPLY_DB
+  read -r -p "Applicarle ora al database remoto? [S/n]: " APPLY_DB
 
   case "${APPLY_DB:-}" in
-    s|S|si|SI|sì|SÌ|y|Y|yes|YES)
+    n|N|no|NO|No)
+      fail "Migrazioni non applicate. La pubblicazione è stata fermata prima del commit."
+      ;;
+    *)
       echo
       echo "Applico le migrazioni..."
       supabase db push || fail "supabase db push non è riuscito."
       echo "  Database aggiornato."
       echo
-      ;;
-    *)
-      fail "Migrazioni non applicate. La pubblicazione è stata fermata prima del commit."
       ;;
   esac
 fi

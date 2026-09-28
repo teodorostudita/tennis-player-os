@@ -1,9 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.0.6 — Development Worklist + publish migration default Sì
+- Aggiunta la nuova vista **Worklist** nel modulo Development.
+- I focus tecnici/tattici hanno stato `To do / Active / Paused / Done`, fase di sviluppo, priorità, area e collegamento opzionale al quadro Development.
+- **Lavorato oggi** registra data, nota, fase e stato e costruisce una timeline storica.
+- I focus `Done` restano nello storico e possono essere riaperti.
+- Il cloud Development passa allo schema 2 e sincronizza anche `workItems` + `activityLog`.
+- Nessuna nuova migration SQL per la Worklist.
+- `Pubblica Tennis Player OS.command`: per le migration il prompt è ora `[S/n]`; Invio equivale a Sì.
+
 ## v1.0.5 — Calendar: sync mobile robusta ed eccezioni ricorrenti sicure
-- Aggiunta una **outbox locale** del Calendar: le modifiche non ancora confermate da Supabase restano sul dispositivo.
-- Retry automatico al ritorno online, al rientro in foreground e al `pageshow`.
-- Gli eventi ricorrenti vengono modificati di default **solo per la singola occorrenza**.
-- L’opzione **Questa e le successive** resta disponibile come scelta esplicita.
-- Eliminare una singola occorrenza non altera le settimane successive.
-- Drag/resize diretto disabilitato sulle occorrenze ricorrenti per evitare modifiche involontarie dell’intera serie.
+- Outbox locale del Calendar.
+- Retry al ritorno online / foreground.
+- Modifica singola delle ricorrenze come comportamento predefinito.

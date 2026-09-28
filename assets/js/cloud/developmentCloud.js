@@ -4,7 +4,7 @@ import {
 } from './moduleStateCloud.js';
 
 const MODULE_KEY = 'development';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const SAVE_DELAY_MS = 300;
 
 function clone(value) {
@@ -26,6 +26,29 @@ function normalizeItem(item = {}) {
   };
 }
 
+function normalizeWorkItem(item = {}) {
+  const source = item && typeof item === 'object' && !Array.isArray(item)
+    ? item
+    : {};
+
+  return {
+    ...source,
+    type: source.type === 'tactics' ? 'tactics' : 'technique',
+    status: ['todo', 'active', 'paused', 'done'].includes(source.status)
+      ? source.status
+      : 'todo',
+    priority: ['high', 'medium', 'low'].includes(source.priority)
+      ? source.priority
+      : 'medium',
+    stage: ['learn', 'stabilize', 'adapt', 'match'].includes(source.stage)
+      ? source.stage
+      : 'learn',
+    activityLog: Array.isArray(source.activityLog)
+      ? source.activityLog.filter(entry => entry && typeof entry === 'object')
+      : [],
+  };
+}
+
 export function normalizeDevelopmentPayload(payload = {}) {
   const source = payload && typeof payload === 'object' && !Array.isArray(payload)
     ? payload
@@ -39,6 +62,9 @@ export function normalizeDevelopmentPayload(payload = {}) {
     measurementRecords: Array.isArray(source.measurementRecords)
       ? source.measurementRecords
       : [],
+    workItems: Array.isArray(source.workItems)
+      ? source.workItems.map(normalizeWorkItem)
+      : [],
   };
 }
 
@@ -48,6 +74,7 @@ export function hasMeaningfulDevelopmentData(payload = {}) {
   return Boolean(
     development.items.length
     || development.measurementRecords.length
+    || development.workItems.length
   );
 }
 

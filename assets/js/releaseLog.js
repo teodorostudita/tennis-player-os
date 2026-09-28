@@ -1,5 +1,19 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.6',
+    date: '2026-09-28',
+    title: 'Development Worklist + pubblicazione migration default Sì',
+    details: [
+      'Aggiunta a Development una terza vista Worklist, separata dal quadro Tecnica/Tattica esistente.',
+      'Ogni focus operativo conserva area, fase, priorità, stato e collegamento opzionale a un tema Development già esistente.',
+      'Il pulsante “Lavorato oggi” registra data, nota, fase e stato, costruendo una timeline storica append-only del lavoro svolto.',
+      'I focus completati passano in Done ma non vengono eliminati: restano nella vista Completati e possono essere riaperti.',
+      'Aggiunti indicatori sintetici To do, Active, Done e numero di lavori registrati negli ultimi 30 giorni.',
+      'Development cloud schema v2 normalizza e sincronizza anche workItems e relativi activityLog senza nuova migration SQL.',
+      'Pubblica Tennis Player OS.command ora propone [S/n] per le nuove migration: premere Invio applica la migration e continua la pubblicazione.',
+    ],
+  },
+  {
     version: '1.0.5',
     date: '2026-09-28',
     title: 'Calendar: sync mobile robusta ed eccezioni ricorrenti sicure',

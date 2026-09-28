@@ -1,0 +1,328 @@
+/* Development Worklist · v1.0.6 */
+
+.dev-worklist-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin:3px 0 14px;
+}
+.dev-worklist-head h2{
+  margin:4px 0 5px;
+  font-size:clamp(1.55rem,3vw,2.15rem);
+  letter-spacing:-.035em;
+}
+.dev-worklist-head p{
+  margin:0;
+  color:var(--muted);
+  max-width:860px;
+  line-height:1.5;
+}
+.dev-worklist-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+.dev-worklist-panel{
+  overflow:hidden;
+}
+.dev-worklist-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:12px 13px;
+  border-bottom:1px solid var(--line);
+  background:#fafbfd;
+}
+.dev-worklist-filter-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+.dev-worklist-filter{
+  border:1px solid #dfe5ec;
+  border-radius:999px;
+  background:#fff;
+  color:#65758a;
+  padding:6px 10px;
+  font-size:.64rem;
+  font-weight:850;
+}
+.dev-worklist-filter.active{
+  border-color:#bfd8b0;
+  background:#eff8ea;
+  color:#426245;
+}
+.dev-worklist-table-scroll{
+  overflow:auto;
+}
+.dev-worklist-table{
+  width:100%;
+  min-width:980px;
+  border-collapse:collapse;
+}
+.dev-worklist-table th,
+.dev-worklist-table td{
+  padding:10px 11px;
+  border-bottom:1px solid #edf0f3;
+  text-align:left;
+  vertical-align:middle;
+  font-size:.69rem;
+}
+.dev-worklist-table th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  background:#f8fafc;
+  color:var(--muted);
+  font-size:.59rem;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.dev-worklist-table tr:last-child td{
+  border-bottom:0;
+}
+.dev-worklist-table tr.is-done{
+  background:#fbfcfd;
+}
+.dev-worklist-table tr.is-done .dev-worklist-title{
+  color:#718095;
+  text-decoration:line-through;
+}
+.dev-worklist-table td:first-child{
+  display:grid;
+  gap:3px;
+}
+.dev-worklist-table td:nth-child(2) small{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:.59rem;
+}
+.dev-worklist-type{
+  color:var(--muted);
+  font-size:.57rem;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.dev-worklist-title{
+  border:0;
+  background:transparent;
+  color:var(--navy-900);
+  padding:0;
+  text-align:left;
+  font:inherit;
+  font-weight:850;
+  cursor:pointer;
+}
+.dev-worklist-title:hover{
+  text-decoration:underline;
+}
+.dev-worklist-status{
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:.61rem;
+  font-weight:850;
+}
+.dev-worklist-status.status-todo{
+  background:#eef2f7;
+  color:#65758a;
+}
+.dev-worklist-status.status-active{
+  background:#e7f4ed;
+  color:#3b7254;
+}
+.dev-worklist-status.status-paused{
+  background:#fff8e8;
+  color:#8f742f;
+}
+.dev-worklist-status.status-done{
+  background:#e8eefb;
+  color:#506c9d;
+}
+.dev-worklist-row-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  white-space:nowrap;
+}
+.dev-worklist-icon{
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border:1px solid #dfe5ec;
+  border-radius:9px;
+  background:#fff;
+  color:#55704f;
+  font-size:.78rem;
+  font-weight:900;
+}
+.dev-worklist-icon:hover{
+  background:#f5f9f2;
+}
+.dev-worklist-empty{
+  display:grid;
+  place-items:center;
+  gap:4px;
+  min-height:180px;
+  padding:24px;
+  color:var(--muted);
+  text-align:center;
+}
+.dev-worklist-empty strong{
+  color:var(--text);
+  font-size:.79rem;
+}
+.dev-worklist-empty span{
+  font-size:.67rem;
+}
+.dev-worklist-dialog{
+  width:min(820px,calc(100% - 24px));
+}
+.dev-worklist-detail-dialog{
+  width:min(920px,calc(100% - 24px));
+}
+.dev-worklist-detail{
+  display:grid;
+  gap:14px;
+}
+.dev-worklist-detail-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
+.dev-worklist-detail-summary>div{
+  display:grid;
+  gap:4px;
+  padding:10px 11px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#fbfcfd;
+}
+.dev-worklist-detail-summary span,
+.dev-worklist-linked span{
+  color:var(--muted);
+  font-size:.59rem;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.dev-worklist-detail-summary strong{
+  font-size:.76rem;
+}
+.dev-worklist-description,
+.dev-worklist-linked{
+  display:grid;
+  gap:5px;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#fff;
+}
+.dev-worklist-description>strong,
+.dev-worklist-linked>strong{
+  font-size:.74rem;
+}
+.dev-worklist-description p{
+  margin:0;
+  color:#5e6d82;
+  font-size:.72rem;
+  line-height:1.5;
+}
+.dev-worklist-history-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+  padding-top:2px;
+}
+.dev-worklist-history-head h4{
+  margin:0;
+  font-size:.84rem;
+}
+.dev-worklist-history-head p{
+  margin:3px 0 0;
+  color:var(--muted);
+  font-size:.64rem;
+}
+.dev-worklist-timeline{
+  display:grid;
+}
+.dev-worklist-log-entry{
+  position:relative;
+  display:grid;
+  grid-template-columns:110px minmax(0,1fr);
+  gap:14px;
+  padding:11px 0;
+  border-bottom:1px solid var(--line);
+}
+.dev-worklist-log-entry:last-child{
+  border-bottom:0;
+}
+.dev-worklist-log-entry time{
+  color:var(--muted);
+  font-size:.64rem;
+}
+.dev-worklist-log-entry>div{
+  min-width:0;
+}
+.dev-worklist-log-meta{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.dev-worklist-log-meta strong{
+  font-size:.72rem;
+}
+.dev-worklist-log-meta span{
+  border-radius:999px;
+  background:#eef2f7;
+  color:#65758a;
+  padding:3px 6px;
+  font-size:.56rem;
+  font-weight:800;
+}
+.dev-worklist-log-entry.kind-work .dev-worklist-log-meta strong{
+  color:#416849;
+}
+.dev-worklist-log-entry p{
+  margin:4px 0 0;
+  color:#5f6e83;
+  font-size:.7rem;
+  line-height:1.45;
+}
+
+@media(max-width:900px){
+  .dev-worklist-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .dev-worklist-detail-summary{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:700px){
+  .dev-worklist-head,
+  .dev-worklist-toolbar,
+  .dev-worklist-history-head{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .dev-worklist-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .dev-worklist-detail-summary{
+    grid-template-columns:1fr;
+  }
+  .dev-worklist-log-entry{
+    grid-template-columns:1fr;
+    gap:5px;
+  }
+}
