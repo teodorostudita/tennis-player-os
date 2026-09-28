@@ -1,5 +1,31 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.5',
+    date: '2026-09-28',
+    title: 'Calendar: sync mobile robusta ed eccezioni ricorrenti sicure',
+    details: [
+      'Aggiunta una outbox locale del Calendar: ogni modifica non ancora confermata dal cloud viene conservata sul dispositivo e recuperata al successivo avvio.',
+      'Il Calendar ritenta automaticamente la sincronizzazione al ritorno online, al rientro in foreground e al pageshow.',
+      'Una modifica ordinaria di un evento ricorrente ora agisce di default solo su quella occorrenza; le settimane successive tornano alla serie originale.',
+      'Per modificare intenzionalmente la serie resta disponibile l’opzione esplicita “Questa e le successive”.',
+      'L’eliminazione di una singola occorrenza ricorrente lascia intatta la serie futura e viene salvata nel modello cloud come eccezione.',
+      'Disabilitato il drag/resize diretto sulle occorrenze ricorrenti, perché il vecchio gesto modificava implicitamente tutta la serie da quella data in poi.',
+    ],
+  },
+  {
+    version: '1.0.4',
+    date: '2026-09-27',
+    title: 'Athletics: Current Athletic Assessment',
+    details: [
+      'Aggiunta alla pagina Obiettivi una fotografia valutativa del preparatore, separata sia dai Test sia dagli Obiettivi.',
+      'Le capacità sono organizzate in due macro-aree: Qualità fisiche e Coordinazione & movimento.',
+      'Ogni capacità usa una scala 1–10 e conserva lo storico per data, valutatore e nota invece di sovrascrivere il valore precedente.',
+      'Potenza ed Esplosività mantengono Lower/Upper; Spostamenti base mantiene N/S ed E/W.',
+      'Cliccando una capacità si apre il dettaglio con grafico temporale e storico completo delle valutazioni.',
+      'Le valutazioni sono salvate in una tabella cloud dedicata con permessi Athletics; i Test restano misurazioni oggettive separate.',
+    ],
+  },
+  {
     version: '1.0.3',
     date: '2026-09-27',
     title: 'Companion 1.0.2: parser Match e reiniezione TPOS',
