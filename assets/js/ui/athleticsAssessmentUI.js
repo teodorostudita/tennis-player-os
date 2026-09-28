@@ -118,7 +118,11 @@ function componentTrend(metricKey, componentKey) {
 }
 
 function metricCurrent(metric) {
-  return metric.components.map(component => ({
+  const components = Array.isArray(metric?.components) && metric.components.length
+    ? metric.components
+    : [{ key: 'main', label: '' }];
+
+  return components.map(component => ({
     component,
     latest: latestEntry(metric.key, component.key),
     trend: componentTrend(metric.key, component.key),

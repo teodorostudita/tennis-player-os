@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.7',
+    date: '2026-09-28',
+    title: 'Hotfix Athletics Assessment',
+    details: [
+      'Corretto un errore di rendering nella nuova Valutazione attuale di Athletics.',
+      'Le capacità senza sottocomponenti espliciti ora usano automaticamente il componente principale invece di generare un errore su metric.components.',
+      'La sezione Assessment torna quindi visibile nella pagina Obiettivi di Athletics.',
+      'La patch resta cumulativa con Development Worklist e con il nuovo comportamento [S/n] del comando di pubblicazione introdotti in v1.0.6.',
+    ],
+  },
+  {
     version: '1.0.6',
     date: '2026-09-28',
     title: 'Development Worklist + pubblicazione migration default Sì',
