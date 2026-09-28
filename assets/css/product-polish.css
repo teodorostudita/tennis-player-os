@@ -1,0 +1,727 @@
+/* Tennis Player OS · Product polish / commercial UI foundation · v1.0.8
+   Visual-only layer. No module data or behavior is changed here. */
+
+:root {
+  --premium-shadow-soft: 0 10px 28px rgba(11,31,58,.075);
+  --premium-shadow: 0 18px 46px rgba(11,31,58,.105);
+  --premium-shadow-hover: 0 22px 54px rgba(11,31,58,.14);
+  --premium-radius: 20px;
+  --premium-radius-lg: 26px;
+}
+
+body.tpos-showcase-route {
+  --module-accent: #4d719b;
+  --module-accent-2: #6e91b8;
+  --module-accent-deep: #2f527b;
+  --module-soft: #eef4fa;
+  --module-soft-2: #f7fafe;
+  --module-line: rgba(77,113,155,.22);
+  background:
+    radial-gradient(circle at 88% 2%, rgba(95,128,164,.08), transparent 26rem),
+    #f5f7fb;
+}
+
+body[data-tpos-route="calendar"] {
+  --module-accent: #b97824;
+  --module-accent-2: #d69b4d;
+  --module-accent-deep: #7f5117;
+  --module-soft: #fff5e6;
+  --module-soft-2: #fffaf2;
+  --module-line: rgba(185,120,36,.24);
+}
+
+body[data-tpos-route="equipment"] {
+  --module-accent: #147c6d;
+  --module-accent-2: #39a18f;
+  --module-accent-deep: #0b5a50;
+  --module-soft: #e9f8f4;
+  --module-soft-2: #f5fbf9;
+  --module-line: rgba(20,124,109,.22);
+}
+
+body[data-tpos-route="development"] {
+  --module-accent: #a8641b;
+  --module-accent-2: #c98a3c;
+  --module-accent-deep: #75430e;
+  --module-soft: #fff2df;
+  --module-soft-2: #fff9f1;
+  --module-line: rgba(168,100,27,.22);
+}
+
+body[data-tpos-route="economics"] {
+  --module-accent: #3568aa;
+  --module-accent-2: #5f88c1;
+  --module-accent-deep: #234a7d;
+  --module-soft: #eaf2ff;
+  --module-soft-2: #f5f8fe;
+  --module-line: rgba(53,104,170,.22);
+}
+
+body[data-tpos-route="health"] {
+  --module-accent: #b7654d;
+  --module-accent-2: #d08a72;
+  --module-accent-deep: #7c4333;
+  --module-soft: #fff0ea;
+  --module-soft-2: #fff8f5;
+  --module-line: rgba(183,101,77,.22);
+}
+
+/* ---------- Common premium shell ---------- */
+
+body.tpos-showcase-route .topbar {
+  background: rgba(255,255,255,.88);
+  border-bottom-color: rgba(222,228,237,.9);
+  box-shadow: 0 8px 28px rgba(11,31,58,.045);
+}
+
+body.tpos-showcase-route .topbar::after {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:2px;
+  background:linear-gradient(
+    90deg,
+    transparent 0,
+    var(--module-accent) 16%,
+    var(--module-accent-2) 52%,
+    transparent 92%
+  );
+  opacity:.62;
+  pointer-events:none;
+}
+
+body.tpos-showcase-route .main-content {
+  padding-top: clamp(24px,3vw,36px);
+}
+
+body.tpos-showcase-route .module-workspace-switch {
+  padding:4px;
+  border:1px solid var(--module-line);
+  background:rgba(255,255,255,.76);
+  box-shadow:0 6px 20px rgba(11,31,58,.05);
+  backdrop-filter:blur(12px);
+}
+
+body.tpos-showcase-route .module-workspace-button.active {
+  color:#fff;
+  background:linear-gradient(135deg,var(--module-accent-deep),var(--module-accent));
+  box-shadow:0 5px 14px rgba(11,31,58,.10);
+}
+
+body.tpos-showcase-route .panel {
+  border-color:rgba(219,226,236,.92);
+  box-shadow:var(--premium-shadow-soft);
+}
+
+body.tpos-showcase-route .panel-header {
+  background:linear-gradient(180deg,rgba(250,252,254,.96),rgba(255,255,255,.88));
+}
+
+body.tpos-showcase-route .button {
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease,
+    border-color .15s ease,
+    background .15s ease;
+}
+
+body.tpos-showcase-route .button-primary {
+  background:linear-gradient(135deg,var(--module-accent-deep),var(--module-accent));
+  box-shadow:0 7px 17px rgba(11,31,58,.10);
+}
+
+body.tpos-showcase-route .button-ghost:hover,
+body.tpos-showcase-route .icon-button:hover {
+  border-color:var(--module-line);
+  background:var(--module-soft-2);
+  color:var(--module-accent-deep);
+}
+
+body.tpos-showcase-route .field input:focus,
+body.tpos-showcase-route .field select:focus,
+body.tpos-showcase-route .field textarea:focus {
+  border-color:var(--module-accent-2);
+  box-shadow:0 0 0 3px rgba(80,110,140,.12);
+}
+
+@media (hover:hover) and (pointer:fine) {
+  body.tpos-showcase-route .button-primary:hover {
+    transform:translateY(-1px);
+    box-shadow:0 10px 22px rgba(11,31,58,.14);
+  }
+}
+
+/* ---------- Module hero treatment ---------- */
+
+body[data-tpos-route="calendar"] .calendar-module-head,
+body[data-tpos-route="equipment"] .equipment-module-head,
+body[data-tpos-route="development"] .dev-head,
+body[data-tpos-route="economics"] .economics-module-head,
+body[data-tpos-route="health"] .health-module-head {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:148px;
+  margin-bottom:18px;
+  padding:24px 26px;
+  border:1px solid var(--module-line);
+  border-radius:var(--premium-radius-lg);
+  background:
+    linear-gradient(128deg,var(--module-soft),rgba(255,255,255,.96) 58%,var(--module-soft-2));
+  box-shadow:var(--premium-shadow);
+}
+
+body[data-tpos-route="calendar"] .calendar-module-head::before,
+body[data-tpos-route="equipment"] .equipment-module-head::before,
+body[data-tpos-route="development"] .dev-head::before,
+body[data-tpos-route="economics"] .economics-module-head::before,
+body[data-tpos-route="health"] .health-module-head::before {
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:6px;
+  background:linear-gradient(180deg,var(--module-accent-2),var(--module-accent-deep));
+}
+
+body[data-tpos-route="calendar"] .calendar-module-head::after,
+body[data-tpos-route="equipment"] .equipment-module-head::after,
+body[data-tpos-route="development"] .dev-head::after,
+body[data-tpos-route="economics"] .economics-module-head::after,
+body[data-tpos-route="health"] .health-module-head::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:240px;
+  height:240px;
+  right:-72px;
+  top:-100px;
+  border-radius:50%;
+  background:rgba(100,120,140,.06);
+  box-shadow:0 0 0 34px rgba(255,255,255,.18);
+}
+
+body[data-tpos-route="calendar"] .calendar-module-head > *,
+body[data-tpos-route="equipment"] .equipment-module-head > *,
+body[data-tpos-route="development"] .dev-head > *,
+body[data-tpos-route="economics"] .economics-module-head > *,
+body[data-tpos-route="health"] .health-module-head > * {
+  position:relative;
+  z-index:1;
+}
+
+body.tpos-showcase-route
+:is(.calendar-module-head,.equipment-module-head,.dev-head,.economics-module-head,.health-module-head)
+.eyebrow {
+  display:inline-flex;
+  width:max-content;
+  padding:5px 8px;
+  border:1px solid var(--module-line);
+  border-radius:999px;
+  background:rgba(255,255,255,.62);
+  color:var(--module-accent-deep);
+  letter-spacing:.105em;
+}
+
+body.tpos-showcase-route
+:is(.calendar-module-head,.equipment-module-head,.dev-head,.economics-module-head,.health-module-head)
+h2 {
+  margin-top:9px;
+  font-size:clamp(1.8rem,3vw,2.55rem);
+  letter-spacing:-.045em;
+}
+
+body.tpos-showcase-route
+:is(.calendar-module-head,.equipment-module-head,.dev-head,.economics-module-head,.health-module-head)
+p {
+  max-width:760px;
+  color:#5b687a;
+}
+
+/* ---------- Module navigation ---------- */
+
+body[data-tpos-route="calendar"] .calendar-section-switch,
+body[data-tpos-route="equipment"] .equipment-section-switch,
+body[data-tpos-route="economics"] .economics-section-switch,
+body[data-tpos-route="health"] .health-section-switch,
+body[data-tpos-route="development"] .dev-area-switch {
+  padding:5px;
+  border:1px solid var(--module-line);
+  background:rgba(255,255,255,.74);
+  box-shadow:0 6px 18px rgba(11,31,58,.055);
+  backdrop-filter:blur(10px);
+}
+
+body[data-tpos-route="calendar"] .calendar-section-button.active,
+body[data-tpos-route="equipment"] .equipment-section-button.active,
+body[data-tpos-route="economics"] .economics-section-button.active,
+body[data-tpos-route="health"] .health-section-button.active,
+body[data-tpos-route="development"] .dev-area-button.active {
+  color:#fff;
+  background:linear-gradient(135deg,var(--module-accent-deep),var(--module-accent));
+  box-shadow:0 6px 16px rgba(11,31,58,.12);
+}
+
+/* ---------- KPI language ---------- */
+
+body[data-tpos-route="calendar"] .planner-kpi,
+body[data-tpos-route="equipment"] .equipment-kpi,
+body[data-tpos-route="development"] .dev-kpi,
+body[data-tpos-route="economics"] .economics-kpi,
+body[data-tpos-route="health"] .health-kpi {
+  position:relative;
+  overflow:hidden;
+  border-color:var(--module-line);
+  background:
+    linear-gradient(145deg,#fff 0%,var(--module-soft-2) 100%);
+  box-shadow:0 8px 22px rgba(11,31,58,.06);
+}
+
+body[data-tpos-route="calendar"] .planner-kpi::before,
+body[data-tpos-route="equipment"] .equipment-kpi::before,
+body[data-tpos-route="development"] .dev-kpi::before,
+body[data-tpos-route="economics"] .economics-kpi::before,
+body[data-tpos-route="health"] .health-kpi::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:4px;
+  background:linear-gradient(180deg,var(--module-accent-2),var(--module-accent));
+  opacity:.84;
+}
+
+body[data-tpos-route="calendar"] .planner-kpi strong,
+body[data-tpos-route="equipment"] .equipment-kpi strong,
+body[data-tpos-route="development"] .dev-kpi strong,
+body[data-tpos-route="economics"] .economics-kpi strong,
+body[data-tpos-route="health"] .health-kpi strong {
+  color:var(--module-accent-deep);
+  font-size:1.22rem;
+}
+
+body.tpos-showcase-route
+:is(.planner-kpi,.equipment-kpi,.dev-kpi,.economics-kpi,.health-kpi)
+> span {
+  color:#6a7587;
+}
+
+/* ---------- Calendar ---------- */
+
+body[data-tpos-route="calendar"] .planner-head.calendar-subhead {
+  margin-top:4px;
+  padding:4px 2px 2px;
+}
+
+body[data-tpos-route="calendar"] .planner-toolbar {
+  border-color:var(--module-line);
+  background:rgba(255,255,255,.86);
+  box-shadow:0 9px 24px rgba(80,55,18,.06);
+  backdrop-filter:blur(10px);
+}
+
+body[data-tpos-route="calendar"] .planner-view-switch {
+  border:1px solid rgba(185,120,36,.12);
+  background:#fff7eb;
+}
+
+body[data-tpos-route="calendar"] .planner-view-button.active {
+  color:var(--module-accent-deep);
+  box-shadow:0 3px 10px rgba(127,81,23,.11);
+}
+
+body[data-tpos-route="calendar"] .planner-timeline-scroll {
+  border-radius:18px;
+  box-shadow:0 12px 34px rgba(72,49,20,.075);
+}
+
+body[data-tpos-route="calendar"] .planner-timeline-shell {
+  border-color:rgba(211,193,169,.9);
+  background:#fff;
+}
+
+body[data-tpos-route="calendar"] .planner-timeline-day-head.today,
+body[data-tpos-route="calendar"] .planner-timeline-day.today {
+  background:linear-gradient(180deg,#fff9ef,#fffdf9);
+}
+
+body[data-tpos-route="calendar"] .planner-timeline-day-head.today {
+  color:var(--module-accent-deep);
+  box-shadow:inset 0 -3px 0 rgba(185,120,36,.52);
+}
+
+body[data-tpos-route="calendar"] .planner-timeline-event,
+body[data-tpos-route="calendar"] .planner-event,
+body[data-tpos-route="calendar"] .planner-tournament-event {
+  border-radius:11px;
+  box-shadow:0 5px 14px rgba(11,31,58,.08);
+  transition:transform .14s ease,box-shadow .14s ease;
+}
+
+@media (hover:hover) and (pointer:fine) {
+  body[data-tpos-route="calendar"] .planner-timeline-event:hover,
+  body[data-tpos-route="calendar"] .planner-event:hover,
+  body[data-tpos-route="calendar"] .planner-tournament-event:hover {
+    transform:translateY(-1px);
+    box-shadow:0 9px 18px rgba(11,31,58,.12);
+  }
+}
+
+body[data-tpos-route="calendar"] .planner-summary-panel {
+  border-color:rgba(185,120,36,.15);
+}
+
+body[data-tpos-route="calendar"] .planner-summary-total {
+  color:var(--module-accent-deep);
+  background:var(--module-soft);
+}
+
+/* ---------- Equipment ---------- */
+
+body[data-tpos-route="equipment"] .equipment-current-grid {
+  gap:16px;
+}
+
+body[data-tpos-route="equipment"] .equipment-current-card {
+  position:relative;
+  overflow:hidden;
+  min-height:260px;
+  padding-top:4px;
+  border-color:rgba(20,124,109,.17);
+  background:
+    linear-gradient(155deg,#fff 20%,#f3fbf8 100%);
+}
+
+body[data-tpos-route="equipment"] .equipment-current-card::after {
+  content:"";
+  position:absolute;
+  width:118px;
+  height:118px;
+  right:-44px;
+  bottom:-52px;
+  border-radius:50%;
+  background:rgba(57,161,143,.07);
+  pointer-events:none;
+}
+
+body[data-tpos-route="equipment"] .equipment-card-kicker {
+  display:inline-flex;
+  width:max-content;
+  padding:5px 8px;
+  border-radius:999px;
+  background:var(--module-soft);
+  color:var(--module-accent-deep);
+  font-size:.62rem;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+body[data-tpos-route="equipment"] .equipment-current-title {
+  color:#173c39;
+  font-size:1.18rem;
+  letter-spacing:-.02em;
+}
+
+body[data-tpos-route="equipment"] .equipment-spec {
+  border-color:rgba(20,124,109,.11);
+  background:rgba(255,255,255,.72);
+}
+
+body[data-tpos-route="equipment"] .equipment-primary-chip {
+  color:#fff;
+  background:linear-gradient(135deg,var(--module-accent-deep),var(--module-accent));
+}
+
+body[data-tpos-route="equipment"] .equipment-item-card,
+body[data-tpos-route="equipment"] .equipment-table-panel,
+body[data-tpos-route="equipment"] .equipment-philosophy {
+  border-color:rgba(20,124,109,.14);
+}
+
+body[data-tpos-route="equipment"] .equipment-inline-warning {
+  border-color:#ead7a7;
+  background:linear-gradient(135deg,#fffaf0,#fff5df);
+}
+
+/* ---------- Development ---------- */
+
+body[data-tpos-route="development"] .dev-stage-legend {
+  border-color:rgba(168,100,27,.16);
+  background:
+    linear-gradient(135deg,#fff9ef,#fff 48%,#fff3e1);
+  box-shadow:0 10px 26px rgba(117,67,14,.06);
+}
+
+body[data-tpos-route="development"] .dev-stage-legend-item {
+  border-color:rgba(168,100,27,.14);
+}
+
+body[data-tpos-route="development"] .dev-stage-legend-item > span {
+  background:#f6dbb9;
+  color:#71430f;
+}
+
+body[data-tpos-route="development"] .dev-item-card {
+  border-color:rgba(168,100,27,.14);
+  box-shadow:0 9px 25px rgba(93,58,19,.065);
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+}
+
+@media (hover:hover) and (pointer:fine) {
+  body[data-tpos-route="development"] .dev-item-card:hover {
+    transform:translateY(-2px);
+    border-color:rgba(168,100,27,.28);
+    box-shadow:0 16px 34px rgba(93,58,19,.11);
+  }
+}
+
+body[data-tpos-route="development"] .dev-order-badge {
+  color:var(--module-accent-deep);
+  background:var(--module-soft);
+}
+
+body[data-tpos-route="development"] .dev-stage-step.done::before,
+body[data-tpos-route="development"] .dev-stage-step.current::before {
+  background:#d19a58;
+}
+
+body[data-tpos-route="development"] .dev-stage-step.done .dev-stage-dot {
+  background:#dcb279;
+  box-shadow:0 0 0 1px #c48c49;
+}
+
+body[data-tpos-route="development"] .dev-stage-step.current .dev-stage-dot {
+  background:var(--module-accent);
+  box-shadow:0 0 0 2px #f4d7b3;
+}
+
+body[data-tpos-route="development"] .dev-stage-step.current small {
+  color:var(--module-accent-deep);
+}
+
+body[data-tpos-route="development"] .dev-detail-hero {
+  border-color:rgba(168,100,27,.16);
+  background:
+    linear-gradient(135deg,#fff 20%,#fff5e7 100%);
+}
+
+body[data-tpos-route="development"] .dev-detail-stage {
+  background:linear-gradient(135deg,#f9e7cf,#fff3df);
+}
+
+body[data-tpos-route="development"] .dev-detail-stage span,
+body[data-tpos-route="development"] .dev-detail-stage strong {
+  color:var(--module-accent-deep);
+}
+
+body[data-tpos-route="development"] .dev-worklist-panel {
+  border-color:rgba(168,100,27,.15);
+  box-shadow:0 13px 34px rgba(93,58,19,.075);
+}
+
+body[data-tpos-route="development"] .dev-worklist-toolbar {
+  background:linear-gradient(180deg,#fffaf3,#fff);
+}
+
+body[data-tpos-route="development"] .dev-worklist-filter.active {
+  border-color:rgba(168,100,27,.28);
+  background:var(--module-soft);
+  color:var(--module-accent-deep);
+}
+
+/* ---------- Economics ---------- */
+
+body[data-tpos-route="economics"] .economics-head-actions {
+  padding:8px;
+  border:1px solid rgba(53,104,170,.13);
+  border-radius:14px;
+  background:rgba(255,255,255,.58);
+}
+
+body[data-tpos-route="economics"] .economics-year-picker {
+  border-color:rgba(53,104,170,.18);
+  background:#fff;
+}
+
+body[data-tpos-route="economics"] .economics-season-overview {
+  position:relative;
+  overflow:hidden;
+  padding:20px;
+  border:1px solid rgba(53,104,170,.18);
+  border-radius:20px;
+  background:
+    linear-gradient(135deg,#f8fbff,#edf4ff 58%,#f8fbff);
+  box-shadow:0 12px 34px rgba(35,74,125,.07);
+}
+
+body[data-tpos-route="economics"] .economics-season-overview::after {
+  content:"";
+  position:absolute;
+  width:220px;
+  height:220px;
+  right:-100px;
+  top:-105px;
+  border-radius:50%;
+  border:34px solid rgba(53,104,170,.045);
+}
+
+body[data-tpos-route="economics"] .economics-season-progress {
+  position:relative;
+  z-index:1;
+  border-color:rgba(53,104,170,.14);
+  background:#fff;
+}
+
+body[data-tpos-route="economics"] .economics-budget-track > span,
+body[data-tpos-route="economics"] .economics-bar-track > span,
+body[data-tpos-route="economics"] .economics-season-progress .economics-budget-track > span {
+  background:linear-gradient(90deg,var(--module-accent-deep),var(--module-accent-2));
+}
+
+body[data-tpos-route="economics"] .economics-commitment-row,
+body[data-tpos-route="economics"] .economics-deadline-row,
+body[data-tpos-route="economics"] .economics-simple-row {
+  border-radius:10px;
+  transition:background .14s ease;
+}
+
+body[data-tpos-route="economics"] .economics-commitment-row:hover,
+body[data-tpos-route="economics"] .economics-deadline-row:hover,
+body[data-tpos-route="economics"] .economics-simple-row:hover {
+  background:#f7faff;
+}
+
+body[data-tpos-route="economics"] .economics-season-budget-panel,
+body[data-tpos-route="economics"] .economics-ledger-panel,
+body[data-tpos-route="economics"] .economics-area-card {
+  border-color:rgba(53,104,170,.15);
+}
+
+/* ---------- Body & Health ---------- */
+
+body[data-tpos-route="health"] .health-kpi.status-ok {
+  background:linear-gradient(145deg,#fff,#f0faf5);
+}
+
+body[data-tpos-route="health"] .health-kpi.status-warning {
+  background:linear-gradient(145deg,#fff,#fff8e9);
+}
+
+body[data-tpos-route="health"] .health-kpi.status-danger {
+  background:linear-gradient(145deg,#fff,#fff0f1);
+}
+
+body[data-tpos-route="health"] .health-overview-main {
+  border-color:rgba(183,101,77,.16);
+  box-shadow:0 14px 36px rgba(124,67,51,.075);
+}
+
+body[data-tpos-route="health"] .health-msk-map-shell {
+  padding:12px;
+  border:1px solid rgba(183,101,77,.10);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 50% 30%,#fff 0,#fffaf7 62%,#fff3ed 100%);
+}
+
+body[data-tpos-route="health"] .health-msk-map-canvas {
+  filter:drop-shadow(0 10px 24px rgba(65,72,82,.09));
+}
+
+body[data-tpos-route="health"] .health-certificate-card,
+body[data-tpos-route="health"] .health-physio-card,
+body[data-tpos-route="health"] .health-restrictions-panel,
+body[data-tpos-route="health"] .health-injury-tracker {
+  border-color:rgba(183,101,77,.14);
+}
+
+body[data-tpos-route="health"] .health-avatar {
+  background:linear-gradient(135deg,#fff0e9,#ffd8ca);
+  color:var(--module-accent-deep);
+}
+
+body[data-tpos-route="health"] .health-body-map-row {
+  border-color:rgba(183,101,77,.10);
+  background:#fffaf8;
+  transition:transform .14s ease,box-shadow .14s ease;
+}
+
+@media (hover:hover) and (pointer:fine) {
+  body[data-tpos-route="health"] .health-body-map-row:hover {
+    transform:translateX(2px);
+    box-shadow:0 7px 16px rgba(124,67,51,.08);
+  }
+}
+
+/* ---------- Dialogs on showcase routes ---------- */
+
+body.tpos-showcase-route .planner-dialog,
+body.tpos-showcase-route .dev-dialog,
+body.tpos-showcase-route .dev-worklist-dialog {
+  border:1px solid var(--module-line);
+  box-shadow:0 28px 90px rgba(7,22,44,.30);
+}
+
+body.tpos-showcase-route .dialog-head {
+  background:linear-gradient(135deg,var(--module-soft),#fff 72%);
+}
+
+body.tpos-showcase-route .dialog-head .eyebrow {
+  color:var(--module-accent-deep);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width:900px) {
+  body[data-tpos-route="calendar"] .calendar-module-head,
+  body[data-tpos-route="equipment"] .equipment-module-head,
+  body[data-tpos-route="economics"] .economics-module-head,
+  body[data-tpos-route="health"] .health-module-head {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  body[data-tpos-route="economics"] .economics-head-actions {
+    width:100%;
+  }
+}
+
+@media (max-width:700px) {
+  body[data-tpos-route="calendar"] .calendar-module-head,
+  body[data-tpos-route="equipment"] .equipment-module-head,
+  body[data-tpos-route="development"] .dev-head,
+  body[data-tpos-route="economics"] .economics-module-head,
+  body[data-tpos-route="health"] .health-module-head {
+    min-height:0;
+    padding:19px 18px;
+    border-radius:20px;
+  }
+
+  body.tpos-showcase-route
+  :is(.calendar-module-head,.equipment-module-head,.dev-head,.economics-module-head,.health-module-head)
+  h2 {
+    font-size:1.75rem;
+  }
+
+  body[data-tpos-route="calendar"] .calendar-section-switch,
+  body[data-tpos-route="equipment"] .equipment-section-switch,
+  body[data-tpos-route="economics"] .economics-section-switch,
+  body[data-tpos-route="health"] .health-section-switch,
+  body[data-tpos-route="development"] .dev-area-switch {
+    width:100%;
+    max-width:100%;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body.tpos-showcase-route *,
+  body.tpos-showcase-route *::before,
+  body.tpos-showcase-route *::after {
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+    animation-duration:.01ms!important;
+  }
+}

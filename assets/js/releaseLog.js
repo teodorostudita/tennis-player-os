@@ -1,5 +1,20 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.8',
+    date: '2026-09-28',
+    title: 'Product polish: prima facies commerciale',
+    details: [
+      'Introdotto un layer estetico comune per i cinque moduli più maturi: Calendar, Equipment, Development, Economics e Body & Health.',
+      'Ogni modulo ha ora un accent color sobrio, header hero, tab più riconoscibili, KPI più leggibili e superfici/card con una gerarchia visiva più premium.',
+      'Calendar riceve una resa più editoriale della settimana, focus sul giorno corrente e maggiore profondità visiva degli eventi.',
+      'Equipment valorizza Setup attuale, racchetta, incordatura e scarpe come elementi di una configurazione tecnica, con card più da prodotto.',
+      'Development enfatizza progressione, roadmap e Worklist senza cambiare la logica del modulo.',
+      'Economics assume una facies più business con snapshot stagionale, progress bar e pannelli finanziari più strutturati.',
+      'Body & Health riceve un trattamento clinico-sportivo più pulito per KPI, body map, certificato, physio e injury tracking.',
+      'Il restyling è isolato in product-polish.css e productPolishUI.js: nessuna modifica ai dati o alla logica dei moduli.',
+    ],
+  },
+  {
     version: '1.0.7',
     date: '2026-09-28',
     title: 'Hotfix Athletics Assessment',
