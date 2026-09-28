@@ -1,5 +1,19 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.10',
+    date: '2026-09-28',
+    title: 'Full cloud coverage',
+    details: [
+      'Drills passa al cloud: libreria esercizi, sessioni, protocolli di misurazione e storico dei risultati vengono caricati e sincronizzati su Supabase.',
+      'Nutrition & Recovery passa al cloud: template, indicazioni, sonno e check-in di recupero vengono sincronizzati tra dispositivi.',
+      'Aggiunto un backfill automatico per eventuali dati locali preesistenti di Body & Health, Mental, Visual e Match quando il relativo record cloud non esiste ancora.',
+      'Le Librerie dei moduli passano da IndexedDB locale a Supabase: link e metadati sono salvati in tabella cloud, mentre i file binari vivono in un bucket Storage privato.',
+      'Le vecchie risorse IndexedDB vengono migrate automaticamente in background per l’atleta corrente; la copia locale viene rimossa solo dopo un trasferimento cloud riuscito.',
+      'Permessi e RLS delle Librerie seguono gli stessi privilegi read/write del modulo a cui appartiene la risorsa.',
+      'Restano locali soltanto cache, sessione, preferenze temporanee dell’interfaccia e dati tecnici del browser: i dati atleta persistenti dei moduli hanno ora una destinazione cloud.',
+    ],
+  },
+  {
     version: '1.0.9',
     date: '2026-09-28',
     title: 'Calendar reliability: outbox compatta e sync isolata',
