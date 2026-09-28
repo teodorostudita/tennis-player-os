@@ -409,6 +409,10 @@ export function startTrainingCloudSync({
   let inFlight = false;
   let queuedPayload = null;
   let stopped = false;
+  let retryDelayMs = 5000;
+  let lastObservedFingerprint = JSON.stringify(
+    normalizeTrainingPayload(store.getState().training),
+  );
 
   if (baselineAthleteId !== athleteId) {
     baselineAthleteId = athleteId;
@@ -432,6 +436,7 @@ export function startTrainingCloudSync({
 
     try {
       await applyRecordDiff(nextRecords);
+      retryDelayMs = 5000;
       status('synced');
     } catch (error) {
       console.warn('Athletics record save failed; local cache retained.', error);
@@ -451,16 +456,27 @@ export function startTrainingCloudSync({
 
       if (queuedPayload) {
         window.clearTimeout(timer);
+        const delay = retryDelayMs;
+        retryDelayMs = Math.min(60000, retryDelayMs * 2);
         timer = window.setTimeout(() => {
           void flush();
-        }, SAVE_DELAY_MS);
+        }, delay);
       }
     }
   };
 
-  const queue = training => {
+  const queue = (training, { force = false } = {}) => {
     if (stopped) return;
-    queuedPayload = clone(normalizeTrainingPayload(training));
+
+    const normalized = normalizeTrainingPayload(training);
+    const nextFingerprint = JSON.stringify(normalized);
+
+    // The global store emits for Calendar, Equipment, Health, etc. Athletics
+    // must not wake up unless its own payload actually changed.
+    if (!force && nextFingerprint === lastObservedFingerprint) return;
+
+    lastObservedFingerprint = nextFingerprint;
+    queuedPayload = clone(normalized);
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
       void flush();
@@ -473,6 +489,7 @@ export function startTrainingCloudSync({
 
   const retryOnline = () => {
     if (!queuedPayload) return;
+    retryDelayMs = 5000;
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
       void flush();
@@ -484,7 +501,7 @@ export function startTrainingCloudSync({
   // If there is meaningful local data but no materialised cloud record yet,
   // the first sync creates individual records under the current writer.
   if (!baselineRecords.size && hasMeaningfulTrainingData(store.getState().training)) {
-    queue(store.getState().training);
+    queue(store.getState().training, { force: true });
   }
 
   status('synced');

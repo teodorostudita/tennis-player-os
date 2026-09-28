@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.9',
+    date: '2026-09-28',
+    title: 'Calendar reliability: outbox compatta e sync isolata',
+    details: [
+      'L’outbox di sicurezza Calendar non salva più centinaia di occorrenze ricorrenti materializzate: conserva una rappresentazione compatta di serie, eccezioni e attività singole, evitando il QuotaExceededError di localStorage.',
+      'Rimosso il MutationObserver usato per confermare l’outbox; la conferma avviene con controlli differiti e ai normali eventi di lifecycle.',
+      'La gestione della superficie tennis ora rispetta l’opzione “Solo questa attività” e non propaga accidentalmente la superficie alle settimane successive.',
+      'La sincronizzazione Athletics ignora gli update globali dello store quando il payload Athletics non è cambiato, quindi una modifica Calendar non provoca più PATCH inutili su athletics_records.',
+      'In caso di errore reale Athletics il retry usa ora backoff progressivo invece di riprovare ogni 300 ms.',
+      'La patch è cumulativa con la facies commerciale della v1.0.8.',
+    ],
+  },
+  {
     version: '1.0.8',
     date: '2026-09-28',
     title: 'Product polish: prima facies commerciale',

@@ -94,6 +94,7 @@ function captureSurfaceSubmit(event) {
     startTime: data.startTime || '',
     endTime: data.endTime || '',
     recurrenceMode: data.recurrenceMode || 'none',
+    editScope: data.calendarEditScope || '',
     oldSeriesId: edited?.seriesId || '',
     beforeEventIds: new Set((planner.events || []).map(item => item.id)),
     beforeSeriesIds: new Set((planner.recurringSeries || []).map(item => item.id)),
@@ -137,7 +138,12 @@ function commitPendingSurface() {
       const event = events.find(item => item.id === pending.id);
       if (event) {
         event.surface = pending.surface;
-        if (event.seriesId) applySeries(event.seriesId);
+
+        // A single-occurrence edit must remain an exception: do not leak the
+        // surface change into the recurring-series template or later weeks.
+        if (event.seriesId && pending.editScope !== 'single') {
+          applySeries(event.seriesId);
+        }
         return;
       }
 

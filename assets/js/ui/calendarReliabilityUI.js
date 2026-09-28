@@ -17,7 +17,6 @@ const SAVE_LABEL = 'Calendar cloud ✓';
 let lastPlannerSignature = '';
 let recoveryInProgress = false;
 let initialized = false;
-let saveIndicatorObserver = null;
 
 function clean(value = '') {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -42,8 +41,8 @@ function stableValue(value) {
   return value;
 }
 
-function plannerSignature(planner = {}) {
-  return JSON.stringify(stableValue({
+function normalizePlanner(planner = {}) {
+  return {
     people: Array.isArray(planner.people) ? planner.people : [],
     events: Array.isArray(planner.events) ? planner.events : [],
     tournaments: Array.isArray(planner.tournaments) ? planner.tournaments : [],
@@ -52,7 +51,230 @@ function plannerSignature(planner = {}) {
       planner.locationDefaults && typeof planner.locationDefaults === 'object'
         ? planner.locationDefaults
         : {},
-  }));
+  };
+}
+
+function stableStringify(value) {
+  return JSON.stringify(stableValue(value));
+}
+
+function shiftDateString(value, days) {
+  const [year, month, day] = String(value || '').split('-').map(Number);
+  if (!year || !month || !day) return '';
+
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function recurrenceDates(series) {
+  if (
+    !series?.startDate
+    || !series?.generatedThrough
+    || series.active === false
+  ) {
+    return [];
+  }
+
+  const stepDays = Math.max(
+    7,
+    Math.min(364, Number(series.intervalWeeks || 1) * 7),
+  );
+
+  const dates = [];
+  let value = series.startDate;
+  let guard = 0;
+
+  while (
+    value
+    && value <= series.generatedThrough
+    && guard < 5000
+  ) {
+    dates.push(value);
+    value = shiftDateString(value, stepDays);
+    guard += 1;
+  }
+
+  return dates;
+}
+
+function exceptionKey(seriesId, date) {
+  return `${seriesId}::${date}`;
+}
+
+function syntheticOccurrenceId(seriesId, date) {
+  return `series-occ-${seriesId}-${date}`;
+}
+
+function isExpectedOccurrenceDate(series, date) {
+  if (
+    !series?.startDate
+    || !series?.generatedThrough
+    || series.active === false
+    || !date
+    || date < series.startDate
+    || date > series.generatedThrough
+  ) {
+    return false;
+  }
+
+  const start = new Date(`${series.startDate}T00:00:00`);
+  const current = new Date(`${date}T00:00:00`);
+  const diffDays = Math.round((current - start) / 86400000);
+  const stepDays = Math.max(
+    7,
+    Math.min(364, Number(series.intervalWeeks || 1) * 7),
+  );
+
+  return diffDays >= 0 && diffDays % stepDays === 0;
+}
+
+function recurringComparablePayload(event = {}) {
+  const { id, seriesId, date, ...rest } = event;
+  return rest;
+}
+
+function compactPlannerForOutbox(plannerInput = {}) {
+  const planner = normalizePlanner(plannerInput);
+  const seriesMap = new Map(
+    planner.recurringSeries.map(series => [String(series.id), series]),
+  );
+  const expectedEventMap = new Map();
+  const materializedEvents = [];
+
+  planner.events.forEach(event => {
+    if (!event?.seriesId) {
+      materializedEvents.push(event);
+      return;
+    }
+
+    const series = seriesMap.get(String(event.seriesId));
+    if (!series || !isExpectedOccurrenceDate(series, event.date)) {
+      materializedEvents.push(event);
+      return;
+    }
+
+    expectedEventMap.set(exceptionKey(event.seriesId, event.date), event);
+  });
+
+  const exceptions = [];
+
+  planner.recurringSeries.forEach(series => {
+    recurrenceDates(series).forEach(date => {
+      const key = exceptionKey(series.id, date);
+      const event = expectedEventMap.get(key);
+
+      if (!event) {
+        exceptions.push({
+          id: key,
+          seriesId: String(series.id),
+          date,
+          kind: 'skip',
+          payload: {},
+        });
+        return;
+      }
+
+      if (
+        stableStringify(recurringComparablePayload(event))
+        !== stableStringify(recurringComparablePayload(series.template || {}))
+      ) {
+        exceptions.push({
+          id: key,
+          seriesId: String(series.id),
+          date,
+          kind: 'override',
+          payload: event,
+        });
+      }
+    });
+  });
+
+  return {
+    people: planner.people,
+    recurringSeries: planner.recurringSeries,
+    materializedEvents,
+    tournaments: planner.tournaments,
+    locationDefaults: planner.locationDefaults,
+    exceptions,
+  };
+}
+
+function reconstructPlannerFromOutbox(compact = {}) {
+  const people = Array.isArray(compact.people) ? compact.people : [];
+  const recurringSeries = Array.isArray(compact.recurringSeries)
+    ? compact.recurringSeries
+    : [];
+  const materializedEvents = Array.isArray(compact.materializedEvents)
+    ? compact.materializedEvents
+    : [];
+  const tournaments = Array.isArray(compact.tournaments)
+    ? compact.tournaments
+    : [];
+  const locationDefaults = compact.locationDefaults
+    && typeof compact.locationDefaults === 'object'
+      ? compact.locationDefaults
+      : {};
+  const exceptions = Array.isArray(compact.exceptions) ? compact.exceptions : [];
+
+  const exceptionMap = new Map(
+    exceptions.map(item => [exceptionKey(item.seriesId, item.date), item]),
+  );
+  const generatedEvents = [];
+
+  recurringSeries.forEach(series => {
+    recurrenceDates(series).forEach(date => {
+      const exception = exceptionMap.get(exceptionKey(series.id, date));
+      if (exception?.kind === 'skip') return;
+
+      if (exception?.kind === 'override') {
+        const payload = exception.payload && typeof exception.payload === 'object'
+          ? exception.payload
+          : {};
+        generatedEvents.push({
+          ...(series.template || {}),
+          ...payload,
+          id: payload.id || syntheticOccurrenceId(series.id, date),
+          seriesId: series.id,
+          date,
+        });
+        return;
+      }
+
+      generatedEvents.push({
+        ...(series.template || {}),
+        id: syntheticOccurrenceId(series.id, date),
+        seriesId: series.id,
+        date,
+      });
+    });
+  });
+
+  return normalizePlanner({
+    people,
+    recurringSeries,
+    events: [...materializedEvents, ...generatedEvents],
+    tournaments,
+    locationDefaults,
+  });
+}
+
+function hashString(value = '') {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function plannerSignature(planner = {}) {
+  return hashString(stableStringify(compactPlannerForOutbox(planner)));
 }
 
 function outboxKey() {
@@ -72,10 +294,15 @@ function readOutbox() {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) || 'null');
 
+    const hasPayload = Boolean(
+      parsed?.compactPlanner && typeof parsed.compactPlanner === 'object'
+    ) || Boolean(
+      parsed?.planner && typeof parsed.planner === 'object'
+    );
+
     if (
       !parsed
-      || !parsed.planner
-      || typeof parsed.planner !== 'object'
+      || !hasPayload
       || parsed.athleteId !== getCurrentAccess().athleteId
     ) {
       return null;
@@ -92,18 +319,26 @@ function writeOutbox(planner) {
   if (!key) return;
 
   const access = getCurrentAccess();
+  const compactPlanner = compactPlannerForOutbox(planner);
+  const signature = hashString(stableStringify(compactPlanner));
 
   try {
     localStorage.setItem(key, JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       athleteId: access.athleteId,
       userId: access.userId || '',
       updatedAt: new Date().toISOString(),
-      signature: plannerSignature(planner),
-      planner: clone(planner),
+      signature,
+      compactPlanner,
     }));
+
+    window.setTimeout(confirmOutboxIfSaved, 900);
+    window.setTimeout(confirmOutboxIfSaved, 2500);
   } catch (error) {
-    console.warn('Calendar safety outbox unavailable.', error);
+    console.warn(
+      'Calendar safety outbox unavailable even in compact mode.',
+      error,
+    );
   }
 }
 
@@ -134,7 +369,10 @@ function restorePendingOutbox() {
 
   const current = currentPlanner();
   const currentSignature = plannerSignature(current);
-  const pendingSignature = pending.signature || plannerSignature(pending.planner);
+  const pendingPlanner = pending.compactPlanner
+    ? reconstructPlannerFromOutbox(pending.compactPlanner)
+    : pending.planner;
+  const pendingSignature = pending.signature || plannerSignature(pendingPlanner);
 
   if (currentSignature === pendingSignature) {
     clearOutbox();
@@ -144,7 +382,7 @@ function restorePendingOutbox() {
   recoveryInProgress = true;
 
   store.update(state => {
-    state.planner = clone(pending.planner);
+    state.planner = clone(pendingPlanner);
     state.meta.calendarRecoveredFromOutboxAt = new Date().toISOString();
   });
 
@@ -186,29 +424,16 @@ function confirmOutboxIfSaved() {
   if (!pending) return;
 
   const currentSignature = plannerSignature(currentPlanner());
-  const pendingSignature = pending.signature || plannerSignature(pending.planner);
+  const pendingPlanner = pending.compactPlanner
+    ? reconstructPlannerFromOutbox(pending.compactPlanner)
+    : pending.planner;
+  const pendingSignature = pending.signature || plannerSignature(pendingPlanner);
 
   if (currentSignature === pendingSignature) {
     clearOutbox();
   }
 }
 
-function installSaveIndicatorObserver() {
-  const indicator = document.querySelector('#save-indicator');
-  if (!indicator) return;
-
-  saveIndicatorObserver?.disconnect();
-
-  saveIndicatorObserver = new MutationObserver(() => {
-    confirmOutboxIfSaved();
-  });
-
-  saveIndicatorObserver.observe(indicator, {
-    childList: true,
-    subtree: true,
-    characterData: true,
-  });
-}
 
 function nudgeCalendarSync() {
   if (!calendarWriteEnabled() || !readOutbox()) return;
@@ -525,7 +750,6 @@ function initialize() {
 
   restorePendingOutbox();
   installOutboxTracking();
-  installSaveIndicatorObserver();
   installRecurringSafety();
   installLifecycleSafety();
   confirmOutboxIfSaved();
