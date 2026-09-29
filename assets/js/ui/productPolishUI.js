@@ -7,6 +7,7 @@ const SHOWCASE_ROUTES = new Set([
   'training',
   'equipment',
   'development',
+  'drills',
   'economics',
   'health',
 ]);

@@ -1,5 +1,21 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.12',
+    date: '2026-09-29',
+    title: 'Development ↔ Drills bridge + Drills product polish',
+    details: [
+      'Il collegamento Development–Drills diventa bidirezionale e operativo, mantenendo linkedDrillIds nel record Development come unica fonte canonica.',
+      'Da un tema Development, “Apri drill” porta direttamente alla card corretta nella Libreria Drills, azzerando i filtri se necessario e mettendo il drill in evidenza.',
+      'Ogni card Drills mostra i temi Development collegati; i chip aprono direttamente il relativo tema tecnico o tattico.',
+      'Da Drills è possibile gestire i collegamenti con una checklist Development senza duplicare il dato nel record del drill.',
+      'Aggiunto alla Libreria Drills un filtro Development: tutti, solo collegati, senza collegamento o singolo tema.',
+      'Overview Drills mostra un KPI sui drill collegati e un pannello Development bridge con i temi e il numero di esercizi associati.',
+      'La cancellazione di un drill rimuove automaticamente eventuali riferimenti Development orfani quando l’account ha permesso di scrittura Development.',
+      'Drills riceve una facies premium blu-court + tennis-lime su hero, tab, KPI, cards, session builder e misurazioni.',
+      'Corretto il titolo della pagina Drills da 3. Drills a 4. Drills.',
+    ],
+  },
+  {
     version: '1.0.11',
     date: '2026-09-28',
     title: 'Icone rifinite + Athletics product polish',

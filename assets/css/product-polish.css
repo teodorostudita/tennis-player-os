@@ -1088,3 +1088,625 @@ body[data-tpos-route="training"] .athletics-assessment-chart-dot {
     font-size:1.75rem;
   }
 }
+/* ============================================================
+   v1.0.12 · Development ↔ Drills bridge + Drills product polish
+   ============================================================ */
+
+body[data-tpos-route="drills"] {
+  --module-accent:#3974a6;
+  --module-accent-2:#8aa83d;
+  --module-accent-deep:#234f78;
+  --module-soft:#eaf3fb;
+  --module-soft-2:#f5f9fd;
+  --module-line:rgba(57,116,166,.20);
+  background:
+    radial-gradient(circle at 88% 2%,rgba(57,116,166,.09),transparent 27rem),
+    radial-gradient(circle at 12% 86%,rgba(138,168,61,.06),transparent 30rem),
+    #f5f7fb;
+}
+
+body[data-tpos-route="drills"] .drills-module-head {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  min-height:148px;
+  margin-bottom:14px;
+  padding:24px 26px;
+  border:1px solid var(--module-line);
+  border-radius:var(--premium-radius-lg);
+  background:
+    linear-gradient(126deg,#eaf3fb,rgba(255,255,255,.97) 58%,#f3f8e8);
+  box-shadow:var(--premium-shadow);
+}
+
+body[data-tpos-route="drills"] .drills-module-head::before {
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:6px;
+  background:linear-gradient(180deg,var(--module-accent-2),var(--module-accent));
+}
+
+body[data-tpos-route="drills"] .drills-module-head::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  right:-72px;
+  top:-83px;
+  width:230px;
+  height:230px;
+  border:1px solid rgba(57,116,166,.11);
+  border-radius:50%;
+  box-shadow:
+    0 0 0 24px rgba(57,116,166,.028),
+    0 0 0 48px rgba(138,168,61,.02);
+}
+
+body[data-tpos-route="drills"] .drills-module-head > * {
+  position:relative;
+  z-index:1;
+}
+
+body[data-tpos-route="drills"] .drills-module-head .eyebrow {
+  display:inline-flex;
+  width:max-content;
+  padding:5px 8px;
+  border:1px solid var(--module-line);
+  border-radius:999px;
+  background:rgba(255,255,255,.72);
+  color:var(--module-accent-deep);
+  letter-spacing:.105em;
+}
+
+body[data-tpos-route="drills"] .drills-module-head h2 {
+  margin-top:9px;
+  font-size:clamp(1.8rem,3vw,2.55rem);
+  letter-spacing:-.045em;
+}
+
+body[data-tpos-route="drills"] .drills-module-head p {
+  color:#5c687a;
+}
+
+body[data-tpos-route="drills"] .drills-section-switch {
+  padding:5px;
+  border:1px solid var(--module-line);
+  background:rgba(255,255,255,.78);
+  box-shadow:0 6px 18px rgba(35,79,120,.07);
+  backdrop-filter:blur(10px);
+}
+
+body[data-tpos-route="drills"] .drills-section-button {
+  color:#63738b;
+}
+
+body[data-tpos-route="drills"] .drills-section-button.active {
+  color:#fff;
+  background:linear-gradient(135deg,var(--module-accent-deep),var(--module-accent));
+  box-shadow:0 6px 16px rgba(35,79,120,.18);
+}
+
+body[data-tpos-route="drills"] .drills-kpis {
+  grid-template-columns:repeat(5,minmax(0,1fr));
+}
+
+body[data-tpos-route="drills"] .drills-kpi {
+  position:relative;
+  overflow:hidden;
+  border-color:var(--module-line);
+  background:linear-gradient(145deg,#fff,var(--module-soft-2));
+  box-shadow:0 8px 22px rgba(35,79,120,.055);
+}
+
+body[data-tpos-route="drills"] .drills-kpi::before {
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:4px;
+  background:linear-gradient(180deg,var(--module-accent-2),var(--module-accent));
+}
+
+body[data-tpos-route="drills"] .drills-kpi strong {
+  color:var(--module-accent-deep);
+  font-size:1.22rem;
+}
+
+body[data-tpos-route="drills"] .drills-development-kpi {
+  background:linear-gradient(145deg,#fff,#f3f7e9);
+}
+
+body[data-tpos-route="drills"] .drills-overview-grid > .panel,
+body[data-tpos-route="drills"] .drills-top-used-panel,
+body[data-tpos-route="drills"] .drills-development-bridge-panel {
+  border-color:rgba(57,116,166,.14);
+}
+
+body[data-tpos-route="drills"] .drills-category-track span {
+  background:linear-gradient(90deg,var(--module-accent),#6290ba);
+}
+
+body[data-tpos-route="drills"] .drills-top-used-card {
+  border-color:rgba(57,116,166,.13);
+  background:linear-gradient(150deg,#fff,#f7fafc);
+  box-shadow:0 5px 14px rgba(35,79,120,.04);
+}
+
+.drills-development-bridge-panel {
+  margin:0 0 16px;
+  overflow:hidden;
+}
+
+.drills-development-bridge-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  background:linear-gradient(90deg,#f4f8fd,#f8fbed);
+}
+
+.drills-development-theme-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:10px;
+}
+
+.drills-development-theme-card {
+  display:grid;
+  gap:5px;
+  width:100%;
+  padding:12px 13px;
+  text-align:left;
+  border:1px solid rgba(57,116,166,.14);
+  border-radius:13px;
+  background:linear-gradient(145deg,#fff,#f8fbfd);
+  color:var(--text);
+  transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+}
+
+.drills-development-theme-card > span {
+  color:var(--module-accent);
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+
+.drills-development-theme-card > strong {
+  font-size:.8rem;
+}
+
+.drills-development-theme-card > small {
+  color:var(--muted);
+  font-size:.64rem;
+}
+
+.drills-development-bridge-empty {
+  display:grid;
+  gap:5px;
+  padding:18px;
+  text-align:center;
+  color:var(--muted);
+}
+
+.drills-development-bridge-empty strong {
+  color:var(--text);
+  font-size:.82rem;
+}
+
+.drills-development-bridge-empty span {
+  font-size:.7rem;
+}
+
+body[data-tpos-route="drills"] .drills-filterbar {
+  grid-template-columns:
+    minmax(210px,1.45fr)
+    minmax(135px,.65fr)
+    minmax(135px,.65fr)
+    minmax(170px,.85fr)
+    auto;
+  border-color:rgba(57,116,166,.16);
+  background:rgba(255,255,255,.90);
+  box-shadow:0 8px 22px rgba(35,79,120,.045);
+}
+
+body[data-tpos-route="drills"] .drills-filterbar input[type="search"]:focus,
+body[data-tpos-route="drills"] .drills-filterbar select:focus {
+  border-color:var(--module-accent-2);
+  box-shadow:0 0 0 3px rgba(57,116,166,.09);
+  outline:0;
+}
+
+body[data-tpos-route="drills"] .drills-library-grid {
+  gap:16px;
+}
+
+body[data-tpos-route="drills"] .drills-card {
+  overflow:hidden;
+  border-color:rgba(57,116,166,.14);
+  background:linear-gradient(155deg,#fff 35%,#f7fafc 100%);
+  box-shadow:0 9px 24px rgba(35,79,120,.055);
+  transition:
+    transform .16s ease,
+    box-shadow .16s ease,
+    border-color .16s ease;
+}
+
+body[data-tpos-route="drills"] .drills-category-badge {
+  background:#e9f2fb;
+  color:#356a99;
+}
+
+body[data-tpos-route="drills"] .drills-focus-badge {
+  background:#f1f6e7;
+  color:#687f2e;
+}
+
+body[data-tpos-route="drills"] .drills-card-meta span {
+  border-color:rgba(57,116,166,.10);
+  background:#f8fafc;
+}
+
+body[data-tpos-route="drills"] .drills-star.active {
+  color:#9aaa2f;
+  text-shadow:0 1px 8px rgba(154,170,47,.18);
+}
+
+body[data-tpos-route="drills"] .drills-card-block {
+  border-top-color:rgba(57,116,166,.10);
+}
+
+body[data-tpos-route="drills"] .drills-tags span {
+  color:#526f8e;
+  background:#eef4fa;
+}
+
+body[data-tpos-route="drills"] .drills-card--focused {
+  border-color:rgba(138,168,61,.72)!important;
+  box-shadow:
+    0 0 0 3px rgba(138,168,61,.15),
+    0 18px 42px rgba(35,79,120,.14)!important;
+  animation:drills-linked-focus 1.05s ease 2;
+}
+
+@keyframes drills-linked-focus {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-3px); }
+}
+
+.drills-development-links {
+  display:grid;
+  gap:7px;
+  margin-top:11px;
+  padding:10px 0 1px;
+  border-top:1px solid rgba(57,116,166,.10);
+}
+
+.drills-development-links-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.drills-development-links-head > span {
+  color:#6f7c8f;
+  font-size:.6rem;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.drills-development-links-head > strong {
+  display:grid;
+  min-width:22px;
+  height:22px;
+  place-items:center;
+  padding:0 5px;
+  border-radius:999px;
+  background:#eef3fa;
+  color:#486b91;
+  font-size:.61rem;
+}
+
+.drills-development-links > p {
+  margin:0;
+  color:#8994a4;
+  font-size:.66rem;
+}
+
+.drills-development-chips {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.drills-development-chip {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+  padding:5px 8px;
+  border:1px solid rgba(57,116,166,.16);
+  border-radius:999px;
+  background:#f6f9fd;
+  color:#3d5876;
+  font-size:.64rem;
+  font-weight:800;
+}
+
+.drills-development-chip > span {
+  display:inline-grid;
+  place-items:center;
+  min-width:28px;
+  height:18px;
+  padding:0 4px;
+  border-radius:999px;
+  background:#e7eff8;
+  color:#376790;
+  font-size:.52rem;
+  font-weight:950;
+  letter-spacing:.04em;
+}
+
+.drills-development-manage {
+  margin-right:6px;
+}
+
+body[data-tpos-route="drills"] .drills-session-list-panel,
+body[data-tpos-route="drills"] .drills-session-builder {
+  border-color:rgba(57,116,166,.14);
+}
+
+body[data-tpos-route="drills"] .drills-session-list-item.active {
+  background:linear-gradient(90deg,#edf4fb,#f5f9fd);
+  box-shadow:inset 4px 0 var(--module-accent);
+}
+
+body[data-tpos-route="drills"] .drills-session-builder-head {
+  background:linear-gradient(135deg,#f4f8fd,#fbfdf6);
+}
+
+body[data-tpos-route="drills"] .drills-session-item {
+  border-color:rgba(57,116,166,.13);
+  background:linear-gradient(145deg,#fff,#fafcfd);
+}
+
+body[data-tpos-route="drills"] .drills-session-order {
+  background:#e8f0f8;
+  color:#37658f;
+}
+
+body[data-tpos-route="drills"] .drills-add-form {
+  border-color:rgba(57,116,166,.25);
+  background:#f8fbfd;
+}
+
+body[data-tpos-route="drills"] .drills-measurement-list-panel,
+body[data-tpos-route="drills"] .drills-measurement-detail {
+  border-color:rgba(57,116,166,.14);
+}
+
+body[data-tpos-route="drills"] .drills-measurement-list-item.active {
+  background:linear-gradient(90deg,#edf4fb,#f5f9fd);
+  box-shadow:inset 4px 0 var(--module-accent);
+}
+
+body[data-tpos-route="drills"] .drills-measurement-kpis > div {
+  border-color:rgba(57,116,166,.13);
+  background:linear-gradient(145deg,#fff,#f7fafc);
+}
+
+body[data-tpos-route="drills"] .drills-measurement-kpis strong {
+  color:var(--module-accent-deep);
+}
+
+.dev-drill-bridge-list {
+  display:grid;
+  gap:8px;
+}
+
+.dev-drill-bridge-row {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:9px;
+  align-items:center;
+  padding:8px;
+  border:1px solid rgba(168,100,27,.14);
+  border-radius:12px;
+  background:linear-gradient(135deg,#fff,#fffaf3);
+}
+
+.dev-drill-bridge-main {
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr);
+  gap:9px;
+  align-items:center;
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:var(--text);
+  text-align:left;
+}
+
+.dev-drill-bridge-main > span:last-child {
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+
+.dev-drill-bridge-main strong {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:.78rem;
+  white-space:nowrap;
+}
+
+.dev-drill-bridge-main small {
+  color:var(--muted);
+  font-size:.62rem;
+}
+
+.dev-drill-bridge-icon {
+  display:grid;
+  width:28px;
+  height:28px;
+  place-items:center;
+  border-radius:9px;
+  background:#fff0dd;
+  color:#9c5d19;
+  font-size:.77rem;
+  font-weight:900;
+}
+
+.dev-drill-bridge-empty {
+  display:grid;
+  justify-items:start;
+  gap:5px;
+  padding:11px;
+  border:1px dashed rgba(168,100,27,.22);
+  border-radius:11px;
+  background:#fffaf4;
+}
+
+.dev-drill-bridge-empty strong {
+  font-size:.77rem;
+}
+
+.dev-drill-bridge-empty span {
+  color:var(--muted);
+  font-size:.68rem;
+  line-height:1.4;
+}
+
+.drills-development-link-dialog {
+  width:min(790px,calc(100% - 24px));
+}
+
+.drills-development-link-dialog .dialog-head p {
+  max-width:590px;
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:.72rem;
+  line-height:1.4;
+}
+
+.drills-development-picker {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+
+.drills-development-picker > label {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:9px;
+  align-items:start;
+  padding:10px 11px;
+  border:1px solid #dfe5ec;
+  border-radius:12px;
+  background:#fff;
+  cursor:pointer;
+  transition:border-color .14s ease,background .14s ease,box-shadow .14s ease;
+}
+
+.drills-development-picker > label.selected {
+  border-color:rgba(57,116,166,.32);
+  background:linear-gradient(135deg,#f0f6fc,#f7faef);
+  box-shadow:0 5px 15px rgba(35,79,120,.055);
+}
+
+.drills-development-picker input {
+  margin-top:4px;
+}
+
+.drills-development-picker span {
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+
+.drills-development-picker small {
+  color:#597491;
+  font-size:.57rem;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.045em;
+}
+
+.drills-development-picker strong {
+  font-size:.74rem;
+}
+
+.drills-development-picker em {
+  color:var(--muted);
+  font-size:.62rem;
+  font-style:normal;
+}
+
+@media (hover:hover) and (pointer:fine) {
+  body[data-tpos-route="drills"] .drills-card:hover {
+    transform:translateY(-2px);
+    border-color:rgba(57,116,166,.25);
+    box-shadow:0 16px 34px rgba(35,79,120,.095);
+  }
+
+  .drills-development-theme-card:hover {
+    transform:translateY(-1px);
+    border-color:rgba(57,116,166,.28);
+    box-shadow:0 9px 19px rgba(35,79,120,.07);
+  }
+}
+
+@media (max-width:1180px) {
+  body[data-tpos-route="drills"] .drills-kpis {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  body[data-tpos-route="drills"] .drills-filterbar {
+    grid-template-columns:1fr 1fr 1fr;
+  }
+
+  body[data-tpos-route="drills"] .drills-search {
+    grid-column:1/-1;
+  }
+}
+
+@media (max-width:800px) {
+  body[data-tpos-route="drills"] .drills-module-head {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .drills-development-picker {
+    grid-template-columns:1fr;
+  }
+
+  .drills-development-bridge-head {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
+
+@media (max-width:650px) {
+  body[data-tpos-route="drills"] .drills-module-head {
+    min-height:0;
+    padding:19px 18px;
+    border-radius:20px;
+  }
+
+  body[data-tpos-route="drills"] .drills-module-head h2 {
+    font-size:1.75rem;
+  }
+
+  body[data-tpos-route="drills"] .drills-kpis {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  body[data-tpos-route="drills"] .drills-filterbar {
+    grid-template-columns:1fr;
+  }
+
+  .dev-drill-bridge-row {
+    grid-template-columns:1fr;
+  }
+}
