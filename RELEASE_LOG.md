@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.0.14 — Dummy-friendly PWA install assistant
+- Aggiunto un unico comando **Installa app** per semplificare l’installazione della PWA.
+- Android/Chromium: quando disponibile, il pulsante apre direttamente il prompt nativo di installazione.
+- iPhone/iPad: il pulsante mostra solo i passaggi Safari realmente necessari.
+- Fallback Android se il prompt automatico non è ancora disponibile.
+- L’assistente compare solo dopo il login e resta nascosto quando TPOS è già avviata come app installata.
+- Banner iniziale non invasivo; se chiuso, non ricompare per 14 giorni.
+- Nessuna modifica a Supabase, dati cloud, service worker o logica dei moduli.
+
 ## v1.0.13 — Installable PWA
 - Tennis Player OS è ora installabile come web app su iPhone/iPad, Android e browser desktop compatibili.
 - Aggiunto Web App Manifest con modalità `standalone`, nome, colori e icone dedicate.
