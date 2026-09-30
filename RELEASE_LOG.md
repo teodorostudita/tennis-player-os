@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.0.19 — PWA asset consistency
+- Corretto il rischio di caricare una combinazione di shell recente e moduli JS/CSS vecchi su iPhone/Safari/PWA.
+- Gli asset applicativi vengono richiesti network-fresh; la cache del service worker resta solo per la pagina offline.
+- Il nuovo service worker elimina le vecchie cache TPOS e, quando sostituisce una versione precedente, ricarica una sola volta i client aperti.
+- Aggiunto cache-busting esplicito agli entry point CSS/JS e al manifest.
+- Nessuna modifica ai dati o alla logica di Body & Health, Mental e Perception & Neuro.
+
 ## v1.0.17 — Athletics Assessment ↔ Tests
 - **Valutazione attuale** semplificata.
 - **Qualità fisiche**: Resistenza; Elasticità; Potenza; Esplosività; Velocità di scatto; Core Stability.

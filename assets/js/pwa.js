@@ -1,12 +1,19 @@
-// Tennis Player OS — PWA bootstrap.
-// Static app files and cloud data remain network-first.
-// The service worker exists only to provide a clean offline fallback for navigation.
+// Tennis Player OS — PWA bootstrap v1.0.19.
+// The service worker provides only an offline navigation fallback and also
+// prevents mixed-release JS/CSS after an update.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      await navigator.serviceWorker.register('./sw.js', { scope: './' });
+      const registration = await navigator.serviceWorker.register('./sw.js', {
+        scope: './',
+        updateViaCache: 'none',
+      });
+
+      // Ask the browser to check immediately instead of waiting for its
+      // normal service-worker update interval.
+      await registration.update();
     } catch (error) {
-      console.warn('[TPOS] Service worker registration failed:', error);
+      console.warn('[TPOS] Service worker registration/update failed:', error);
     }
   });
 }

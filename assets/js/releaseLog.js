@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.19',
+    date: '2026-09-30',
+    title: 'PWA asset consistency',
+    details: [
+      'Corretto il rischio di mescolare index e moduli JavaScript/CSS appartenenti a release diverse, soprattutto su iPhone/Safari e PWA installata.',
+      'Il service worker forza la rete per gli asset eseguibili e usa la cache soltanto come fallback offline della navigazione.',
+      'Quando un service worker precedente viene sostituito, le finestre TPOS aperte vengono ricaricate una sola volta per riallineare l’intera app alla stessa release.',
+      'Gli entry point CSS/JS e il manifest ricevono un version query esplicito per invalidare la cache del browser a ogni release.',
+      'Nessuna modifica ai dati cloud o ai contenuti dei moduli Body & Health, Mental e Perception & Neuro.',
+    ],
+  },
+  {
     version: '1.0.17',
     date: '2026-09-30',
     title: 'Athletics Assessment ↔ Tests',
