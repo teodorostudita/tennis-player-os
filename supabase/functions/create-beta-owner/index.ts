@@ -5,7 +5,7 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const APP_URL = 'https://tennis.polidorionline.it';
-const BETA_OWNER_MAIL_URL = 'https://www.polidorionline.it/TennisPlayerOS/beta-owner-invite.php';
+const BETA_OWNER_MAIL_URL = 'https://www.polidorionline.it/tennis-player-os-site/beta-owner-invite.php';
 const ALLOWED_ORIGINS = new Set([
   APP_URL,
   'http://127.0.0.1:8080',
