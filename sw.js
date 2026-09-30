@@ -1,12 +1,12 @@
-// Tennis Player OS — service worker v1.0.19
-// Keep application code network-fresh. The cache is used only for the offline navigation fallback.
-const CACHE_NAME = 'tpos-pwa-v1.0.19';
+// Tennis Player OS — service worker v1.0.20
+// Application assets are network-fresh. Cache is only an offline navigation fallback.
+const CACHE_NAME = 'tpos-pwa-v1.0.20';
 const OFFLINE_URL = './offline.html';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.add(OFFLINE_URL))
+      .then((cache) => cache.add(new Request(OFFLINE_URL, { cache: 'reload' })))
       .then(() => self.skipWaiting())
   );
 });
@@ -21,8 +21,6 @@ self.addEventListener('activate', (event) => {
     await Promise.all(previousCaches.map((key) => caches.delete(key)));
     await self.clients.claim();
 
-    // If this replaces an older TPOS worker, reload open clients once so
-    // index.html and all ES modules come from the same release.
     if (previousCaches.length) {
       const clients = await self.clients.matchAll({
         type: 'window',
@@ -32,9 +30,7 @@ self.addEventListener('activate', (event) => {
       await Promise.all(clients.map(async (client) => {
         try {
           if ('navigate' in client) await client.navigate(client.url);
-        } catch (_) {
-          // A closed/background client may no longer be navigable.
-        }
+        } catch (_) {}
       }));
     }
   })());
@@ -55,9 +51,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // TPOS is a network application. Never allow an old HTTP-cache copy of
-  // executable/style assets to be mixed with a newer shell.
-  if (/\.(?:js|css|html)$/i.test(url.pathname) || url.pathname.endsWith('/manifest.webmanifest')) {
+  if (
+    /\.(?:js|css|html)$/i.test(url.pathname)
+    || url.pathname.endsWith('/manifest.webmanifest')
+  ) {
     event.respondWith(fetch(request, { cache: 'no-store' }));
   }
 });

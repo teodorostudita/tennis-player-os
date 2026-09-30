@@ -32,9 +32,88 @@ jobs:
 
       - name: Prepare static site
         run: |
+          rm -rf _site
           mkdir -p _site
-          rsync -av             --exclude='.git/'             --exclude='.github/'             --exclude='_site/'             --exclude='*.command'             --exclude='server.py'             --exclude='*.zip'             --exclude='.DS_Store'             ./ _site/
+          rsync -av \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='_site/' \
+            --exclude='*.command' \
+            --exclude='server.py' \
+            --exclude='*.zip' \
+            --exclude='.DS_Store' \
+            ./ _site/
           touch _site/.nojekyll
+
+      - name: Version complete ES-module graph
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const root = '_site';
+          const versionFile = path.join(root, 'assets/js/version.js');
+          const versionSource = fs.readFileSync(versionFile, 'utf8');
+          const match = versionSource.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+
+          if (!match) {
+            throw new Error('APP_VERSION non trovato in assets/js/version.js');
+          }
+
+          const version = match[1];
+          const suffix = `?v=${encodeURIComponent(version)}`;
+
+          function walk(dir) {
+            return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+              const full = path.join(dir, entry.name);
+              return entry.isDirectory() ? walk(full) : [full];
+            });
+          }
+
+          function versionJsSpecifier(specifier) {
+            if (!/^\.\.?\//.test(specifier)) return specifier;
+            if (!specifier.split('?')[0].endsWith('.js')) return specifier;
+            return specifier.replace(/\?v=[^#]*/, '').split('#')[0] + suffix;
+          }
+
+          const jsFiles = walk(path.join(root, 'assets/js')).filter((file) => file.endsWith('.js'));
+
+          for (const file of jsFiles) {
+            let source = fs.readFileSync(file, 'utf8');
+
+            source = source.replace(
+              /(\bfrom\s*['"])(\.\.?\/[^'"]+\.js(?:\?v=[^'"]*)?)(['"])/g,
+              (_, a, spec, b) => a + versionJsSpecifier(spec) + b,
+            );
+
+            source = source.replace(
+              /(\bimport\s*['"])(\.\.?\/[^'"]+\.js(?:\?v=[^'"]*)?)(['"])/g,
+              (_, a, spec, b) => a + versionJsSpecifier(spec) + b,
+            );
+
+            source = source.replace(
+              /(\bimport\s*\(\s*['"])(\.\.?\/[^'"]+\.js(?:\?v=[^'"]*)?)(['"]\s*\))/g,
+              (_, a, spec, b) => a + versionJsSpecifier(spec) + b,
+            );
+
+            fs.writeFileSync(file, source);
+          }
+
+          const htmlFiles = walk(root).filter((file) => file.endsWith('.html'));
+
+          for (const file of htmlFiles) {
+            let source = fs.readFileSync(file, 'utf8');
+
+            source = source.replace(
+              /((?:src|href)=["'])(\.\/[^"'?#]+\.(?:js|css|webmanifest))(?:\?v=[^"']*)?(["'])/gi,
+              (_, a, asset, b) => a + asset + suffix + b,
+            );
+
+            fs.writeFileSync(file, source);
+          }
+
+          console.log(`TPOS Pages build versioned consistently as ${version}`);
+          NODE
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
