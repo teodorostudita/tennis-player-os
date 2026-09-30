@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.0.27 — Founding Beta counter cleanup
+- `beta-request.php` legge ora direttamente da Supabase lo stesso stato Founding Beta usato dal contatore pubblico.
+- Eliminata la dipendenza dal vecchio `beta-program.php` locale.
+- Le email di richiesta riportano quindi valori coerenti con il sito.
+- `.htaccess` protegge ora soltanto `mail-config.php`; `beta-program.php` può essere rimosso definitivamente.
+
 ## v1.0.26 — Dashboard navigation reliability
 - Corretto il caso in cui un aggiornamento dello store ridisegnava la Dashboard ma lasciava i nuovi pulsanti **Apri modulo** senza click handler.
 - Il menu laterale continuava a funzionare, spiegando il comportamento apparentemente intermittente.

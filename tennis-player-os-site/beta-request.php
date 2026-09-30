@@ -27,6 +27,48 @@ function respond(bool $ok, int $status, string $message, bool $json = true, ?str
     exit;
 }
 
+function foundingBetaStatus(): ?array {
+    $url = 'https://jgonjgxtshupvpqflzpe.supabase.co/rest/v1/rpc/get_founding_beta_status';
+    $key = 'sb_publishable_-Xz5LAaeK7XYcjyUCzt6VQ_Ud9wmV4S';
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => implode("\r\n", [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'apikey: ' . $key,
+                'Authorization: Bearer ' . $key,
+            ]),
+            'content' => '{}',
+            'timeout' => 8,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $response = @file_get_contents($url, false, $context);
+    if ($response === false || trim($response) === '') {
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    if (!is_array($data) || !isset($data['capacity'])) {
+        return null;
+    }
+
+    $capacity = max(0, (int)($data['capacity'] ?? 30));
+    $active = max(0, (int)($data['active'] ?? 0));
+    $remaining = max(0, (int)($data['remaining'] ?? max(0, $capacity - $active)));
+
+    return [
+        'capacity' => $capacity,
+        'active' => $active,
+        'remaining' => $remaining,
+        'full' => (bool)($data['full'] ?? ($remaining <= 0)),
+    ];
+}
+
+
 function smtpRead($fp): array {
     $lines = [];
     $code = 0;
@@ -211,20 +253,23 @@ $langLabel = strtolower($lang) === 'en' ? 'English' : 'Italiano';
 $timestamp = new DateTimeImmutable('now', new DateTimeZone('Europe/Rome'));
 $referer = trim((string)($_SERVER['HTTP_REFERER'] ?? '')) ?: 'non disponibile';
 
-$betaProgramFile = __DIR__ . '/beta-program.php';
-$capacity = 30;
-$active = 0;
-if (is_file($betaProgramFile)) {
-    $betaProgram = require $betaProgramFile;
-    if (is_array($betaProgram)) {
-        $capacity = max(0, (int)($betaProgram['capacity'] ?? 30));
-        $active = max(0, (int)($betaProgram['active'] ?? 0));
-    }
-}
-$remaining = max(0, $capacity - $active);
-$programLabel = ($programState === 'waitlist' || $remaining <= 0)
+$betaStatus = foundingBetaStatus();
+$capacity = $betaStatus !== null ? $betaStatus['capacity'] : 30;
+$active = $betaStatus !== null ? $betaStatus['active'] : null;
+$remaining = $betaStatus !== null ? $betaStatus['remaining'] : null;
+$programFull = $betaStatus !== null ? (bool)$betaStatus['full'] : false;
+
+$programLabel = ($programState === 'waitlist' || $programFull || $remaining === 0)
     ? "Lista d'attesa"
     : 'Posto Beta disponibile';
+
+$activeLabel = $active !== null
+    ? "{$active} / {$capacity}"
+    : 'non disponibile';
+
+$remainingLabel = $remaining !== null
+    ? (string)$remaining
+    : 'non disponibile';
 
 $subjectPrefix = $programLabel === "Lista d'attesa"
     ? 'Tennis Player OS - Lista d’attesa Founding Beta - '
@@ -237,8 +282,8 @@ $body = "Nuova richiesta per la Founding Beta di Tennis Player OS\n"
       . "Profilo di interesse: {$profileLabel}\n"
       . "Tipo di accesso previsto: Founding Beta Owner (accesso completo)\n"
       . "Stato programma: {$programLabel}\n"
-      . "Posti attivi: {$active} / {$capacity}\n"
-      . "Posti rimanenti: {$remaining}\n"
+      . "Posti attivi: {$activeLabel}\n"
+      . "Posti rimanenti: {$remainingLabel}\n"
       . "Lingua sito: {$langLabel}\n"
       . "Data: " . $timestamp->format('d/m/Y H:i:s T') . "\n"
       . "Pagina: {$referer}\n";

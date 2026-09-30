@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.27',
+    date: '2026-09-30',
+    title: 'Founding Beta counter cleanup',
+    details: [
+      'beta-request.php non usa più il vecchio beta-program.php locale: legge lo stato reale della Founding Beta direttamente da Supabase.',
+      'Le email di richiesta riportano quindi lo stesso contatore mostrato sul sito pubblico.',
+      'beta-program.php può essere eliminato definitivamente; .htaccess protegge ora soltanto la configurazione SMTP.',
+    ],
+  },
+  {
     version: '1.0.26',
     date: '2026-09-30',
     title: 'Dashboard navigation reliability',

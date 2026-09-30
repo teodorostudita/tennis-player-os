@@ -149,11 +149,11 @@ Per sicurezza Tennis Player OS pubblica solo nuove migrazioni SQL; non riscrive 
 fi
 
 # ---------------------------------------------------------------------------
-# 3. Edge Functions modificate
+# 3. Edge Functions modificate / eliminate
 # ---------------------------------------------------------------------------
 
 FUNCTIONS="$(
-  git status --porcelain \
+  git status --porcelain -- supabase/functions \
     | awk '{print $2}' \
     | sed -n 's#^supabase/functions/\([^/]*\)/.*#\1#p' \
     | sort -u
@@ -161,13 +161,32 @@ FUNCTIONS="$(
 
 if [ -n "$FUNCTIONS" ]; then
   if ! command -v supabase >/dev/null 2>&1; then
-    fail "Supabase CLI non è disponibile, ma ci sono Edge Functions da pubblicare."
+    fail "Supabase CLI non è disponibile, ma ci sono Edge Functions modificate o eliminate."
   fi
 
-  echo "Pubblico le Edge Functions modificate..."
+  echo "Gestisco le Edge Functions modificate..."
 
   while IFS= read -r function_name; do
     [ -z "$function_name" ] && continue
+    function_entry="supabase/functions/$function_name/index.ts"
+
+    if [ ! -f "$function_entry" ]; then
+      echo "  → $function_name (rimossa localmente)"
+      read -r -p "    Eliminarla anche da Supabase remoto? [S/n]: " DELETE_REMOTE
+
+      case "${DELETE_REMOTE:-}" in
+        n|N|no|NO|No)
+          echo "    Eliminazione remota saltata."
+          ;;
+        *)
+          supabase functions delete "$function_name" \
+            || fail "Eliminazione remota della funzione $function_name non riuscita."
+          echo "    Funzione eliminata anche da Supabase."
+          ;;
+      esac
+      continue
+    fi
+
     echo "  → $function_name"
 
     if [ "$function_name" = "remove-user" ]; then

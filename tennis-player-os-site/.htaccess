@@ -1,11 +1,11 @@
 # Protect server-side configuration files from direct web access.
-<FilesMatch "^(mail-config|beta-program)\.php$">
+<FilesMatch "^mail-config\.php$">
   Require all denied
 </FilesMatch>
 
 # Apache 2.2 fallback
 <IfModule !mod_authz_core.c>
-  <FilesMatch "^(mail-config|beta-program)\.php$">
+  <FilesMatch "^mail-config\.php$">
     Order allow,deny
     Deny from all
   </FilesMatch>
