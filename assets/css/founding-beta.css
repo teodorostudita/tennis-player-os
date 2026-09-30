@@ -1,0 +1,118 @@
+.founding-beta-admin {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 15px;
+  border: 1px solid #d8e3ef;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f7fc 100%);
+}
+
+.founding-beta-admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.founding-beta-admin-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.founding-beta-admin-head strong {
+  color: #173455;
+  font-size: .92rem;
+}
+
+.founding-beta-admin-head small {
+  color: #78889b;
+  font-size: .7rem;
+}
+
+.founding-beta-create {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding-inline: 13px;
+}
+
+.founding-beta-meter {
+  display: grid;
+  gap: 7px;
+}
+
+.founding-beta-meter-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #61758d;
+  font-size: .72rem;
+}
+
+.founding-beta-meter-copy b {
+  color: #173455;
+}
+
+.founding-beta-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dfe8f2;
+}
+
+.founding-beta-progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #2b5e91;
+  transition: width .2s ease;
+}
+
+.founding-beta-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #dde6ef;
+}
+
+.founding-beta-form[hidden] {
+  display: none !important;
+}
+
+.founding-beta-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.founding-beta-message:empty {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .founding-beta-admin-head,
+  .founding-beta-meter-copy {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .founding-beta-create {
+    width: 100%;
+  }
+
+  .founding-beta-form {
+    grid-template-columns: 1fr;
+  }
+
+  .founding-beta-form-actions,
+  .founding-beta-form-actions .button {
+    width: 100%;
+  }
+
+  .founding-beta-form-actions {
+    flex-direction: column-reverse;
+  }
+}
