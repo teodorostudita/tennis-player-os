@@ -111,6 +111,9 @@ async function sendBetaOwnerMail({
       displayName,
       inviteUrl,
       existingAccount,
+      // Some shared-hosting PHP/FastCGI stacks strip the Authorization header.
+      // Carry the same user JWT in the HTTPS JSON body as a server-to-server fallback.
+      authorization,
     }),
   });
 

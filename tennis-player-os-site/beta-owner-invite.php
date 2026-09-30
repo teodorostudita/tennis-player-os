@@ -199,15 +199,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     respond(false, 405, 'Metodo non consentito.');
 }
 
-$authorization = authorizationHeader();
-if (!verifyGlobalOwner($authorization)) {
-    respond(false, 403, 'Richiesta non autorizzata.');
-}
-
 $raw = file_get_contents('php://input');
 $data = json_decode($raw !== false ? $raw : '', true);
 if (!is_array($data)) {
     respond(false, 400, 'Payload non valido.');
+}
+
+$authorization = authorizationHeader();
+if ($authorization === '') {
+    $authorization = trim((string)($data['authorization'] ?? ''));
+}
+
+if (!verifyGlobalOwner($authorization)) {
+    respond(false, 403, 'Richiesta non autorizzata.');
 }
 
 $email = trim((string)($data['email'] ?? ''));
