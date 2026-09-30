@@ -1,5 +1,10 @@
 # Tennis Player OS — Release Log
 
+## v1.0.26 — Dashboard navigation reliability
+- Corretto il caso in cui un aggiornamento dello store ridisegnava la Dashboard ma lasciava i nuovi pulsanti **Apri modulo** senza click handler.
+- Il menu laterale continuava a funzionare, spiegando il comportamento apparentemente intermittente.
+- I pulsanti della Dashboard vengono ora riassociati subito dopo ogni suo refresh.
+
 ## v1.0.25 — Founding Beta integrata negli account
 - Il Founding Beta Owner si crea dal normale pannello **Utenti & Accessi**, senza un flusso email/invito separato.
 - Aggiunta **Email di contatto** modificabile per tutti gli account, distinta dall'email tecnica usata internamente per il login.

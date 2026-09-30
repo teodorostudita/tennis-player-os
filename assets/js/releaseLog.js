@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.26',
+    date: '2026-09-30',
+    title: 'Dashboard navigation reliability',
+    details: [
+      'Corretto il caso in cui un aggiornamento dello store ridisegnava la Dashboard sostituendo i pulsanti “Apri modulo” senza riassociare i relativi click handler.',
+      'La navigazione dal menu laterale non era coinvolta: per questo aprire prima il modulo dal menu e poi tornare alla Dashboard faceva sembrare il problema intermittente.',
+      'Dopo ogni refresh della Dashboard i pulsanti di accesso ai moduli vengono ora riassociati immediatamente.',
+    ],
+  },
+  {
     version: '1.0.25',
     date: '2026-09-30',
     title: 'Founding Beta integrata negli account',

@@ -284,8 +284,16 @@ resetButton.addEventListener('click', async () => {
 store.subscribe(() => {
   saveIndicator.textContent = 'Salvato';
   const route = getRoute();
-  if (route === 'dashboard') renderDashboard();
-  else if (route === 'calendar' || route === 'training') queueMicrotask(render);
+
+  if (route === 'dashboard') {
+    // renderDashboard() replaces the dashboard DOM. Rebind its route buttons
+    // immediately, otherwise a background/cloud store update leaves the new
+    // "Apri modulo" buttons without click handlers while the sidebar still works.
+    renderDashboard();
+    bindRouteButtons();
+  } else if (route === 'calendar' || route === 'training') {
+    queueMicrotask(render);
+  }
 });
 
 if (!location.hash) setRoute('dashboard');
