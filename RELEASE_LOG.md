@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.0.21 — iPhone module render race fix
+- Corretto il race condition di rendering che su WebKit/iPhone poteva lasciare **Body & Health**, **Mental** e **Perception & Neuro** sulla schermata placeholder.
+- `app.js` emette ora un evento post-render deterministico solo dopo che la route e il workspace sono stati montati.
+- I tre moduli avanzati si agganciano a quell'evento, evitando la dipendenza dal timing di `hashchange`/microtask.
+- Nessuna modifica ai dati atleta o ai payload cloud.
+
 ## v1.0.19 — PWA asset consistency
 - Corretto il rischio di caricare una combinazione di shell recente e moduli JS/CSS vecchi su iPhone/Safari/PWA.
 - Gli asset applicativi vengono richiesti network-fresh; la cache del service worker resta solo per la pagina offline.

@@ -246,6 +246,13 @@ function render() {
 
   bindRouteButtons();
   main.focus({ preventScroll: true });
+
+  // Notify enhancement modules only after the route DOM is fully mounted.
+  // This removes a WebKit timing race where hashchange listeners could run
+  // before the module workspace existed, leaving the base placeholder visible.
+  window.dispatchEvent(new CustomEvent('tpos:route-rendered', {
+    detail: { route },
+  }));
 }
 
 function bindRouteButtons() {

@@ -1,5 +1,6 @@
-TPOS v1.0.20 — Full ES-module graph versioning
+TPOS v1.0.21 — iPhone module render race fix
 
-Corregge il problema iPhone/Safari in cui gli entry point erano versionati ma gli import JS interni restavano senza versione.
-La pipeline GitHub Pages ora applica la stessa versione a tutto il grafo ES modules, evitando mix tra release diverse.
-Nessuna modifica ai dati atleta.
+Corregge il race condition WebKit/iPhone che poteva lasciare Body & Health, Mental e Perception & Neuro sulla schermata placeholder pur caricando i file corretti.
+
+Applica con Applica Patch.command e poi pubblica con Pubblica Tennis Player OS.command.
+Nessuna modifica ai dati atleta o ai payload cloud.

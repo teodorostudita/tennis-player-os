@@ -2711,6 +2711,7 @@ document.addEventListener('click', event => {
 });
 
 window.addEventListener('hashchange', queueEnhancement);
+window.addEventListener('tpos:route-rendered', queueEnhancement);
 
 applyModuleMetadata();
 patchVisibleMetadata();

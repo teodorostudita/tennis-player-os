@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.21',
+    date: '2026-09-30',
+    title: 'iPhone module render race fix',
+    details: [
+      'Corretto il race condition di rendering che su WebKit/iPhone poteva lasciare Body & Health, Mental e Perception & Neuro sulla schermata placeholder nonostante i moduli fossero caricati.',
+      'app.js emette ora un evento post-render deterministico dopo il montaggio completo della route.',
+      'I moduli avanzati si agganciano a questo evento e applicano la propria UI solo quando il workspace esiste realmente.',
+      'Nessuna modifica ai dati atleta o ai payload cloud.',
+    ],
+  },
+  {
     version: '1.0.19',
     date: '2026-09-30',
     title: 'PWA asset consistency',
