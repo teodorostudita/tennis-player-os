@@ -38,16 +38,28 @@ function normalizeWorkspace(payload = {}) {
       ? root.users.map(user => ({
           userId: String(user.userId || '').trim(),
           email: String(user.email || ''),
+          contactEmail: String(user.contactEmail || user.email || ''),
           displayName: String(user.displayName || ''),
           accountRole: String(user.accountRole || 'member'),
           strongestRole: String(user.strongestRole || 'member'),
           hasOwnerRole: Boolean(user.hasOwnerRole),
+          isBetaOwner: Boolean(user.isBetaOwner),
+          athleteCreationLimit: user.athleteCreationLimit == null
+            ? null
+            : Number(user.athleteCreationLimit),
           firstCreatedAt: String(user.firstCreatedAt || ''),
           assignments: Array.isArray(user.assignments)
             ? user.assignments.map(normalizeAssignment).filter(item => item.athleteId)
             : [],
         })).filter(user => user.userId)
       : [],
+    beta: {
+      capacity: Math.max(0, Number(root.beta?.capacity ?? 30)),
+      active: Math.max(0, Number(root.beta?.active ?? 0)),
+      remaining: Math.max(0, Number(root.beta?.remaining ?? 30)),
+      full: Boolean(root.beta?.full),
+      status: String(root.beta?.status || 'active'),
+    },
   };
 }
 
@@ -91,6 +103,30 @@ export async function replaceOwnerUserAccess({
 
   if (error) {
     throw new Error(`Impossibile salvare i privilegi: ${error.message}`);
+  }
+
+  return data || { ok: true };
+}
+
+
+export async function saveOwnerUserAccountOptions({
+  userId,
+  contactEmail = '',
+  isBetaOwner = false,
+} = {}) {
+  const normalizedUserId = String(userId || '').trim();
+  if (!normalizedUserId) {
+    throw new Error('Utente non specificato.');
+  }
+
+  const { data, error } = await supabase.rpc('set_owner_user_account_options', {
+    p_user_id: normalizedUserId,
+    p_contact_email: String(contactEmail || '').trim() || null,
+    p_is_beta_owner: Boolean(isBetaOwner),
+  });
+
+  if (error) {
+    throw new Error(`Impossibile salvare email/Founding Beta: ${error.message}`);
   }
 
   return data || { ok: true };

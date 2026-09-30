@@ -15,6 +15,7 @@ const ALLOWED_ORIGINS = new Set([
 type RequestBody = {
   athleteId?: string;
   userId?: string;
+  deleteAccount?: boolean;
 };
 
 function corsHeaders(origin: string | null) {
@@ -79,8 +80,9 @@ Deno.serve(async req => {
     const body = await req.json() as RequestBody;
     const athleteId = String(body.athleteId ?? '').trim();
     const targetUserId = String(body.userId ?? '').trim();
+    const deleteAccount = Boolean(body.deleteAccount);
 
-    if (!athleteId || !targetUserId) {
+    if (!targetUserId || (!deleteAccount && !athleteId)) {
       return json({ error: 'Atleta o utente non specificato.' }, 400, origin);
     }
 
@@ -107,6 +109,48 @@ Deno.serve(async req => {
       return json({ error: 'Sessione non valida.' }, 401, origin);
     }
 
+    const adminClient = createClient(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      },
+    );
+
+    if (deleteAccount) {
+      const { data: appOwnerAllowed, error: appOwnerError } =
+        await callerClient.rpc('is_app_owner');
+
+      if (appOwnerError) throw appOwnerError;
+      if (!appOwnerAllowed) {
+        return json({ error: 'Solo l’Owner globale può eliminare un account senza atleti.' }, 403, origin);
+      }
+
+      const { data: accountAccess, error: accountAccessError } = await adminClient
+        .from('account_access')
+        .select('role')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+
+      if (accountAccessError) throw accountAccessError;
+      if (accountAccess?.role === 'owner') {
+        return json({ error: 'L’Owner globale non può essere eliminato.' }, 400, origin);
+      }
+
+      const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(targetUserId);
+      if (deleteUserError) throw deleteUserError;
+
+      return json({
+        ok: true,
+        userId: targetUserId,
+        accountDeleted: true,
+        remainingAthleteCount: 0,
+      }, 200, origin);
+    }
+
     const { data: isOwner, error: ownerError } = await callerClient.rpc(
       'is_athlete_owner',
       { p_athlete_id: athleteId },
@@ -121,17 +165,6 @@ Deno.serve(async req => {
         origin,
       );
     }
-
-    const adminClient = createClient(
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      },
-    );
 
     const { data: membership, error: membershipError } =
       await adminClient

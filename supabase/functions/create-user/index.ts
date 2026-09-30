@@ -44,6 +44,8 @@ type RequestBody = {
   syncAssignments?: boolean;
   login?: string;
   email?: string;
+  contactEmail?: string;
+  isBetaOwner?: boolean;
   temporaryPassword?: string;
   role?: 'admin' | 'member';
   permissions?: PermissionInput[];
@@ -236,9 +238,10 @@ Deno.serve(async req => {
   try {
     const body = await req.json() as RequestBody;
     const sourceAthleteId = String(body.athleteId ?? '').trim();
+    const isBetaOwner = Boolean(body.isBetaOwner);
     const athleteIds = normalizeIdList(
       body.athleteIds,
-      sourceAthleteId,
+      isBetaOwner ? '' : sourceAthleteId,
       'atleta',
     );
     const managedAthleteIds = normalizeIdList(
@@ -251,6 +254,7 @@ Deno.serve(async req => {
     const resolvedLogin = resolveLogin(body.login ?? body.email);
     const login = resolvedLogin.login;
     const email = resolvedLogin.email;
+    const contactEmail = normalizeEmail(body.contactEmail || email);
     const temporaryPassword = String(body.temporaryPassword ?? '');
     const role = body.role === 'admin' ? 'admin' : 'member';
     const permissions = normalizePermissions(body.permissions);
@@ -259,8 +263,12 @@ Deno.serve(async req => {
       return json({ error: 'Atleta attivo non valido.' }, 400, origin);
     }
 
-    if (!athleteIds.length) {
+    if (!athleteIds.length && !isBetaOwner) {
       return json({ error: 'Seleziona almeno un atleta.' }, 400, origin);
+    }
+
+    if (!contactEmail || !contactEmail.includes('@')) {
+      return json({ error: 'Email di contatto non valida.' }, 400, origin);
     }
 
     if (syncAssignments && !requestedUserId) {
@@ -277,7 +285,10 @@ Deno.serve(async req => {
           ...athleteIds,
           sourceAthleteId,
         ])]
-      : athleteIds;
+      : [...new Set([
+          ...athleteIds,
+          sourceAthleteId,
+        ])];
 
     if (syncAssignments && managedAthleteIds.length) {
       const managedSet = new Set(managedAthleteIds);
@@ -313,6 +324,20 @@ Deno.serve(async req => {
 
     if (callerError || !callerData.user) {
       return json({ error: 'Sessione non valida.' }, 401, origin);
+    }
+
+    if (isBetaOwner) {
+      const { data: appOwnerAllowed, error: appOwnerError } =
+        await callerClient.rpc('is_app_owner');
+
+      if (appOwnerError) throw appOwnerError;
+      if (!appOwnerAllowed) {
+        return json(
+          { error: 'Solo l’Owner globale può creare un Founding Beta Owner.' },
+          403,
+          origin,
+        );
+      }
     }
 
     const adminClient = createClient(
@@ -406,6 +431,13 @@ Deno.serve(async req => {
         newlyCreatedUserId = targetUser.id;
       }
     }
+
+    const { error: contactEmailError } = await adminClient
+      .from('profiles')
+      .update({ contact_email: contactEmail })
+      .eq('id', targetUser.id);
+
+    if (contactEmailError) throw contactEmailError;
 
     const { data: existingMemberships, error: membershipReadError } =
       await adminClient
@@ -551,6 +583,14 @@ Deno.serve(async req => {
 
     if (accountRoleReadError) throw accountRoleReadError;
 
+    if (isBetaOwner && accountRoleRow?.role === 'owner') {
+      return json(
+        { error: 'L’Owner globale non può essere trasformato in Founding Beta Owner.' },
+        409,
+        origin,
+      );
+    }
+
     if (accountRoleRow?.role !== 'owner') {
       const { data: remainingMemberships, error: remainingMembershipsError } =
         await adminClient
@@ -570,11 +610,13 @@ Deno.serve(async req => {
         user_id: string;
         role: 'admin' | 'member';
         can_create_athletes: boolean;
+        athlete_creation_limit: number | null;
         must_change_password?: boolean;
       } = {
         user_id: targetUser.id,
-        role: hasAdminAccess ? 'admin' : 'member',
-        can_create_athletes: hasAdminAccess,
+        role: isBetaOwner ? 'admin' : hasAdminAccess ? 'admin' : 'member',
+        can_create_athletes: isBetaOwner || hasAdminAccess,
+        athlete_creation_limit: isBetaOwner ? 1 : null,
       };
 
       if (accountCreated) {
@@ -593,12 +635,29 @@ Deno.serve(async req => {
       if (accountRoleUpdateError) throw accountRoleUpdateError;
     }
 
+    let betaStatus = null;
+    if (isBetaOwner) {
+      const { data: reservedBetaStatus, error: betaReserveError } =
+        await adminClient.rpc('reserve_founding_beta_slot', {
+          p_user_id: targetUser.id,
+          p_email: contactEmail,
+          p_display_name: login || null,
+          p_created_by: callerData.user.id,
+        });
+
+      if (betaReserveError) throw betaReserveError;
+      betaStatus = reservedBetaStatus;
+    }
+
     return json(
       {
         ok: true,
         userId: targetUser.id,
         login,
         email,
+        contactEmail,
+        isBetaOwner,
+        beta: betaStatus,
         role,
         accountCreated,
         passwordChangeRequired: accountCreated,

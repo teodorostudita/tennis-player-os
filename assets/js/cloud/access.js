@@ -192,6 +192,8 @@ export async function createOrUpdateAthleteAccess({
   syncAssignments = false,
   login = '',
   email = '',
+  contactEmail = '',
+  isBetaOwner = false,
   temporaryPassword = '',
   role = 'member',
   permissions = [],
@@ -208,6 +210,8 @@ export async function createOrUpdateAthleteAccess({
       userId,
       syncAssignments,
       login: login || email,
+      contactEmail,
+      isBetaOwner: Boolean(isBetaOwner),
       temporaryPassword,
       role,
       permissions,
@@ -276,6 +280,43 @@ export async function removeAthleteUser({
     throw new Error(data.error);
   }
 
+  return data;
+}
+
+
+export async function deleteManagedAccount({ userId }) {
+  if (!currentAccess.isOwner) {
+    throw new Error('Solo il proprietario può rimuovere utenti.');
+  }
+
+  if (!userId) {
+    throw new Error('Utente non specificato.');
+  }
+
+  const { data, error } = await supabase.functions.invoke('remove-user', {
+    body: {
+      userId,
+      deleteAccount: true,
+    },
+  });
+
+  if (error) {
+    let message = error.message || 'Errore durante l’eliminazione dell’account.';
+
+    try {
+      const context = error.context;
+      if (context && typeof context.json === 'function') {
+        const payload = await context.json();
+        if (payload?.error) message = payload.error;
+      }
+    } catch {
+      // Keep the original message.
+    }
+
+    throw new Error(message);
+  }
+
+  if (data?.error) throw new Error(data.error);
   return data;
 }
 

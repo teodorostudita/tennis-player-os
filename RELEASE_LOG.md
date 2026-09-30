@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.0.25 — Founding Beta integrata negli account
+- Il Founding Beta Owner si crea dal normale pannello **Utenti & Accessi**, senza un flusso email/invito separato.
+- Aggiunta **Email di contatto** modificabile per tutti gli account, distinta dall'email tecnica usata internamente per il login.
+- Il flag **Founding Beta Owner** assegna il posto Beta, imposta accesso completo di default e consente la creazione di **un solo atleta**.
+- Il limite di un atleta è applicato lato database, non soltanto nell'interfaccia.
+- I privilegi del Beta Owner restano personalizzabili per atleta e modulo.
+- I Beta Owner senza atleta sono comunque visibili nel pannello Owner; il counter 30 posti si aggiorna con il flag.
+- Il vecchio pannello separato `+ Beta Owner` non viene più caricato.
+
 ## v1.0.21 — iPhone module render race fix
 - Corretto il race condition di rendering che su WebKit/iPhone poteva lasciare **Body & Health**, **Mental** e **Perception & Neuro** sulla schermata placeholder.
 - `app.js` emette ora un evento post-render deterministico solo dopo che la route e il workspace sono stati montati.

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { loadCurrentAccountAccess } from './accountAccess.js';
 
 const SELECTED_ATHLETE_KEY = 'tennisPlayerOS.selectedAthlete.v1';
 
@@ -191,6 +192,12 @@ export async function createAthlete({
 
   const athlete = mapCloudAthlete(data);
   setSelectedAthleteId(athlete.id);
+
+  // Re-read account limits immediately. Founding Beta accounts may create
+  // exactly one athlete, so the creation control must disappear as soon as
+  // the first athlete exists rather than waiting for a full page reload.
+  await loadCurrentAccountAccess();
+
   return athlete;
 }
 

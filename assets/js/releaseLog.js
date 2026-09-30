@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.25',
+    date: '2026-09-30',
+    title: 'Founding Beta integrata negli account',
+    details: [
+      'Il Founding Beta Owner si crea ora dal normale pannello Utenti & Accessi: eliminata la dipendenza dal flusso email/invito separato.',
+      'Ogni account dispone di una Email di contatto modificabile e separata dall’email tecnica usata internamente per il login.',
+      'Il flag Founding Beta Owner assegna per default accesso completo al proprio atleta e consente la creazione di un solo atleta, con limite applicato anche lato database.',
+      'I privilegi per atleta restano personalizzabili dal normale editor; il contatore Founding Beta si aggiorna quando il flag viene attivato o rimosso.',
+      'I Beta Owner senza atleta sono visibili nel pannello Owner e possono entrare in un workspace vuoto per creare il proprio atleta.',
+    ],
+  },
+  {
     version: '1.0.21',
     date: '2026-09-30',
     title: 'iPhone module render race fix',

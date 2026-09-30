@@ -1,14 +1,17 @@
 import { modules } from '../data/schema.js';
 import {
   createOrUpdateAthleteAccess,
+  deleteManagedAccount,
   getCurrentAccess,
   removeAthleteUser,
 } from '../cloud/access.js';
 import {
   loadOwnerAccessWorkspace,
   replaceOwnerUserAccess,
+  saveOwnerUserAccountOptions,
 } from '../cloud/accessDirectory.js';
-import { loginFromEmail, normalizeUsername } from '../cloud/loginIdentity.js';
+import { isAppOwner } from '../cloud/accountAccess.js';
+import { emailFromLogin, loginFromEmail, normalizeUsername } from '../cloud/loginIdentity.js';
 import { showInAppConfirm } from '../ui/inAppMessages.js';
 
 function escapeHtml(value = '') {
@@ -59,10 +62,10 @@ function permissionMapFromAssignment(assignment = {}) {
   return map;
 }
 
-function defaultAssignment(athleteId) {
+function defaultAssignment(athleteId, role = 'member') {
   return {
     athleteId,
-    role: 'member',
+    role: role === 'admin' ? 'admin' : 'member',
     status: 'active',
     permissions: blankPermissionMap(),
     protectedOwner: false,
@@ -124,6 +127,7 @@ function renderShell(gate) {
             <div>
               <h3>Utenti</h3>
               <p>Seleziona un utente per visualizzarne la configurazione.</p>
+              <small class="access-beta-counter" id="access-beta-counter" hidden></small>
             </div>
             <button class="button button-primary" type="button" id="access-new-user">+ Nuovo utente</button>
           </div>
@@ -157,6 +161,25 @@ function renderShell(gate) {
                   placeholder="es. mario.rossi"
                 />
                 <small id="access-login-help">3–40 caratteri: lettere, numeri, punto, trattino o underscore.</small>
+              </label>
+
+              <label class="access-field">
+                <span>Email di contatto</span>
+                <input
+                  name="contactEmail"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="nome@email.it"
+                />
+                <small id="access-contact-email-help">L’email tecnica di login resta separata. Se non inserisci una mail reale, resta quella tecnica generata dal nome utente.</small>
+              </label>
+
+              <label class="access-beta-toggle" id="access-beta-toggle" hidden>
+                <input name="isBetaOwner" type="checkbox" />
+                <span>
+                  <strong>Founding Beta Owner</strong>
+                  <small>Default: scrittura completa sul proprio atleta e creazione massima di 1 atleta. I privilegi restano personalizzabili.</small>
+                </span>
               </label>
 
               <div id="access-password-block">
@@ -306,7 +329,7 @@ function isProtectedUser(gate) {
 
 function memberRole(user = {}) {
   if (user.hasOwnerRole || user.strongestRole === 'owner') return 'owner';
-  if (user.strongestRole === 'admin') return 'admin';
+  if (user.isBetaOwner || user.accountRole === 'admin' || user.strongestRole === 'admin') return 'admin';
   return 'member';
 }
 
@@ -315,7 +338,9 @@ function memberSummary(gate, user) {
     .map(assignment => athleteLabel(athleteById(gate, assignment.athleteId) || {}))
     .filter(Boolean);
 
-  if (!names.length) return 'Nessun atleta assegnato';
+  if (!names.length) return user.isBetaOwner
+    ? 'Founding Beta · nessun atleta ancora'
+    : 'Nessun atleta assegnato';
   if (names.length <= 2) return names.join(' · ');
   return `${names.slice(0, 2).join(' · ')} · +${names.length - 2}`;
 }
@@ -346,6 +371,7 @@ function memberCards(gate) {
           <span class="access-member-name">
             ${escapeHtml(login)}
             <span class="access-role-badge role-${escapeAttr(role)}">${escapeHtml(roleLabel(role))}</span>
+            ${user.isBetaOwner ? '<span class="access-role-badge role-beta">Beta</span>' : ''}
           </span>
           <span class="access-member-summary">${escapeHtml(memberSummary(gate, user))}</span>
         </span>
@@ -358,6 +384,14 @@ function memberCards(gate) {
 function renderMembers(gate) {
   const list = gate.querySelector('#access-members-list');
   if (!list) return;
+
+  const betaCounter = gate.querySelector('#access-beta-counter');
+  if (betaCounter) {
+    const beta = workspace(gate).beta || {};
+    betaCounter.hidden = !isAppOwner();
+    betaCounter.textContent = `Founding Beta: ${Number(beta.active || 0)}/${Number(beta.capacity || 30)} · ${Number(beta.remaining || 0)} disponibili`;
+  }
+
   list.innerHTML = memberCards(gate);
 
   list.querySelectorAll('[data-select-member]').forEach(button => {
@@ -386,6 +420,9 @@ function userToDraft(user) {
   return {
     userId: user.userId,
     login: userLogin(user),
+    contactEmail: String(user.contactEmail || user.email || ''),
+    isBetaOwner: Boolean(user.isBetaOwner),
+    athleteCreationLimit: user.athleteCreationLimit == null ? null : Number(user.athleteCreationLimit),
     hasOwnerRole: Boolean(user.hasOwnerRole),
     assignments,
     activeAthleteId: assignmentIds({ assignments })[0] || '',
@@ -405,6 +442,9 @@ function newDraft(gate) {
   return {
     userId: '',
     login: '',
+    contactEmail: '',
+    isBetaOwner: false,
+    athleteCreationLimit: null,
     hasOwnerRole: false,
     assignments,
     activeAthleteId: preferred?.id || '',
@@ -553,7 +593,10 @@ function renderAthleteChoices(gate) {
       const athleteId = input.value;
 
       if (input.checked) {
-        state.draft.assignments[athleteId] ||= defaultAssignment(athleteId);
+        state.draft.assignments[athleteId] ||= defaultAssignment(
+          athleteId,
+          state.draft.isBetaOwner ? 'admin' : 'member',
+        );
         state.draft.activeAthleteId = athleteId;
       } else {
         delete state.draft.assignments[athleteId];
@@ -573,6 +616,8 @@ function setFormMode(gate) {
   const form = gate.querySelector('#access-form');
   const passwordBlock = gate.querySelector('#access-password-block');
   const loginHelp = gate.querySelector('#access-login-help');
+  const contactHelp = gate.querySelector('#access-contact-email-help');
+  const betaToggle = gate.querySelector('#access-beta-toggle');
   const modifyButton = gate.querySelector('#access-modify');
   const saveButton = gate.querySelector('#access-save');
   const deleteButton = gate.querySelector('#access-delete-user');
@@ -585,8 +630,18 @@ function setFormMode(gate) {
 
   form.elements.userId.value = state.draft.userId || '';
   form.elements.login.value = state.draft.login || '';
+  form.elements.contactEmail.value = state.draft.contactEmail || '';
+  form.elements.isBetaOwner.checked = Boolean(state.draft.isBetaOwner);
   form.elements.login.readOnly = !isNew;
+  form.elements.contactEmail.readOnly = !isAppOwner() || isView || protectedUser;
   setControlDisabled(form.elements.login, false);
+  setControlDisabled(form.elements.isBetaOwner, !isAppOwner() || isView || protectedUser);
+  if (betaToggle) betaToggle.hidden = !isAppOwner();
+  if (contactHelp) {
+    contactHelp.textContent = state.draft.isBetaOwner
+      ? 'Email amministrativa/di contatto. Non modifica il nome utente tecnico usato per il login.'
+      : 'Se non conosci una mail reale, puoi lasciare quella tecnica generata dal nome utente.';
+  }
 
   if (passwordBlock) passwordBlock.hidden = !isNew;
   if (loginHelp) {
@@ -609,7 +664,7 @@ function setFormMode(gate) {
   gate.querySelector('#access-editor-kicker').textContent = isNew ? 'Nuovo account' : protectedUser ? 'Account protetto' : 'Account';
   gate.querySelector('#access-editor-title').textContent = isNew ? 'Nuovo utente' : state.draft.login;
   gate.querySelector('#access-editor-subtitle').textContent = isNew
-    ? 'Crea l’account, assegna gli atleti e configura i privilegi di ciascuno.'
+    ? 'Crea l’account, inserisci l’email di contatto e configura eventuali atleti/privilegi.'
     : protectedUser
       ? 'Puoi consultare le assegnazioni Owner, ma non modificarle o eliminarle.'
       : isEdit
@@ -629,6 +684,7 @@ function openNewUser(gate) {
   state.mode = 'new';
   state.originalUserId = '';
   state.draft = newDraft(gate);
+  state.contactEmailEdited = false;
 
   const form = gate.querySelector('#access-form');
   form?.reset();
@@ -717,13 +773,29 @@ async function saveEditor(gate) {
   if (!state || !form || !saveButton) return;
 
   const assignments = collectAssignmentPayload(gate);
-  if (!assignments.length) {
-    setMessage(gate, 'Seleziona almeno un atleta da assegnare all’utente.', 'error');
+  const isNew = state.mode === 'new';
+  const login = String(form.elements.login?.value || '').trim();
+  const contactEmail = String(form.elements.contactEmail?.value || '').trim();
+  const isBetaOwner = Boolean(form.elements.isBetaOwner?.checked) && isAppOwner();
+  const originalUser = state.draft?.userId
+    ? workspace(gate).users.find(user => user.userId === state.draft.userId)
+    : null;
+
+  if (!assignments.length && !isBetaOwner) {
+    setMessage(gate, 'Seleziona almeno un atleta oppure abilita Founding Beta Owner.', 'error');
     return;
   }
 
-  const isNew = state.mode === 'new';
-  const login = String(form.elements.login?.value || '').trim();
+  if (!assignments.length && !isNew && (originalUser?.assignments || []).length) {
+    setMessage(gate, 'Non rimuovere qui l’ultimo atleta assegnato: mantienilo oppure elimina l’account.', 'error');
+    return;
+  }
+
+  if (contactEmail && !form.elements.contactEmail?.validity?.valid) {
+    setMessage(gate, 'Inserisci un indirizzo email di contatto valido.', 'error');
+    return;
+  }
+
   let userId = state.draft.userId || '';
 
   if (isNew) {
@@ -770,6 +842,8 @@ async function saveEditor(gate) {
         athleteId: state.contextAthleteId,
         athleteIds: assignments.map(item => item.athleteId),
         login,
+        contactEmail,
+        isBetaOwner,
         temporaryPassword: String(form.elements.temporaryPassword?.value || ''),
         role: 'member',
         permissions: [],
@@ -783,14 +857,24 @@ async function saveEditor(gate) {
       }
     }
 
-    await replaceOwnerUserAccess({
-      userId,
-      assignments,
-      // A newly created account has no pre-existing assignments. If the
-      // username already existed, preserve assignments outside this owner’s
-      // current selection rather than silently removing them from the New flow.
-      removeMissing: isNew ? accountCreated : true,
-    });
+    if (assignments.length) {
+      await replaceOwnerUserAccess({
+        userId,
+        assignments,
+        // A newly created account has no pre-existing assignments. If the
+        // username already existed, preserve assignments outside this owner’s
+        // current selection rather than silently removing them from the New flow.
+        removeMissing: isNew ? accountCreated : true,
+      });
+    }
+
+    if (isAppOwner()) {
+      await saveOwnerUserAccountOptions({
+        userId,
+        contactEmail,
+        isBetaOwner,
+      });
+    }
 
     state.originalUserId = userId;
     state.mode = 'view';
@@ -804,9 +888,11 @@ async function saveEditor(gate) {
     setMessage(
       gate,
       isNew
-        ? accountCreated
-          ? 'Utente creato. Atleti e privilegi sono stati salvati.'
-          : 'Account esistente trovato: le nuove assegnazioni e i relativi privilegi sono stati salvati.'
+        ? isBetaOwner
+          ? 'Founding Beta Owner creato. Potrà creare un solo atleta; i privilegi restano personalizzabili.'
+          : accountCreated
+            ? 'Utente creato. Atleti, email e privilegi sono stati salvati.'
+            : 'Account esistente trovato: assegnazioni, email e privilegi sono stati salvati.'
         : 'Configurazione utente aggiornata.',
       'success',
     );
@@ -844,16 +930,21 @@ async function deleteCurrentUser(gate) {
 
   try {
     const removable = (user.assignments || []).filter(assignment => assignment.role !== 'owner');
-    if (!removable.length) {
-      throw new Error('Questo utente non ha assegnazioni eliminabili.');
-    }
-
     let lastResult = null;
-    for (const assignment of removable) {
-      lastResult = await removeAthleteUser({
-        athleteId: assignment.athleteId,
-        userId,
-      });
+
+    if (!removable.length && user.isBetaOwner && isAppOwner()) {
+      lastResult = await deleteManagedAccount({ userId });
+    } else {
+      if (!removable.length) {
+        throw new Error('Questo utente non ha assegnazioni eliminabili.');
+      }
+
+      for (const assignment of removable) {
+        lastResult = await removeAthleteUser({
+          athleteId: assignment.athleteId,
+          userId,
+        });
+      }
     }
 
     closeEditor(gate);
@@ -888,6 +979,45 @@ function bindStaticEvents(gate) {
 
   gate.querySelector('#access-new-user')?.addEventListener('click', () => {
     openNewUser(gate);
+  });
+
+  gate.querySelector('#access-form')?.elements.login?.addEventListener('input', event => {
+    const state = editorState(gate);
+    const form = gate.querySelector('#access-form');
+    if (!state || state.mode !== 'new' || state.contactEmailEdited || !form) return;
+
+    try {
+      form.elements.contactEmail.value = emailFromLogin(event.target.value || '');
+      state.draft.contactEmail = form.elements.contactEmail.value;
+    } catch (_) {
+      form.elements.contactEmail.value = '';
+    }
+  });
+
+  gate.querySelector('#access-form')?.elements.contactEmail?.addEventListener('input', event => {
+    const state = editorState(gate);
+    if (!state) return;
+    state.contactEmailEdited = true;
+    state.draft.contactEmail = String(event.target.value || '');
+  });
+
+  gate.querySelector('#access-form')?.elements.isBetaOwner?.addEventListener('change', event => {
+    const state = editorState(gate);
+    if (!state || !isEditableMode(gate) || !isAppOwner()) return;
+
+    persistActiveAssignment(gate);
+    state.draft.isBetaOwner = Boolean(event.target.checked);
+
+    // New Beta Owners start in a clean workspace. They create their own athlete.
+    // Existing assignments can still be added back manually and customized.
+    if (state.mode === 'new' && state.draft.isBetaOwner) {
+      state.draft.assignments = {};
+      state.draft.activeAthleteId = '';
+    }
+
+    renderAthleteChoices(gate);
+    renderAssignmentTabs(gate);
+    setFormMode(gate);
   });
 
   gate.querySelector('#access-cancel')?.addEventListener('click', () => {
