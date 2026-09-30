@@ -22,15 +22,6 @@ function isIOSSafari() {
     && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
 }
 
-function escapeHtml(value = '') {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
 function showAlreadyInstalled() {
   content.innerHTML = `
     <div class="install-success">
@@ -126,10 +117,9 @@ function showAndroidFallback() {
 
 function showDesktop() {
   content.innerHTML = `
-    <p class="install-copy">
-      Apri questa pagina dal telefono sul quale vuoi installare Tennis Player OS.
-    </p>
-    <div class="install-desktop-url">${escapeHtml(location.href)}</div>
+    <a class="install-primary" href="https://tennis.polidorionline.it/install.html">
+      Clicca qui
+    </a>
   `;
 }
 
