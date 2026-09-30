@@ -1,12 +1,12 @@
-# Protect the SMTP credentials file from direct web access.
-<Files "mail-config.php">
+# Protect server-side configuration files from direct web access.
+<FilesMatch "^(mail-config|beta-program)\.php$">
   Require all denied
-</Files>
+</FilesMatch>
 
 # Apache 2.2 fallback
 <IfModule !mod_authz_core.c>
-  <Files "mail-config.php">
+  <FilesMatch "^(mail-config|beta-program)\.php$">
     Order allow,deny
     Deny from all
-  </Files>
+  </FilesMatch>
 </IfModule>

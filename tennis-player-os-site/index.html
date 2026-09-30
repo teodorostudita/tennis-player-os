@@ -151,32 +151,63 @@
   </section>
 
   <section class="beta section" id="beta">
-    <div class="beta-card">
-      <div>
+    <div class="beta-card beta-card-v2">
+      <div class="beta-copy">
         <span class="pill">FOUNDING BETA</span>
-        <h2 data-i18n="betaTitle">Aiutaci a far crescere Tennis Player OS partendo dal campo.</h2>
-        <p data-i18n="betaBody">Stiamo aprendo la piattaforma a un primo gruppo ristretto di giocatori agonisti, famiglie e coach. Il sistema centrale è già operativo; il prodotto continua a evolversi.</p>
-        <div class="beta-points">
-          <span><b>01</b><i data-i18n="bp1">Accesso alla piattaforma</i></span>
-          <span><b>02</b><i data-i18n="bp2">Influenza diretta sullo sviluppo</i></span>
-          <span><b>03</b><i data-i18n="bp3">Vantaggi Founder al lancio</i></span>
+        <h2 data-i18n="betaTitle">30 account. Accesso completo gratuito per tutta la Beta.</h2>
+        <p data-i18n="betaBody">Apriamo Tennis Player OS a un primo gruppo di 30 Beta Owner. Ogni account ha accesso completo al proprio ambiente e a tutti i moduli disponibili durante la Beta.</p>
+
+        <div class="beta-capacity" aria-live="polite">
+          <div class="beta-capacity-top">
+            <div>
+              <small data-i18n="betaAvailability">DISPONIBILITÀ FOUNDING BETA</small>
+              <strong><span id="betaRemaining">30</span> <span data-i18n="betaSlotsLeft">posti disponibili</span></strong>
+            </div>
+            <div class="beta-capacity-count"><span id="betaAssigned">0</span> / <span id="betaCapacity">30</span> <span data-i18n="betaAssignedLabel">assegnati</span></div>
+          </div>
+          <div class="beta-progress" role="progressbar" aria-label="Founding Beta account assegnati" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0" id="betaProgress" style="--beta-progress:0%"><span></span></div>
+          <p class="beta-waitlist" id="betaWaitlist" hidden data-i18n="betaWaitlist">I 30 posti sono stati assegnati. Puoi comunque lasciare la tua richiesta per la lista d'attesa.</p>
+        </div>
+
+        <div class="beta-feature-grid">
+          <div><b data-i18n="bfAccess">Accesso</b><span data-i18n="bfAccessBody">Tutti i moduli Beta disponibili</span></div>
+          <div><b data-i18n="bfDuration">Durata</b><span data-i18n="bfDurationBody">Gratuito fino alla fine della Beta</span></div>
+          <div><b data-i18n="bfOwner">Profilo</b><span data-i18n="bfOwnerBody">Beta Owner: pieno controllo del proprio ambiente</span></div>
+          <div><b data-i18n="bfUpdates">Aggiornamenti</b><span data-i18n="bfUpdatesBody">Inclusi automaticamente durante la Beta</span></div>
+          <div><b data-i18n="bfRequests">Feature requests</b><span data-i18n="bfRequestsBody">Puoi proporre funzioni e modifiche alla roadmap</span></div>
+          <div><b data-i18n="bfAfter">Dopo la Beta</b><span data-i18n="bfAfterBody">Nessun rinnovo automatico e nessuna carta richiesta</span></div>
+        </div>
+
+        <div class="feature-request-note">
+          <strong data-i18n="featureRequestTitle">Hai bisogno di qualcosa che Tennis Player OS ancora non fa?</strong>
+          <p data-i18n="featureRequestBody">Durante la Beta puoi proporre nuove funzioni o modifiche. Le richieste vengono valutate in base a utilità generale, fattibilità e priorità di sviluppo.</p>
         </div>
       </div>
-      <form id="betaForm">
-        <label><span data-i18n="name">Nome</span><input required name="name" autocomplete="name"></label>
-        <label><span>Email</span><input required type="email" name="email" autocomplete="email"></label>
-        <label><span data-i18n="role">Sono…</span>
-          <select name="role">
-            <option data-i18n="rParent">Genitore</option>
-            <option data-i18n="rPlayer">Atleta</option>
-            <option data-i18n="coach">Coach</option>
-            <option data-i18n="rAcademy">Academy / Club</option>
-            <option data-i18n="rOther">Altro</option>
+
+      <form id="betaForm" action="beta-request.php" method="post" novalidate>
+        <div class="form-head">
+          <small data-i18n="formKicker">RICHIEDI IL TUO ACCOUNT</small>
+          <h3 data-i18n="formTitle">Founding Beta Owner</h3>
+        </div>
+        <label><span data-i18n="name">Nome</span><input required name="name" maxlength="100" autocomplete="name"></label>
+        <label><span>Email</span><input required type="email" name="email" maxlength="190" autocomplete="email"></label>
+        <label><span data-i18n="profileInterest">Mi interessa TPOS come…</span>
+          <select name="profile">
+            <option value="parent" data-i18n="rParent">Genitore / famiglia</option>
+            <option value="player" data-i18n="rPlayer">Atleta</option>
+            <option value="coach" data-i18n="coach">Coach</option>
+            <option value="academy" data-i18n="rAcademy">Academy / Club</option>
+            <option value="other" data-i18n="rOther">Altro</option>
           </select>
         </label>
-        <button class="button" type="submit" data-i18n="request">Richiedi accesso alla Beta</button>
-        <small data-i18n="formNote">Nessun pagamento oggi. Ti contatteremo per accesso e condizioni della Founding Beta.</small>
-        <div class="success" id="formSuccess" data-i18n="success">Grazie. Prima della pubblicazione definitiva collegheremo questo form al canale di contatto scelto.</div>
+        <label><span data-i18n="betaMessage">Cosa ti interessa di più? <em>Facoltativo</em></span><textarea name="message" maxlength="1200" rows="4" data-i18n-placeholder="betaMessagePlaceholder" placeholder="Puoi indicarci come pensi di usare TPOS o una funzione che vorresti vedere durante la Beta."></textarea></label>
+        <input type="hidden" name="lang" id="betaLang" value="it">
+        <input type="hidden" name="program_state" id="betaProgramState" value="open">
+        <div class="hp-field" aria-hidden="true"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off"></label></div>
+        <button class="button" id="betaSubmit" type="submit" data-i18n="request">Richiedi il tuo account Beta</button>
+        <small class="form-note" data-i18n="formNote">Nessun pagamento e nessuna carta richiesta. L'accesso viene attivato manualmente fino a esaurimento dei 30 posti.</small>
+        <div class="success" id="formSuccess" data-i18n="success" role="status">Richiesta inviata. Ti contatteremo appena possibile per l'attivazione del tuo account Founding Beta.</div>
+        <div class="form-error" id="formError" data-i18n="formError" role="alert">Non siamo riusciti a inviare la richiesta. Riprova tra poco oppure contattaci direttamente.</div>
       </form>
     </div>
     <p class="beta-honesty"><b data-i18n="betaMeans">Beta significa beta.</b> <span data-i18n="betaHonesty">Le funzioni possono cambiare, alcune integrazioni sono ancora in sviluppo e possono esserci bug. I dati restano sotto il controllo dell'utente.</span></p>
@@ -187,7 +218,7 @@
   <div class="brand"><span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span></div>
   <p>One Player. A Complete Journey.</p>
   <div><a href="#" data-i18n="privacy">Privacy</a><a href="#" data-i18n="terms">Termini</a><a href="#beta">Beta</a></div>
-  <small>© 2026 Tennis Player OS · Beta site v0.3</small>
+  <small>© 2026 Tennis Player OS · Beta site v0.8</small>
 </footer>
 
 <dialog id="previewDialog" aria-labelledby="previewDialogTitle">
@@ -208,6 +239,5 @@
 </dialog>
 
 <script src="app.js"></script>
-  <script src="./tpos-install-bridge.js" defer></script>
 </body>
 </html>

@@ -159,10 +159,13 @@ if (is_file($rateFile)) {
 
 $name = trim((string)($_POST['name'] ?? ''));
 $email = trim((string)($_POST['email'] ?? ''));
-$role = trim((string)($_POST['role'] ?? ''));
+$profile = trim((string)($_POST['profile'] ?? ''));
+$message = trim((string)($_POST['message'] ?? ''));
+$programState = trim((string)($_POST['program_state'] ?? 'open'));
 $lang = trim((string)($_POST['lang'] ?? 'it'));
 $name = preg_replace('/[\r\n]+/', ' ', $name) ?? '';
 $email = preg_replace('/[\r\n]+/', '', $email) ?? '';
+$message = preg_replace('/\r\n?/', "\n", $message) ?? '';
 
 $nameLength = function_exists('mb_strlen') ? mb_strlen($name, 'UTF-8') : strlen($name);
 if ($name === '' || $nameLength < 2 || $nameLength > 100) {
@@ -172,15 +175,22 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190) {
     respond(false, 422, 'Email non valida.', $wantsJson, 'invalid_email');
 }
 
-$roles = [
-    'parent' => 'Genitore',
+$profiles = [
+    'parent' => 'Genitore / famiglia',
     'player' => 'Atleta',
     'coach' => 'Coach',
     'academy' => 'Academy / Club',
     'other' => 'Altro',
 ];
-if (!isset($roles[$role])) {
-    respond(false, 422, 'Profilo non valido.', $wantsJson, 'invalid_role');
+if ($profile !== '' && !isset($profiles[$profile])) {
+    respond(false, 422, 'Profilo di interesse non valido.', $wantsJson, 'invalid_profile');
+}
+$messageLength = function_exists('mb_strlen') ? mb_strlen($message, 'UTF-8') : strlen($message);
+if ($messageLength > 1200) {
+    respond(false, 422, 'Messaggio troppo lungo.', $wantsJson, 'message_too_long');
+}
+if (!in_array($programState, ['open', 'waitlist'], true)) {
+    $programState = 'open';
 }
 
 $configFile = __DIR__ . '/mail-config.php';
@@ -196,20 +206,48 @@ if ($password === '' || $password === 'INCOLLA_QUI_LA_PASSWORD_SPECIFICA_PER_APP
     respond(false, 503, 'Configurazione SMTP da completare.', $wantsJson, 'smtp_password_missing');
 }
 
-$roleLabel = $roles[$role];
+$profileLabel = $profile !== '' ? $profiles[$profile] : 'Non specificato';
 $langLabel = strtolower($lang) === 'en' ? 'English' : 'Italiano';
 $timestamp = new DateTimeImmutable('now', new DateTimeZone('Europe/Rome'));
 $referer = trim((string)($_SERVER['HTTP_REFERER'] ?? '')) ?: 'non disponibile';
-$subject = 'Tennis Player OS - Nuova richiesta Founding Beta - ' . $name;
-$body = "Nuova richiesta di accesso alla Founding Beta di Tennis Player OS\n"
-      . "=============================================================\n\n"
+
+$betaProgramFile = __DIR__ . '/beta-program.php';
+$capacity = 30;
+$active = 0;
+if (is_file($betaProgramFile)) {
+    $betaProgram = require $betaProgramFile;
+    if (is_array($betaProgram)) {
+        $capacity = max(0, (int)($betaProgram['capacity'] ?? 30));
+        $active = max(0, (int)($betaProgram['active'] ?? 0));
+    }
+}
+$remaining = max(0, $capacity - $active);
+$programLabel = ($programState === 'waitlist' || $remaining <= 0)
+    ? "Lista d'attesa"
+    : 'Posto Beta disponibile';
+
+$subjectPrefix = $programLabel === "Lista d'attesa"
+    ? 'Tennis Player OS - Lista d’attesa Founding Beta - '
+    : 'Tennis Player OS - Nuova richiesta Founding Beta - ';
+$subject = $subjectPrefix . $name;
+$body = "Nuova richiesta per la Founding Beta di Tennis Player OS\n"
+      . "======================================================\n\n"
       . "Nome: {$name}\n"
       . "Email: {$email}\n"
-      . "Profilo: {$roleLabel}\n"
+      . "Profilo di interesse: {$profileLabel}\n"
+      . "Tipo di accesso previsto: Founding Beta Owner (accesso completo)\n"
+      . "Stato programma: {$programLabel}\n"
+      . "Posti attivi: {$active} / {$capacity}\n"
+      . "Posti rimanenti: {$remaining}\n"
       . "Lingua sito: {$langLabel}\n"
       . "Data: " . $timestamp->format('d/m/Y H:i:s T') . "\n"
-      . "Pagina: {$referer}\n\n"
-      . "Rispondi direttamente a questa email: il Reply-To è impostato su {$email}.\n";
+      . "Pagina: {$referer}\n";
+
+if ($message !== '') {
+    $body .= "\nMessaggio / richiesta iniziale:\n{$message}\n";
+}
+
+$body .= "\nRispondi direttamente a questa email: il Reply-To è impostato su {$email}.\n";
 
 try {
     smtpSend($config, $email, $subject, $body);
