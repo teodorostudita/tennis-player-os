@@ -5,6 +5,7 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const APP_URL = 'https://tennis.polidorionline.it';
+const BETA_OWNER_MAIL_URL = 'https://www.polidorionline.it/TennisPlayerOS/beta-owner-invite.php';
 const ALLOWED_ORIGINS = new Set([
   APP_URL,
   'http://127.0.0.1:8080',
@@ -15,6 +16,11 @@ type RequestBody = {
   email?: string;
   displayName?: string;
 };
+
+type AccountAccessSnapshot = {
+  role: string;
+  can_create_athletes: boolean;
+} | null;
 
 function inviteRedirectUrl(email: string) {
   const url = new URL(APP_URL);
@@ -60,6 +66,69 @@ async function findUserByEmail(adminClient: ReturnType<typeof createClient>, ema
   throw new Error('Impossibile completare la ricerca dell’account.');
 }
 
+async function readAccountAccess(
+  adminClient: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<AccountAccessSnapshot> {
+  const { data, error } = await adminClient
+    .from('account_access')
+    .select('role, can_create_athletes')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data
+    ? {
+        role: String(data.role || ''),
+        can_create_athletes: Boolean(data.can_create_athletes),
+      }
+    : null;
+}
+
+async function sendBetaOwnerMail({
+  authorization,
+  email,
+  displayName,
+  inviteUrl,
+  existingAccount,
+}: {
+  authorization: string;
+  email: string;
+  displayName: string;
+  inviteUrl: string;
+  existingAccount: boolean;
+}) {
+  const response = await fetch(BETA_OWNER_MAIL_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': authorization,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      displayName,
+      inviteUrl,
+      existingAccount,
+    }),
+  });
+
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = await response.json();
+  } catch (_) {
+    // HTTP status below will provide the useful failure if response is not JSON.
+  }
+
+  if (!response.ok || payload?.ok !== true) {
+    const message = typeof payload?.error === 'string'
+      ? payload.error
+      : `Invio email Founding Beta non riuscito (${response.status}).`;
+    throw new Error(message);
+  }
+}
+
 Deno.serve(async req => {
   const origin = req.headers.get('origin');
 
@@ -87,8 +156,10 @@ Deno.serve(async req => {
     return json({ error: 'Sessione non disponibile.' }, 401, origin);
   }
 
-  let newlyInvitedUserId = '';
+  let newlyCreatedUserId = '';
   let reservedUserId = '';
+  let previousAccess: AccountAccessSnapshot = null;
+  let accessChanged = false;
 
   try {
     const body = await req.json() as RequestBody;
@@ -127,28 +198,51 @@ Deno.serve(async req => {
 
     let targetUser = await findUserByEmail(adminClient, email);
     let invitationSent = false;
+    let inviteUrl = '';
 
-    if (!targetUser) {
-      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-        redirectTo: inviteRedirectUrl(email),
-        data: {
-          ...(displayName ? { full_name: displayName } : {}),
-          tpos_beta: 'founding_beta',
+    if (targetUser) {
+      previousAccess = await readAccountAccess(adminClient, targetUser.id);
+
+      // The global application owner is infrastructure, not one of the 30 Beta Owners.
+      if (previousAccess?.role === 'owner') {
+        return json({
+          error: 'Questo indirizzo appartiene già all’Owner globale e non può occupare un posto Founding Beta.',
+        }, 409, origin);
+      }
+
+      if (displayName) {
+        const { error: profileError } = await adminClient
+          .from('profiles')
+          .update({ display_name: displayName })
+          .eq('id', targetUser.id);
+        if (profileError) throw profileError;
+      }
+    } else {
+      // Generate the Supabase invite link, but do not ask Supabase to deliver the email.
+      // TPOS delivers it through the same iCloud SMTP channel already used by the public Beta site.
+      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: 'invite',
+        email,
+        options: {
+          redirectTo: inviteRedirectUrl(email),
+          data: {
+            ...(displayName ? { full_name: displayName } : {}),
+            tpos_beta: 'founding_beta',
+          },
         },
       });
 
-      if (inviteError) throw inviteError;
-      if (!inviteData.user) throw new Error('Supabase non ha restituito l’utente invitato.');
+      if (linkError) throw linkError;
+      if (!linkData?.user) throw new Error('Supabase non ha restituito l’utente invitato.');
 
-      targetUser = inviteData.user;
-      newlyInvitedUserId = targetUser.id;
+      const properties = linkData.properties as Record<string, unknown> | undefined;
+      inviteUrl = String(properties?.action_link ?? properties?.actionLink ?? '').trim();
+      if (!inviteUrl) throw new Error('Supabase non ha restituito il link di attivazione.');
+
+      targetUser = linkData.user;
+      newlyCreatedUserId = targetUser.id;
       invitationSent = true;
-    } else if (displayName) {
-      const { error: profileError } = await adminClient
-        .from('profiles')
-        .update({ display_name: displayName })
-        .eq('id', targetUser.id);
-      if (profileError) throw profileError;
+      previousAccess = await readAccountAccess(adminClient, targetUser.id);
     }
 
     const { data: betaStatus, error: reserveError } = await adminClient.rpc(
@@ -164,15 +258,7 @@ Deno.serve(async req => {
     if (reserveError) throw reserveError;
     reservedUserId = targetUser.id;
 
-    const { data: existingAccess, error: accessReadError } = await adminClient
-      .from('account_access')
-      .select('role, can_create_athletes')
-      .eq('user_id', targetUser.id)
-      .maybeSingle();
-
-    if (accessReadError) throw accessReadError;
-
-    if (existingAccess?.role !== 'owner') {
+    if (previousAccess?.role !== 'owner') {
       const { error: accessError } = await adminClient
         .from('account_access')
         .upsert(
@@ -184,7 +270,16 @@ Deno.serve(async req => {
           { onConflict: 'user_id' },
         );
       if (accessError) throw accessError;
+      accessChanged = true;
     }
+
+    await sendBetaOwnerMail({
+      authorization,
+      email,
+      displayName,
+      inviteUrl,
+      existingAccount: !invitationSent,
+    });
 
     return json({
       ok: true,
@@ -192,7 +287,8 @@ Deno.serve(async req => {
       email,
       displayName,
       invitationSent,
-      accountRole: existingAccess?.role === 'owner' ? 'owner' : 'admin',
+      emailDelivery: 'tpos_smtp',
+      accountRole: 'admin',
       beta: betaStatus,
     }, 200, origin);
   } catch (error) {
@@ -214,9 +310,42 @@ Deno.serve(async req => {
       }
     }
 
-    if (newlyInvitedUserId) {
+    if (accessChanged && reservedUserId && !newlyCreatedUserId) {
       try {
-        const { error: cleanupError } = await adminClient.auth.admin.deleteUser(newlyInvitedUserId);
+        if (previousAccess) {
+          await adminClient
+            .from('account_access')
+            .upsert(
+              {
+                user_id: reservedUserId,
+                role: previousAccess.role,
+                can_create_athletes: previousAccess.can_create_athletes,
+              },
+              { onConflict: 'user_id' },
+            );
+        } else {
+          await adminClient
+            .from('account_access')
+            .delete()
+            .eq('user_id', reservedUserId);
+        }
+      } catch (cleanupError) {
+        console.error('Failed to restore previous account access:', cleanupError);
+      }
+    }
+
+    if (newlyCreatedUserId) {
+      try {
+        await adminClient
+          .from('account_access')
+          .delete()
+          .eq('user_id', newlyCreatedUserId);
+      } catch (cleanupError) {
+        console.error('Failed to clean up account access:', cleanupError);
+      }
+
+      try {
+        const { error: cleanupError } = await adminClient.auth.admin.deleteUser(newlyCreatedUserId);
         if (cleanupError) console.error('Failed to clean up invited user:', cleanupError);
       } catch (cleanupError) {
         console.error('Failed to clean up invited user:', cleanupError);
