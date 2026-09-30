@@ -15,26 +15,31 @@ const GROUPS = [
     title: 'Qualità fisiche',
     subtitle: 'Fotografia sintetica delle capacità fisiche generali.',
     metrics: [
-      { key: 'endurance', label: 'Resistenza / Fondo' },
-      { key: 'elasticity-prevention', label: 'Elasticità / injury prevention' },
-      { key: 'power', label: 'Potenza', components: [{ key: 'lower', label: 'L' }, { key: 'upper', label: 'U' }] },
-      { key: 'explosiveness', label: 'Esplosività', components: [{ key: 'lower', label: 'L' }, { key: 'upper', label: 'U' }] },
+      { key: 'endurance', label: 'Resistenza' },
+      { key: 'elasticity-prevention', label: 'Elasticità' },
+      {
+        key: 'power',
+        label: 'Potenza',
+        legacyComponents: [{ key: 'lower', label: 'L' }, { key: 'upper', label: 'U' }],
+      },
+      {
+        key: 'explosiveness',
+        label: 'Esplosività',
+        legacyComponents: [{ key: 'lower', label: 'L' }, { key: 'upper', label: 'U' }],
+      },
       { key: 'sprint-speed', label: 'Velocità di scatto' },
-      { key: 'core-stability', label: 'Core stability' },
+      { key: 'core-stability', label: 'Core Stability' },
     ],
   },
   {
     id: 'coordination',
-    title: 'Coordinazione & movimento',
-    subtitle: 'Controllo motorio, reattività e qualità degli spostamenti.',
+    title: 'Coordinazione & Movimento',
+    subtitle: 'Controllo motorio, qualità degli spostamenti e reattività dinamica.',
     metrics: [
-      { key: 'balance-proprioception', label: 'Equilibrio / Propriocezione' },
-      { key: 'reactivity', label: 'Reattività' },
-      { key: 'eye-motor-coordination', label: 'Coordinazione oculo-motoria' },
+      { key: 'balance-proprioception', label: 'Equilibrio' },
       { key: 'footwork', label: 'Footwork' },
-      { key: 'static-dynamic-coordination', label: 'Coordinazione statica / dinamica' },
-      { key: 'basic-movements', label: 'Spostamenti base', components: [{ key: 'ns', label: 'N/S' }, { key: 'ew', label: 'E/W' }] },
-      { key: 'advanced-recovery-crossover', label: 'Spost. avanzati · Recovery / Crossover' },
+      { key: 'static-dynamic-coordination', label: 'Coordinazione' },
+      { key: 'reactivity', label: 'Reattività in movimento' },
     ],
   },
 ];
@@ -48,6 +53,10 @@ const METRICS = GROUPS.flatMap(group => group.metrics.map(metric => ({
 
 let cache = { athleteId: '', entries: [], evaluatorName: '', loading: false, error: '' };
 let queuePending = false;
+let testBridgePending = false;
+let pendingAssessmentMetricKey = '';
+let pendingTestId = '';
+let lastTestLinkFingerprint = '';
 
 function route() {
   return location.hash.replace(/^#\/?/, '') || 'dashboard';
@@ -97,6 +106,72 @@ function formatValue(value) {
 
 function metricByKey(metricKey) {
   return METRICS.find(metric => metric.key === metricKey) || null;
+}
+
+function trainingTests() {
+  const tests = store.getState().training?.tests;
+  return Array.isArray(tests) ? tests : [];
+}
+
+function linkedTestForMetric(metricKey) {
+  return trainingTests().find(test => clean(test.assessmentMetricKey) === metricKey) || null;
+}
+
+function linkedMetricForTest(test) {
+  return metricByKey(clean(test?.assessmentMetricKey));
+}
+
+function testLinkFingerprint(state = store.getState()) {
+  const tests = Array.isArray(state.training?.tests) ? state.training.tests : [];
+  return JSON.stringify(tests.map(test => [
+    clean(test.id),
+    clean(test.assessmentMetricKey),
+    clean(test.name),
+  ]));
+}
+
+function setMetricTestLink(metricKey, testId = '') {
+  const normalizedMetricKey = metricByKey(metricKey)?.key || '';
+  const normalizedTestId = clean(testId);
+
+  store.update(state => {
+    const tests = Array.isArray(state.training?.tests) ? state.training.tests : [];
+
+    for (const test of tests) {
+      if (clean(test.assessmentMetricKey) === normalizedMetricKey) {
+        test.assessmentMetricKey = '';
+      }
+    }
+
+    if (!normalizedMetricKey || !normalizedTestId) return;
+
+    const selected = tests.find(test => clean(test.id) === normalizedTestId);
+    if (selected) selected.assessmentMetricKey = normalizedMetricKey;
+  });
+}
+
+function setTestMetricLink(testId, metricKey = '') {
+  const normalizedTestId = clean(testId);
+  const normalizedMetricKey = metricByKey(metricKey)?.key || '';
+
+  store.update(state => {
+    const tests = Array.isArray(state.training?.tests) ? state.training.tests : [];
+    const selected = tests.find(test => clean(test.id) === normalizedTestId);
+    if (!selected) return;
+
+    if (normalizedMetricKey) {
+      for (const test of tests) {
+        if (
+          test !== selected
+          && clean(test.assessmentMetricKey) === normalizedMetricKey
+        ) {
+          test.assessmentMetricKey = '';
+        }
+      }
+    }
+
+    selected.assessmentMetricKey = normalizedMetricKey;
+  });
 }
 
 function entriesFor(metricKey, componentKey = '') {
@@ -176,6 +251,12 @@ async function ensureAssessmentSurface() {
   else content.appendChild(section);
 
   bindAssessment(section);
+
+  if (pendingAssessmentMetricKey) {
+    const metricKey = pendingAssessmentMetricKey;
+    pendingAssessmentMetricKey = '';
+    window.setTimeout(() => openDetail(metricKey), 0);
+  }
 }
 
 function queueEnsure() {
@@ -190,13 +271,13 @@ function renderAssessment() {
       <div>
         <div class="eyebrow">Current Athletic Assessment</div>
         <h2>Valutazione attuale</h2>
-        <p>Giudizio sintetico del preparatore, separato sia dai Test sia dagli Obiettivi. Ogni nuova valutazione entra nello storico e alimenta il grafico della singola capacità.</p>
+        <p>Giudizio sintetico del preparatore, separato dai Test e dagli Obiettivi. Ogni capacità può essere collegata a un solo test Athletics: il link è bidirezionale, ma valori e scale restano indipendenti.</p>
       </div>
       <span class="athletics-assessment-scale">Scala 1–10</span>
     </div>
     ${cache.error ? `<div class="access-info athletics-assessment-error">${escapeHtml(cache.error)}</div>` : ''}
     <div class="athletics-assessment-grid">${GROUPS.map(renderGroup).join('')}</div>
-    <p class="athletics-assessment-footnote">Il valore corrente è sempre l'ultima valutazione disponibile. Le valutazioni precedenti non vengono perse.</p>
+    <p class="athletics-assessment-footnote">Il valore corrente è sempre l'ultima valutazione disponibile. Il test collegato è solo un riferimento: nessun valore viene importato o convertito tra la scala 1–10 e la scala del test.</p>
     <dialog class="planner-dialog athletics-assessment-dialog" id="athletics-assessment-entry-dialog"></dialog>
     <dialog class="planner-dialog athletics-assessment-dialog athletics-assessment-detail-dialog" id="athletics-assessment-detail-dialog"></dialog>
   `;
@@ -207,10 +288,41 @@ function renderGroup(group) {
     <article class="panel athletics-assessment-card">
       <div class="panel-header"><h3>${escapeHtml(group.title)}</h3><p>${escapeHtml(group.subtitle)}</p></div>
       <div class="athletics-assessment-table">
-        <div class="athletics-assessment-table-head"><span>Capacità</span><span>Attuale</span><span>Trend</span><span>Agg.</span><span></span></div>
+        <div class="athletics-assessment-table-head"><span>Capacità</span><span>Attuale</span><span>Trend</span><span>Test collegato</span><span>Agg.</span><span></span></div>
         ${group.metrics.map(renderMetricRow).join('')}
       </div>
     </article>`;
+}
+
+function linkedTestMarkup(metric) {
+  const test = linkedTestForMetric(metric.key);
+
+  if (test) {
+    return `
+      <span class="athletics-assessment-test-cell linked">
+        <button
+          type="button"
+          class="athletics-assessment-test-chip"
+          data-assessment-test-open="${escapeAttr(test.id)}"
+          title="Apri ${escapeAttr(test.name || 'test')}"
+        >
+          ${escapeHtml(test.name || 'Test')}
+        </button>
+        ${canWriteModule('training') ? `
+          <button
+            type="button"
+            class="athletics-assessment-test-edit"
+            data-assessment-link="${escapeAttr(metric.key)}"
+            title="Cambia test collegato"
+            aria-label="Cambia test collegato"
+          >↔</button>
+        ` : ''}
+      </span>`;
+  }
+
+  return canWriteModule('training')
+    ? `<button type="button" class="athletics-assessment-test-empty" data-assessment-link="${escapeAttr(metric.key)}">+ collega test</button>`
+    : '<span class="athletics-assessment-test-none">—</span>';
 }
 
 function renderMetricRow(metric) {
@@ -228,6 +340,7 @@ function renderMetricRow(metric) {
       <span class="athletics-assessment-metric">${escapeHtml(metric.label)}</span>
       <strong>${escapeHtml(currentText)}</strong>
       <span class="athletics-assessment-trend">${trendText}</span>
+      <span>${linkedTestMarkup(metric)}</span>
       <time>${escapeHtml(formatDate(latestMetricDate(metric)))}</time>
       <span class="athletics-assessment-row-action">
         ${canWriteModule('training')
@@ -240,7 +353,7 @@ function renderMetricRow(metric) {
 function bindAssessment(section) {
   section.querySelectorAll('[data-assessment-detail]').forEach(row => {
     const open = event => {
-      if (event?.target?.closest?.('[data-assessment-rate]')) return;
+      if (event?.target?.closest?.('[data-assessment-rate], [data-assessment-link], [data-assessment-test-open]')) return;
       openDetail(row.dataset.assessmentDetail);
     };
     row.addEventListener('click', open);
@@ -253,6 +366,20 @@ function bindAssessment(section) {
     button.addEventListener('click', event => {
       event.stopPropagation();
       openEntryDialog(button.dataset.assessmentRate);
+    });
+  });
+
+  section.querySelectorAll('[data-assessment-link]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      openMetricTestLinkDialog(button.dataset.assessmentLink);
+    });
+  });
+
+  section.querySelectorAll('[data-assessment-test-open]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      openLinkedTest(button.dataset.assessmentTestOpen);
     });
   });
 }
@@ -372,6 +499,57 @@ function historyRows(metric) {
   return [...grouped.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 
+function legacyHistoryRows(metric) {
+  const legacy = Array.isArray(metric.legacyComponents)
+    ? metric.legacyComponents
+    : [];
+  if (!legacy.length) return [];
+
+  const grouped = new Map();
+  for (const component of legacy) {
+    for (const entry of entriesFor(metric.key, component.key)) {
+      if (!grouped.has(entry.assessedOn)) {
+        grouped.set(entry.assessedOn, {
+          date: entry.assessedOn,
+          values: {},
+          entries: [],
+        });
+      }
+      const row = grouped.get(entry.assessedOn);
+      row.values[component.key] = entry.value;
+      row.entries.push(entry);
+    }
+  }
+
+  return [...grouped.values()]
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+function legacyHistoryMarkup(metric) {
+  const components = Array.isArray(metric.legacyComponents)
+    ? metric.legacyComponents
+    : [];
+  const rows = legacyHistoryRows(metric);
+  if (!components.length || !rows.length) return '';
+
+  return `
+    <section class="athletics-assessment-legacy">
+      <div>
+        <strong>Storico precedente alla semplificazione</strong>
+        <span>Le vecchie valutazioni L/U restano archiviate e consultabili, ma non vengono aggregate né convertite nel nuovo valore unico.</span>
+      </div>
+      <div class="athletics-assessment-history">
+        <table class="training-table">
+          <thead><tr><th>Data</th>${components.map(component => `<th>${escapeHtml(component.label)}</th>`).join('')}<th>Valutatore</th><th>Nota</th></tr></thead>
+          <tbody>${rows.map(row => {
+            const firstEntry = row.entries[0];
+            return `<tr><td>${escapeHtml(formatDate(row.date))}</td>${components.map(component => `<td><strong>${escapeHtml(formatValue(row.values[component.key]))}</strong></td>`).join('')}<td>${escapeHtml(firstEntry?.evaluatorName || '—')}</td><td>${escapeHtml(firstEntry?.note || '—')}</td></tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    </section>`;
+}
+
 function openDetail(metricKey) {
   const metric = metricByKey(metricKey);
   const dialog = document.querySelector('#athletics-assessment-detail-dialog');
@@ -381,6 +559,7 @@ function openDetail(metricKey) {
   dialog.innerHTML = `
     <div class="dialog-head"><div><div class="eyebrow">${escapeHtml(metric.groupTitle)}</div><h3>${escapeHtml(metric.label)}</h3></div><button class="dialog-close" type="button" data-close aria-label="Chiudi">×</button></div>
     <div class="dialog-body athletics-assessment-detail-body">
+      ${renderAssessmentTestBridge(metric)}
       ${renderMetricChart(metric)}
       <div class="athletics-assessment-detail-actions"><span>${rows.length} ${rows.length === 1 ? 'data valutata' : 'date valutate'}</span>${canWriteModule('training') ? `<button class="button button-primary" type="button" data-new-assessment="${escapeAttr(metric.key)}">+ Nuova valutazione</button>` : ''}</div>
       <div class="athletics-assessment-history">
@@ -389,10 +568,19 @@ function openDetail(metricKey) {
           return `<tr><td>${escapeHtml(formatDate(row.date))}</td>${metric.components.map(component => `<td><strong>${escapeHtml(formatValue(row.values[component.key]))}</strong></td>`).join('')}<td>${escapeHtml(firstEntry?.evaluatorName || '—')}</td><td>${escapeHtml(firstEntry?.note || '—')}</td>${canWriteModule('training') ? `<td class="athletics-assessment-history-actions"><button class="icon-button" type="button" data-edit-assessment="${escapeAttr(metric.key)}" data-assessment-date="${escapeAttr(row.date)}" aria-label="Modifica valutazione">✎</button><button class="training-icon-danger" type="button" data-delete-assessment="${escapeAttr(metric.key)}" data-assessment-date="${escapeAttr(row.date)}" aria-label="Elimina valutazione">×</button></td>` : ''}</tr>`;
         }).join('')}</tbody></table>` : '<div class="athletics-assessment-empty"><strong>Nessuna valutazione registrata</strong><span>La prima valutazione diventerà il punto iniziale del grafico.</span></div>'}
       </div>
+      ${legacyHistoryMarkup(metric)}
     </div>`;
 
   dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
   dialog.querySelector('[data-new-assessment]')?.addEventListener('click', () => { dialog.close(); openEntryDialog(metric.key); });
+  dialog.querySelector('[data-detail-link-test]')?.addEventListener('click', () => {
+    dialog.close();
+    openMetricTestLinkDialog(metric.key);
+  });
+  dialog.querySelector('[data-detail-open-test]')?.addEventListener('click', () => {
+    dialog.close();
+    openLinkedTest(dialog.querySelector('[data-detail-open-test]').dataset.detailOpenTest);
+  });
   dialog.querySelectorAll('[data-edit-assessment]').forEach(button => button.addEventListener('click', () => { dialog.close(); openEntryDialog(metric.key, button.dataset.assessmentDate); }));
   dialog.querySelectorAll('[data-delete-assessment]').forEach(button => button.addEventListener('click', async () => {
     const date = button.dataset.assessmentDate;
@@ -412,14 +600,321 @@ function openDetail(metricKey) {
   dialog.showModal();
 }
 
+function renderAssessmentTestBridge(metric) {
+  const test = linkedTestForMetric(metric.key);
+
+  return `
+    <section class="athletics-assessment-test-bridge">
+      <div>
+        <span>Test Athletics collegato</span>
+        <strong>${escapeHtml(test?.name || 'Nessun test collegato')}</strong>
+        <small>Il collegamento è descrittivo: valutazione 1–10 e risultato del test restano su scale indipendenti.</small>
+      </div>
+      <div>
+        ${test ? `<button class="button button-ghost" type="button" data-detail-open-test="${escapeAttr(test.id)}">Apri test</button>` : ''}
+        ${canWriteModule('training') ? `<button class="button button-ghost" type="button" data-detail-link-test="${escapeAttr(metric.key)}">${test ? 'Cambia' : 'Collega test'}</button>` : ''}
+      </div>
+    </section>`;
+}
+
+function createLinkDialog() {
+  document.querySelector('#athletics-assessment-link-dialog')?.remove();
+  const dialog = document.createElement('dialog');
+  dialog.id = 'athletics-assessment-link-dialog';
+  dialog.className = 'planner-dialog athletics-assessment-link-dialog';
+  document.body.appendChild(dialog);
+  dialog.addEventListener('close', () => dialog.remove(), { once: true });
+  return dialog;
+}
+
+function openMetricTestLinkDialog(metricKey) {
+  if (!canWriteModule('training')) return;
+  const metric = metricByKey(metricKey);
+  if (!metric) return;
+
+  const tests = [...trainingTests()].sort((a, b) => clean(a.name).localeCompare(clean(b.name), 'it'));
+  const current = linkedTestForMetric(metric.key);
+  const dialog = createLinkDialog();
+
+  dialog.innerHTML = `
+    <form method="dialog" id="athletics-assessment-link-form">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Assessment ↔ Test</div>
+          <h3>${escapeHtml(metric.label)}</h3>
+          <p>Scegli un solo test Athletics. Il collegamento non trasferisce né converte i valori.</p>
+        </div>
+        <button class="dialog-close" type="button" data-close aria-label="Chiudi">×</button>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label>Test collegato</label>
+          <select name="testId">
+            <option value="">Nessun test</option>
+            ${tests.map(test => {
+              const otherMetric = linkedMetricForTest(test);
+              const suffix = otherMetric && otherMetric.key !== metric.key
+                ? ` · ora collegato a ${otherMetric.label}`
+                : '';
+              return `<option value="${escapeAttr(test.id)}" ${current?.id === test.id ? 'selected' : ''}>${escapeHtml(`${test.name || 'Test'}${suffix}`)}</option>`;
+            }).join('')}
+          </select>
+          <span class="training-field-hint">Se scegli un test già collegato a un’altra capacità, il collegamento viene spostato.</span>
+        </div>
+        ${tests.length ? '' : '<div class="training-inline-note">Non hai ancora definito test in Athletics.</div>'}
+      </div>
+      <div class="dialog-actions">
+        <div></div>
+        <div class="dialog-save-actions">
+          <button class="button button-ghost" type="button" data-close>Annulla</button>
+          <button class="button button-primary" type="submit" ${tests.length || current ? '' : 'disabled'}>Salva collegamento</button>
+        </div>
+      </div>
+    </form>`;
+
+  dialog.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
+  dialog.querySelector('form').addEventListener('submit', event => {
+    event.preventDefault();
+    const testId = clean(new FormData(event.currentTarget).get('testId'));
+    setMetricTestLink(metric.key, testId);
+    dialog.close();
+    queueEnsure();
+    queueTestBridge();
+  });
+  dialog.showModal();
+}
+
+function openTestMetricLinkDialog(testId) {
+  if (!canWriteModule('training')) return;
+  const test = trainingTests().find(item => clean(item.id) === clean(testId));
+  if (!test) return;
+
+  const currentMetric = linkedMetricForTest(test);
+  const dialog = createLinkDialog();
+
+  dialog.innerHTML = `
+    <form method="dialog" id="athletics-test-assessment-link-form">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Test ↔ Assessment</div>
+          <h3>${escapeHtml(test.name || 'Test')}</h3>
+          <p>Collega il test a una sola capacità della Valutazione attuale. Le due scale restano separate.</p>
+        </div>
+        <button class="dialog-close" type="button" data-close aria-label="Chiudi">×</button>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label>Capacità collegata</label>
+          <select name="metricKey">
+            <option value="">Nessuna capacità</option>
+            ${GROUPS.map(group => `
+              <optgroup label="${escapeAttr(group.title)}">
+                ${group.metrics.map(metric => {
+                  const occupied = linkedTestForMetric(metric.key);
+                  const suffix = occupied && occupied.id !== test.id
+                    ? ` · ora: ${occupied.name || 'altro test'}`
+                    : '';
+                  return `<option value="${escapeAttr(metric.key)}" ${currentMetric?.key === metric.key ? 'selected' : ''}>${escapeHtml(`${metric.label}${suffix}`)}</option>`;
+                }).join('')}
+              </optgroup>`).join('')}
+          </select>
+          <span class="training-field-hint">Scegliendo una capacità già collegata a un altro test, il collegamento precedente viene sostituito.</span>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <div></div>
+        <div class="dialog-save-actions">
+          <button class="button button-ghost" type="button" data-close>Annulla</button>
+          <button class="button button-primary" type="submit">Salva collegamento</button>
+        </div>
+      </div>
+    </form>`;
+
+  dialog.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
+  dialog.querySelector('form').addEventListener('submit', event => {
+    event.preventDefault();
+    const metricKey = clean(new FormData(event.currentTarget).get('metricKey'));
+    setTestMetricLink(test.id, metricKey);
+    dialog.close();
+    queueEnsure();
+    queueTestBridge();
+  });
+  dialog.showModal();
+}
+
+function testsSurface() {
+  if (route() !== 'training') return null;
+  const content = document.querySelector('#training-section-content');
+  return content?.querySelector('.training-tests-layout') ? content : null;
+}
+
+function selectedTrainingTest(content = testsSurface()) {
+  const testId = clean(content?.querySelector('[data-test-id].active')?.dataset.testId);
+  return trainingTests().find(test => clean(test.id) === testId) || null;
+}
+
+function enhanceTestListLinks(content) {
+  content?.querySelectorAll('[data-test-id]').forEach(button => {
+    button.querySelector('.athletics-test-list-link')?.remove();
+    const test = trainingTests().find(item => clean(item.id) === clean(button.dataset.testId));
+    const metric = linkedMetricForTest(test);
+    if (!metric) return;
+
+    const copy = button.querySelector('div');
+    if (!copy) return;
+    const badge = document.createElement('span');
+    badge.className = 'athletics-test-list-link';
+    badge.textContent = `↔ ${metric.label}`;
+    copy.appendChild(badge);
+  });
+}
+
+function ensureTestBridgeSurface() {
+  testBridgePending = false;
+  const content = testsSurface();
+  if (!content) return;
+
+  enhanceTestListLinks(content);
+
+  const test = selectedTrainingTest(content);
+  const detail = content.querySelector('.training-test-detail');
+  if (!test || !detail) return;
+
+  detail.querySelector('.athletics-test-assessment-bridge')?.remove();
+  const metric = linkedMetricForTest(test);
+  const bridge = document.createElement('section');
+  bridge.className = 'athletics-test-assessment-bridge';
+  bridge.innerHTML = `
+    <div>
+      <span>Current Athletic Assessment</span>
+      <strong>${escapeHtml(metric?.label || 'Nessuna capacità collegata')}</strong>
+      <small>Collegamento descrittivo: il risultato del test non modifica la valutazione 1–10.</small>
+    </div>
+    <div>
+      ${metric ? `<button class="button button-ghost" type="button" data-open-assessment-metric="${escapeAttr(metric.key)}">Apri valutazione</button>` : ''}
+      ${canWriteModule('training') ? `<button class="button button-ghost" type="button" data-test-assessment-link="${escapeAttr(test.id)}">${metric ? 'Cambia' : 'Collega valutazione'}</button>` : ''}
+    </div>`;
+
+  detail.querySelector('.training-test-detail-head')?.insertAdjacentElement('afterend', bridge);
+  focusPendingTest();
+}
+
+function queueTestBridge() {
+  if (testBridgePending) return;
+  testBridgePending = true;
+  queueMicrotask(() => window.setTimeout(ensureTestBridgeSurface, 0));
+}
+
+function openLinkedTest(testId) {
+  pendingTestId = clean(testId);
+  const button = document.querySelector('[data-training-section="tests"]');
+  if (button && !button.classList.contains('active')) button.click();
+  queueTestBridge();
+}
+
+function focusPendingTest() {
+  if (!pendingTestId || route() !== 'training') return;
+  const content = testsSurface();
+  if (!content) return;
+
+  const button = content.querySelector(`[data-test-id="${CSS.escape(pendingTestId)}"]`);
+  if (!button) return;
+
+  if (!button.classList.contains('active')) {
+    button.click();
+    queueTestBridge();
+    return;
+  }
+
+  pendingTestId = '';
+  content.querySelector('.training-test-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openAssessmentMetric(metricKey) {
+  if (!metricByKey(metricKey)) return;
+  pendingAssessmentMetricKey = metricKey;
+  const goals = document.querySelector('[data-training-section="goals"]');
+  if (goals && !goals.classList.contains('active')) goals.click();
+  queueEnsure();
+}
+
 document.addEventListener('click', event => {
   const target = event.target;
-  if (target.closest('[data-training-section="goals"]') || target.closest('[data-route="training"]') || target.closest('[data-edit-goal]') || target.closest('#add-training-goal')) queueEnsure();
+
+  if (target.closest('[data-test-assessment-link]')) {
+    openTestMetricLinkDialog(target.closest('[data-test-assessment-link]').dataset.testAssessmentLink);
+    return;
+  }
+
+  if (target.closest('[data-open-assessment-metric]')) {
+    openAssessmentMetric(target.closest('[data-open-assessment-metric]').dataset.openAssessmentMetric);
+    return;
+  }
+
+  if (
+    target.closest('[data-training-section="goals"]')
+    || target.closest('[data-route="training"]')
+    || target.closest('[data-edit-goal]')
+    || target.closest('#add-training-goal')
+  ) queueEnsure();
+
+  if (
+    target.closest('[data-training-section="tests"]')
+    || target.closest('[data-test-id]')
+    || target.closest('#add-training-test')
+    || target.closest('#empty-add-training-test')
+    || target.closest('#edit-training-test')
+    || target.closest('#add-test-result')
+  ) queueTestBridge();
 });
 
 document.addEventListener('submit', event => {
   if (event.target?.id === 'training-goal-form') queueEnsure();
+  if (event.target?.id === 'training-test-form' || event.target?.id === 'training-result-form') queueTestBridge();
 });
 
-window.addEventListener('hashchange', queueEnsure);
+// training.js reconstructs a test object when it is edited. Preserve the
+// athlete-specific Assessment link across that edit without modifying the
+// reusable test definition or importing any numeric value.
+document.addEventListener('submit', event => {
+  if (event.target?.id !== 'training-test-form') return;
+
+  const testId = clean(event.target.elements?.id?.value);
+  if (!testId) return;
+
+  const before = trainingTests().find(test => clean(test.id) === testId);
+  const metricKey = clean(before?.assessmentMetricKey);
+  if (!metricKey) return;
+
+  window.setTimeout(() => {
+    const current = trainingTests().find(test => clean(test.id) === testId);
+    if (!current || clean(current.assessmentMetricKey) === metricKey) return;
+
+    store.update(state => {
+      const test = state.training?.tests?.find(item => clean(item.id) === testId);
+      if (test) test.assessmentMetricKey = metricKey;
+    });
+
+    queueTestBridge();
+  }, 0);
+}, true);
+
+store.subscribe(state => {
+  const fingerprint = testLinkFingerprint(state);
+  if (fingerprint === lastTestLinkFingerprint) return;
+  lastTestLinkFingerprint = fingerprint;
+
+  if (route() === 'training') {
+    queueEnsure();
+    queueTestBridge();
+  }
+});
+
+window.addEventListener('hashchange', () => {
+  queueEnsure();
+  queueTestBridge();
+});
+
+lastTestLinkFingerprint = testLinkFingerprint();
 queueEnsure();
+queueTestBridge();

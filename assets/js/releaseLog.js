@@ -1,5 +1,56 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.17',
+    date: '2026-09-30',
+    title: 'Athletics Assessment ↔ Tests',
+    details: [
+      'Semplificate le due tabelle della Valutazione attuale: sei Qualità fisiche e quattro voci di Coordinazione & Movimento.',
+      'Potenza ed Esplosività diventano valutazioni uniche 1–10; le vecchie rilevazioni L/U restano archiviate e consultabili come storico precedente, senza conversione.',
+      'Ogni capacità della Valutazione attuale può essere collegata a un solo test del modulo Athletics.',
+      'Il collegamento è bidirezionale: dalla Valutazione si apre il test collegato e dal dettaglio del test si apre direttamente la capacità corrispondente.',
+      'Il test mostra il collegamento anche nella Libreria; il collegamento può essere creato, cambiato o rimosso da entrambi i lati.',
+      'Test e Valutazione restano semanticamente separati: nessun valore viene importato, convertito o confrontato automaticamente tra scale diverse.',
+      'Il link è salvato nel record cloud del test Athletics, quindi non richiede una nuova migration e non viene copiato quando si riutilizza il protocollo su un altro atleta.',
+    ],
+  },
+  {
+    version: '1.0.16',
+    date: '2026-09-30',
+    title: 'Cleaner install entry',
+    details: [
+      'Semplificata la schermata desktop dell’installer con un solo CTA “Clicca qui”.',
+      'Rimossi URL tecnico e testo esplicativo superfluo; invariato il flusso iPhone/Android.',
+    ],
+  },
+  {
+    version: '1.0.15',
+    date: '2026-09-30',
+    title: 'Install first, login after',
+    details: [
+      'Aggiunta la pagina pubblica install.html e impostato il funnel sito → installazione → icona TPOS → login.',
+      'Android/Chrome usa il prompt nativo quando disponibile; iPhone/iPad mostra i passaggi Safari necessari.',
+      'Nessuna modifica a Supabase, autenticazione o moduli applicativi.',
+    ],
+  },
+  {
+    version: '1.0.14',
+    date: '2026-09-29',
+    title: 'Dummy-friendly PWA install assistant',
+    details: [
+      'Aggiunto il comando “Installa app” con flusso dedicato per Android/Chromium e iPhone/iPad.',
+      'L’assistente compare solo dopo il login e resta nascosto quando TPOS è già installata.',
+    ],
+  },
+  {
+    version: '1.0.13',
+    date: '2026-09-29',
+    title: 'Installable PWA',
+    details: [
+      'Tennis Player OS diventa installabile come PWA su iPhone/iPad, Android e desktop compatibili.',
+      'Aggiunti manifest, icone, metadati Apple, service worker minimale e pagina offline senza cache aggressiva dei dati cloud.',
+    ],
+  },
+  {
     version: '1.0.12',
     date: '2026-09-29',
     title: 'Development ↔ Drills bridge + Drills product polish',

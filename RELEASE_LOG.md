@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.0.17 — Athletics Assessment ↔ Tests
+- **Valutazione attuale** semplificata.
+- **Qualità fisiche**: Resistenza; Elasticità; Potenza; Esplosività; Velocità di scatto; Core Stability.
+- **Coordinazione & Movimento**: Equilibrio; Footwork; Coordinazione; Reattività in movimento.
+- Ogni capacità può essere collegata a **un solo test Athletics**.
+- Collegamento bidirezionale: Valutazione → test e test → Valutazione.
+- Il link è puramente semantico: **nessun valore viene importato o convertito** tra scala 1–10 e scala del test.
+- Le vecchie valutazioni L/U di Potenza ed Esplosività restano archiviate e consultabili come storico legacy; non vengono aggregate.
+- Il collegamento è memorizzato nel record cloud del test e non richiede migration SQL.
+
 ## v1.0.16 — Cleaner install entry
 - Semplificata la schermata desktop dell’installer.
 - Rimosso l’URL tecnico mostrato in chiaro.
