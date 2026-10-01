@@ -1,22 +1,24 @@
-import '../bootstrap.js?v=1.0.29';
+import '../bootstrap.js';
 
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from './access.js?v=1.0.29';
+} from './access.js';
 
 import {
   loadCloudModuleState,
   saveCloudModuleState,
-} from './moduleStateCloud.js?v=1.0.29';
+  subscribeCloudModuleState,
+} from './moduleStateCloud.js';
 
-import { store } from '../data/store.js?v=1.0.29';
-import { fileProvider } from '../data/providers/provider.js?v=1.0.29';
+import { store } from '../data/store.js';
+import { fileProvider } from '../data/providers/provider.js';
 
 const SAVE_DELAY_MS = 350;
 const RETRY_MIN_MS = 4000;
 const RETRY_MAX_MS = 60000;
+const REMOTE_REFRESH_MS = 30000;
 
 const LIBRARY_MODULES = [
   'development',
@@ -37,8 +39,9 @@ const MANAGED_SLICES = {
     label: 'Drills',
   },
   nutrition: {
-    schemaVersion: 2,
+    schemaVersion: 3,
     normalize: normalizeNutrition,
+    merge: mergeNutrition,
     meaningful: hasMeaningfulNutrition,
     label: 'Nutrition & Recovery',
   },
@@ -46,7 +49,7 @@ const MANAGED_SLICES = {
 
 const BACKFILL_ONLY = {
   health: {
-    schemaVersion: 1,
+    schemaVersion: 3,
     meaningful: hasMeaningfulHealth,
   },
   mental: {
@@ -141,6 +144,83 @@ function normalizeNutrition(payload = {}) {
   };
 }
 
+function rowTimestamp(row = {}) {
+  const value = row.updatedAt || row.updated_at || row.createdAt || row.created_at || '';
+  const parsed = Date.parse(String(value || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mergeRows(localRows = [], cloudRows = [], keyOf = item => item?.id || '') {
+  const merged = new Map();
+
+  for (const row of cloudRows) {
+    const key = String(keyOf(row) || '');
+    if (!key) continue;
+    merged.set(key, clone(row));
+  }
+
+  for (const row of localRows) {
+    const key = String(keyOf(row) || '');
+    if (!key) continue;
+
+    const cloudRow = merged.get(key);
+    if (!cloudRow) {
+      merged.set(key, clone(row));
+      continue;
+    }
+
+    const localTime = rowTimestamp(row);
+    const cloudTime = rowTimestamp(cloudRow);
+
+    // If both copies carry timestamps, the newest edit wins. Legacy rows often
+    // have no timestamp; in a same-key tie the cloud copy remains canonical.
+    if (localTime > cloudTime) merged.set(key, clone(row));
+  }
+
+  return [...merged.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, row]) => row);
+}
+
+function mergeNutrition(localPayload = {}, cloudPayload = {}) {
+  const local = normalizeNutrition(localPayload);
+  const cloud = normalizeNutrition(cloudPayload);
+
+  return normalizeNutrition({
+    ...local,
+    ...cloud,
+    planner: {
+      ...local.planner,
+      ...cloud.planner,
+      entries: mergeRows(
+        local.planner.entries,
+        cloud.planner.entries,
+        item => item?.id || `${item?.date || ''}|${item?.time || ''}|${item?.title || ''}`,
+      ),
+    },
+    templates: mergeRows(
+      local.templates,
+      cloud.templates,
+      item => item?.id || item?.name || '',
+    ),
+    guidance: {
+      ...local.guidance,
+      ...cloud.guidance,
+    },
+    sleepLogs: mergeRows(local.sleepLogs, cloud.sleepLogs, item => item?.date || item?.id || ''),
+    recoveryLogs: mergeRows(local.recoveryLogs, cloud.recoveryLogs, item => item?.date || item?.id || ''),
+    trainingCheckouts: mergeRows(
+      local.trainingCheckouts,
+      cloud.trainingCheckouts,
+      item => item?.date || item?.id || '',
+    ),
+    checkinDefaults: {
+      ...local.checkinDefaults,
+      ...cloud.checkinDefaults,
+    },
+  });
+}
+
 function hasMeaningfulNutrition(payload = {}) {
   const nutrition = normalizeNutrition(payload);
 
@@ -183,6 +263,7 @@ function hasMeaningfulHealth(payload = {}) {
     certificateFilled
     || physioFilled
     || (Array.isArray(health.injuries) && health.injuries.length)
+    || (Array.isArray(health.sorenessLogs) && health.sorenessLogs.length)
     || screeningMeasurements
     || (Array.isArray(monitoring.observations) && monitoring.observations.length)
   );
@@ -270,11 +351,18 @@ function paintStatus(moduleKey, nextStatus) {
   indicator.title = `${label} letto e salvato su Supabase; la copia locale resta come cache.`;
 }
 
+function dispatchCloudUpdate(moduleKey, source = 'remote') {
+  window.dispatchEvent(new CustomEvent('tpos:module-cloud-updated', {
+    detail: { moduleKey, source },
+  }));
+}
+
 async function loadManagedSlice(moduleKey) {
   const config = MANAGED_SLICES[moduleKey];
   if (!config || !canReadModule(moduleKey)) return null;
 
   const athleteId = getCurrentAccess().athleteId;
+  const writable = canWriteModule(moduleKey);
   const localPayload = config.normalize(store.getState()[moduleKey]);
 
   try {
@@ -284,24 +372,54 @@ async function loadManagedSlice(moduleKey) {
     });
 
     if (cloudState) {
-      const payload = config.normalize(cloudState.payload);
+      const cloudPayload = config.normalize(cloudState.payload);
+      const payload = writable && config.merge
+        ? config.merge(localPayload, cloudPayload)
+        : cloudPayload;
+      const cloudFingerprint = fingerprint(config.normalize, cloudPayload);
+      const mergedFingerprint = fingerprint(config.normalize, payload);
+      let source = 'cloud';
+      let finalCloudState = cloudState;
+
+      // Recovery used to be partly local-only. Before replacing the local
+      // cache, merge unique local records into the cloud once. This is the
+      // recovery path for historical check-ins already present on a device.
+      if (writable && mergedFingerprint !== cloudFingerprint) {
+        finalCloudState = await saveCloudModuleState({
+          athleteId,
+          moduleKey,
+          payload,
+          schemaVersion: config.schemaVersion,
+        });
+        source = 'cloud-merged-local';
+        console.info(`TPOS ${config.label}: local history merged into cloud.`);
+      }
 
       store.update(state => {
         state[moduleKey] = clone(payload);
         state.meta[`${moduleKey}CloudLoadedAt`] = new Date().toISOString();
+        if (source === 'cloud-merged-local') {
+          state.meta[`${moduleKey}CloudRecoveredAt`] = new Date().toISOString();
+        }
       });
 
-      paintStatus(moduleKey, { status: 'synced', message: '' });
+      paintStatus(
+        moduleKey,
+        writable
+          ? { status: 'synced', message: '' }
+          : { status: 'readonly', message: '' },
+      );
 
       return {
-        source: 'cloud',
+        source,
         payload,
+        cloudState: finalCloudState,
         cloudError: null,
       };
     }
 
-    if (canWriteModule(moduleKey) && config.meaningful(localPayload)) {
-      await saveCloudModuleState({
+    if (writable && config.meaningful(localPayload)) {
+      const savedState = await saveCloudModuleState({
         athleteId,
         moduleKey,
         payload: localPayload,
@@ -317,13 +435,14 @@ async function loadManagedSlice(moduleKey) {
       return {
         source: 'local-migrated',
         payload: localPayload,
+        cloudState: savedState,
         cloudError: null,
       };
     }
 
     paintStatus(
       moduleKey,
-      canWriteModule(moduleKey)
+      writable
         ? { status: 'synced', message: '' }
         : { status: 'readonly', message: '' },
     );
@@ -331,6 +450,7 @@ async function loadManagedSlice(moduleKey) {
     return {
       source: 'local',
       payload: localPayload,
+      cloudState: null,
       cloudError: null,
     };
   } catch (cloudError) {
@@ -344,6 +464,7 @@ async function loadManagedSlice(moduleKey) {
     return {
       source: 'local-fallback',
       payload: localPayload,
+      cloudState: null,
       cloudError,
     };
   }
@@ -352,29 +473,23 @@ async function loadManagedSlice(moduleKey) {
 function startManagedSliceSync(moduleKey) {
   const config = MANAGED_SLICES[moduleKey];
 
-  if (
-    !config
-    || !canReadModule(moduleKey)
-    || !canWriteModule(moduleKey)
-  ) {
-    if (config && canReadModule(moduleKey)) {
-      paintStatus(moduleKey, { status: 'readonly', message: '' });
-    }
-    return () => {};
-  }
+  if (!config || !canReadModule(moduleKey)) return () => {};
 
   const athleteId = getCurrentAccess().athleteId;
+  const writable = canWriteModule(moduleKey);
   let lastSavedFingerprint = fingerprint(
     config.normalize,
     store.getState()[moduleKey],
   );
   let queuedPayload = null;
   let inFlight = false;
+  let applyingRemote = false;
   let timer = null;
   let retryDelayMs = RETRY_MIN_MS;
   let stopped = false;
 
   const scheduleFlush = delay => {
+    if (!writable) return;
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
       timer = null;
@@ -383,13 +498,12 @@ function startManagedSliceSync(moduleKey) {
   };
 
   const flush = async () => {
-    if (stopped || inFlight || !queuedPayload) return;
+    if (!writable || stopped || inFlight || !queuedPayload) return;
 
     const payload = queuedPayload;
     queuedPayload = null;
 
     const nextFingerprint = fingerprint(config.normalize, payload);
-
     if (nextFingerprint === lastSavedFingerprint) return;
 
     inFlight = true;
@@ -431,7 +545,7 @@ function startManagedSliceSync(moduleKey) {
   };
 
   const queue = payload => {
-    if (stopped) return;
+    if (!writable || stopped || applyingRemote) return;
 
     const normalized = config.normalize(payload);
     const nextFingerprint = fingerprint(config.normalize, normalized);
@@ -442,24 +556,109 @@ function startManagedSliceSync(moduleKey) {
     scheduleFlush(SAVE_DELAY_MS);
   };
 
-  const unsubscribe = store.subscribe(state => {
-    queue(state[moduleKey]);
+  const applyRemote = cloudState => {
+    if (stopped || !cloudState) return;
+
+    const remotePayload = config.normalize(cloudState.payload);
+    const currentPayload = config.normalize(store.getState()[moduleKey]);
+    const mergedPayload = writable && config.merge
+      ? config.merge(currentPayload, remotePayload)
+      : remotePayload;
+
+    const remoteFingerprint = fingerprint(config.normalize, remotePayload);
+    const currentFingerprint = fingerprint(config.normalize, currentPayload);
+    const mergedFingerprint = fingerprint(config.normalize, mergedPayload);
+
+    // Mark the actual server snapshot before mutating the store. If our local
+    // cache contains additional records, they are queued back to the server.
+    lastSavedFingerprint = remoteFingerprint;
+
+    if (mergedFingerprint !== currentFingerprint) {
+      applyingRemote = true;
+      store.update(state => {
+        state[moduleKey] = clone(mergedPayload);
+        state.meta[`${moduleKey}CloudReceivedAt`] = new Date().toISOString();
+      });
+      applyingRemote = false;
+    }
+
+    if (writable && mergedFingerprint !== remoteFingerprint) {
+      queuedPayload = clone(mergedPayload);
+      scheduleFlush(50);
+    }
+
+    paintStatus(
+      moduleKey,
+      writable
+        ? { status: 'synced', message: '' }
+        : { status: 'readonly', message: '' },
+    );
+    dispatchCloudUpdate(moduleKey, 'remote');
+  };
+
+  const refreshFromCloud = async () => {
+    if (stopped || document.visibilityState === 'hidden') return;
+
+    try {
+      const cloudState = await loadCloudModuleState({ athleteId, moduleKey });
+      if (cloudState) applyRemote(cloudState);
+    } catch (error) {
+      console.warn(`${config.label} cloud refresh failed.`, error);
+    }
+  };
+
+  const unsubscribeStore = writable
+    ? store.subscribe(state => queue(state[moduleKey]))
+    : () => {};
+
+  const stopRealtime = subscribeCloudModuleState({
+    athleteId,
+    moduleKey,
+    onChange: ({ eventType, state }) => {
+      if (eventType === 'DELETE') return;
+      applyRemote(state);
+    },
+    onStatus: status => {
+      if (['CHANNEL_ERROR', 'TIMED_OUT'].includes(status)) {
+        console.warn(`TPOS Realtime ${config.label}: ${status}; fallback polling remains active.`);
+      }
+    },
   });
 
   const retryOnline = () => {
-    if (!queuedPayload) return;
     retryDelayMs = RETRY_MIN_MS;
-    scheduleFlush(50);
+    if (queuedPayload) scheduleFlush(50);
+    void refreshFromCloud();
   };
 
+  const refreshOnFocus = () => {
+    if (document.visibilityState === 'visible') void refreshFromCloud();
+  };
+
+  const pollingTimer = window.setInterval(() => {
+    void refreshFromCloud();
+  }, REMOTE_REFRESH_MS);
+
   window.addEventListener('online', retryOnline);
-  paintStatus(moduleKey, { status: 'synced', message: '' });
+  window.addEventListener('focus', refreshOnFocus);
+  document.addEventListener('visibilitychange', refreshOnFocus);
+
+  paintStatus(
+    moduleKey,
+    writable
+      ? { status: 'synced', message: '' }
+      : { status: 'readonly', message: '' },
+  );
 
   return () => {
     stopped = true;
     window.clearTimeout(timer);
-    unsubscribe();
+    window.clearInterval(pollingTimer);
+    unsubscribeStore();
+    stopRealtime?.();
     window.removeEventListener('online', retryOnline);
+    window.removeEventListener('focus', refreshOnFocus);
+    document.removeEventListener('visibilitychange', refreshOnFocus);
   };
 }
 

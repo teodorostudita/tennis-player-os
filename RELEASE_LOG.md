@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.1.4 — Cross-device Recovery & Health sync
+- **Nutrition & Recovery** sincronizza ora in entrambe le direzioni tra dispositivi tramite Supabase Realtime.
+- Aggiunto un refresh di sicurezza ogni **30 secondi**, oltre al refresh immediato quando la PWA torna in primo piano.
+- Al primo avvio della nuova versione, lo storico Recovery presente solo nella cache locale viene **fuso** con il cloud invece di essere sovrascritto.
+- Check-in, sonno e checkout vengono uniti per data; quando entrambe le copie esistono viene usato `updatedAt` se disponibile.
+- **Body & Health** riceve gli aggiornamenti cloud mentre è aperto e al ritorno in foreground, compresi gli indolenzimenti localizzati creati dal Recovery.
+- Nuova migration che abilita `athlete_module_state` nella publication `supabase_realtime` e imposta `REPLICA IDENTITY FULL`.
+
 ## v1.1.3 — Recovery chart readability + Health soreness fix
 - Le serie del grafico check-in combinano ora **colore + tratteggio**, così le linee coincidenti restano distinguibili.
 - La legenda mostra il campione reale della serie ed è **interattiva**: cliccando una voce si evidenzia quella metrica e si attenuano le altre.

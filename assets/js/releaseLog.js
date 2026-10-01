@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.4',
+    date: '2026-10-01',
+    title: 'Cross-device Recovery & Health sync',
+    details: [
+      'Nutrition & Recovery passa a una sincronizzazione bidirezionale tra dispositivi: gli aggiornamenti cloud vengono ricevuti tramite Supabase Realtime.',
+      'Aggiunto un refresh di sicurezza ogni 30 secondi e quando la PWA torna in primo piano, così i dati convergono anche se un evento realtime viene perso.',
+      'Al primo avvio della nuova versione, i check-in/checkout presenti soltanto nella cache locale vengono fusi con il payload cloud invece di essere sovrascritti.',
+      'Il merge Recovery è per data e usa updatedAt quando disponibile, evitando duplicati e preservando le registrazioni storiche uniche di ciascun dispositivo.',
+      'Body & Health riceve ora gli aggiornamenti remoti in tempo reale e al ritorno in foreground, inclusi gli indolenzimenti localizzati provenienti dal Recovery.',
+      'Abilitata la replica Realtime della tabella athlete_module_state tramite migration Supabase.',
+    ],
+  },
+  {
     version: '1.1.3',
     date: '2026-10-01',
     title: 'Recovery chart readability + Health soreness fix',

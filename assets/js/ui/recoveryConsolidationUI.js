@@ -1,11 +1,11 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.1.3';
 
-import { store } from '../data/store.js';
-import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js';
-import { loadCloudModuleState, saveCloudModuleState } from '../cloud/moduleStateCloud.js';
-import { normalizeHealthPayload } from '../cloud/healthCloud.js';
-import { BODY_HOTSPOTS, MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js';
-import { showInAppAlert, showInAppConfirm } from './inAppMessages.js';
+import { store } from '../data/store.js?v=1.1.3';
+import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js?v=1.1.3';
+import { loadCloudModuleState, saveCloudModuleState } from '../cloud/moduleStateCloud.js?v=1.1.3';
+import { normalizeHealthPayload } from '../cloud/healthCloud.js?v=1.1.3';
+import { BODY_HOTSPOTS, MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js?v=1.1.3';
+import { showInAppAlert, showInAppConfirm } from './inAppMessages.js?v=1.1.3';
 
 const SYSTEM_DEFAULTS = Object.freeze({
   sleepHours: 8,
@@ -264,7 +264,7 @@ async function saveHealthSoreness({ date, severity, scope, locations }) {
     athleteId,
     moduleKey: 'health',
     payload: normalized,
-    schemaVersion: 2,
+    schemaVersion: 3,
   });
 
   store.update(state => {
@@ -1357,6 +1357,11 @@ window.addEventListener('tpos:route-rendered', event => {
   if (event?.detail?.route !== 'nutrition') return;
   queueEnhancement();
   queuePendingRecoveryFocus();
+});
+
+window.addEventListener('tpos:module-cloud-updated', event => {
+  if (event?.detail?.moduleKey !== 'nutrition' || !isNutritionRoute()) return;
+  queueEnhancement();
 });
 
 queueEnhancement();

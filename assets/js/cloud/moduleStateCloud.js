@@ -182,6 +182,48 @@ export async function saveCloudModuleState({
   return mapRow(data);
 }
 
+export function subscribeCloudModuleState({
+  athleteId,
+  moduleKey,
+  onChange,
+  onStatus = null,
+} = {}) {
+  const normalizedAthleteId = assertId(athleteId, 'Atleta');
+  const normalizedModuleKey = assertModuleKey(moduleKey);
+  const channelName = `tpos-module-${normalizedAthleteId}-${normalizedModuleKey}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const channel = supabase
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'athlete_module_state',
+        filter: `athlete_id=eq.${normalizedAthleteId}`,
+      },
+      payload => {
+        const row = payload?.new && Object.keys(payload.new).length
+          ? payload.new
+          : payload?.old;
+
+        if (!row || row.module_key !== normalizedModuleKey) return;
+
+        onChange?.({
+          eventType: payload.eventType || payload.event || '',
+          state: mapRow(row),
+        });
+      },
+    )
+    .subscribe(status => {
+      onStatus?.(status);
+    });
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
 export async function deleteCloudModuleState({
   athleteId,
   moduleKey,

@@ -1,9 +1,11 @@
 import {
   loadCloudModuleState,
   saveCloudModuleState,
+  subscribeCloudModuleState,
 } from './moduleStateCloud.js';
 
 const SAVE_DELAY_MS = 350;
+const REMOTE_REFRESH_MS = 30000;
 
 export const SCREENING_STARTER_PROTOCOLS = [
   {
@@ -346,11 +348,13 @@ export async function loadHealthModule({
 export function startHealthSync({
   store,
   athleteId,
+  allowWrite = true,
   onStatus = null,
 } = {}) {
   let lastSavedFingerprint = fingerprint(store.getState().health);
   let timer = null;
   let inFlight = false;
+  let applyingRemote = false;
   let queuedPayload = null;
   let stopped = false;
 
@@ -359,11 +363,10 @@ export function startHealthSync({
   };
 
   const flush = async () => {
-    if (stopped || inFlight || !queuedPayload) return;
+    if (!allowWrite || stopped || inFlight || !queuedPayload) return;
 
     const payload = queuedPayload;
     queuedPayload = null;
-
     const nextFingerprint = fingerprint(payload);
 
     if (nextFingerprint === lastSavedFingerprint) return;
@@ -376,7 +379,7 @@ export function startHealthSync({
         athleteId,
         moduleKey: 'health',
         payload,
-        schemaVersion: 2,
+        schemaVersion: 3,
       });
 
       lastSavedFingerprint = nextFingerprint;
@@ -401,7 +404,7 @@ export function startHealthSync({
   };
 
   const queue = payload => {
-    if (stopped) return;
+    if (!allowWrite || stopped || applyingRemote) return;
 
     const normalized = normalizeHealthPayload(payload);
     const nextFingerprint = fingerprint(normalized);
@@ -410,33 +413,99 @@ export function startHealthSync({
 
     queuedPayload = clone(normalized);
     window.clearTimeout(timer);
-
     timer = window.setTimeout(() => {
       void flush();
     }, SAVE_DELAY_MS);
   };
 
-  const unsubscribe = store.subscribe(state => {
-    queue(state.health);
+  const applyRemote = cloudState => {
+    if (stopped || !cloudState) return;
+
+    const payload = normalizeHealthPayload(cloudState.payload);
+    const nextFingerprint = fingerprint(payload);
+    const currentFingerprint = fingerprint(store.getState().health);
+
+    lastSavedFingerprint = nextFingerprint;
+
+    if (nextFingerprint !== currentFingerprint) {
+      applyingRemote = true;
+      store.update(state => {
+        state.health = clone(payload);
+        state.meta.healthCloudReceivedAt = new Date().toISOString();
+      });
+      applyingRemote = false;
+    }
+
+    status(allowWrite ? 'synced' : 'readonly');
+    window.dispatchEvent(new CustomEvent('tpos:module-cloud-updated', {
+      detail: { moduleKey: 'health', source: 'remote' },
+    }));
+  };
+
+  const refreshFromCloud = async () => {
+    if (stopped || document.visibilityState === 'hidden') return;
+
+    try {
+      const cloudState = await loadCloudModuleState({
+        athleteId,
+        moduleKey: 'health',
+      });
+      if (cloudState) applyRemote(cloudState);
+    } catch (error) {
+      console.warn('health cloud refresh failed.', error);
+    }
+  };
+
+  const unsubscribeStore = allowWrite
+    ? store.subscribe(state => queue(state.health))
+    : () => {};
+
+  const stopRealtime = subscribeCloudModuleState({
+    athleteId,
+    moduleKey: 'health',
+    onChange: ({ eventType, state }) => {
+      if (eventType === 'DELETE') return;
+      applyRemote(state);
+    },
+    onStatus: realtimeStatus => {
+      if (['CHANNEL_ERROR', 'TIMED_OUT'].includes(realtimeStatus)) {
+        console.warn(`TPOS Realtime Body & Health: ${realtimeStatus}; fallback polling remains active.`);
+      }
+    },
   });
 
   const retryOnline = () => {
-    if (!queuedPayload) return;
-
-    window.clearTimeout(timer);
-    timer = window.setTimeout(() => {
-      void flush();
-    }, 50);
+    if (queuedPayload) {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        void flush();
+      }, 50);
+    }
+    void refreshFromCloud();
   };
 
+  const refreshOnFocus = () => {
+    if (document.visibilityState === 'visible') void refreshFromCloud();
+  };
+
+  const pollingTimer = window.setInterval(() => {
+    void refreshFromCloud();
+  }, REMOTE_REFRESH_MS);
+
   window.addEventListener('online', retryOnline);
-  status('synced');
+  window.addEventListener('focus', refreshOnFocus);
+  document.addEventListener('visibilitychange', refreshOnFocus);
+  status(allowWrite ? 'synced' : 'readonly');
 
   return () => {
     stopped = true;
     window.clearTimeout(timer);
-    unsubscribe();
+    window.clearInterval(pollingTimer);
+    unsubscribeStore();
+    stopRealtime?.();
     window.removeEventListener('online', retryOnline);
+    window.removeEventListener('focus', refreshOnFocus);
+    document.removeEventListener('visibilitychange', refreshOnFocus);
   };
 }
 

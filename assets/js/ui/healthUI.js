@@ -367,22 +367,23 @@ async function ensureCloud() {
   cloudState.loaded = true;
   cloudState.error = result.cloudError?.message || '';
 
-  if (canWriteModule('health')) {
-    cloudState.stop = startHealthSync({
-      store,
-      athleteId,
-      onStatus: ({ status, message }) => {
-        setCloudIndicator(status, message);
-      },
-    });
+  cloudState.stop = startHealthSync({
+    store,
+    athleteId,
+    allowWrite: canWriteModule('health'),
+    onStatus: ({ status, message }) => {
+      setCloudIndicator(status, message);
+    },
+  });
 
-    setCloudIndicator(
-      result.cloudError ? 'error' : 'synced',
-      cloudState.error,
-    );
-  } else {
-    setCloudIndicator('readonly');
-  }
+  setCloudIndicator(
+    result.cloudError
+      ? 'error'
+      : canWriteModule('health')
+        ? 'synced'
+        : 'readonly',
+    cloudState.error,
+  );
 }
 
 function activeContentHost() {
@@ -2521,6 +2522,10 @@ document.addEventListener('click', event => {
 
 window.addEventListener('hashchange', queueEnhancement);
 window.addEventListener('tpos:route-rendered', queueEnhancement);
+window.addEventListener('tpos:module-cloud-updated', event => {
+  if (event?.detail?.moduleKey !== 'health' || route() !== 'health') return;
+  queueEnhancement();
+});
 
 applyModuleMetadata();
 patchVisibleMetadata();
