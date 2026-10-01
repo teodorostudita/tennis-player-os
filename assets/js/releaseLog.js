@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.5',
+    date: '2026-10-01',
+    title: 'Stabilità sync multi-device',
+    details: [
+      'Disattivata temporaneamente la subscription Realtime client che poteva generare un feedback loop di aggiornamenti tra cache locale e cloud.',
+      'Nutrition & Recovery e Body & Health usano ora un polling revision-aware ogni 3 secondi, più refresh immediato al ritorno in foreground.',
+      'Gli aggiornamenti remoti vengono applicati soltanto quando la revisione cloud è realmente più recente, evitando rerender e salvataggi ripetuti.',
+      'Il salvataggio locale continua a partire dopo circa 350 ms; il secondo dispositivo riceve normalmente il dato entro pochi secondi.',
+      'La migration Realtime della 1.1.4 resta innocua nel database, ma la 1.1.5 non apre più canali Realtime dal client.',
+    ],
+  },
+  {
     version: '1.1.4',
     date: '2026-10-01',
     title: 'Cross-device Recovery & Health sync',

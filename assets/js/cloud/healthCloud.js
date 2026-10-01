@@ -1,11 +1,10 @@
 import {
   loadCloudModuleState,
-  saveCloudModuleState,
-  subscribeCloudModuleState,
+  saveCloudModuleState
 } from './moduleStateCloud.js';
 
 const SAVE_DELAY_MS = 350;
-const REMOTE_REFRESH_MS = 30000;
+const REMOTE_REFRESH_MS = 3000;
 
 export const SCREENING_STARTER_PROTOCOLS = [
   {
@@ -350,8 +349,12 @@ export function startHealthSync({
   athleteId,
   allowWrite = true,
   onStatus = null,
+  initialCloudState = null,
 } = {}) {
-  let lastSavedFingerprint = fingerprint(store.getState().health);
+  let lastRemoteRevision = Number(initialCloudState?.revision || 0);
+  let lastSavedFingerprint = initialCloudState
+    ? fingerprint(initialCloudState.payload)
+    : fingerprint(store.getState().health);
   let timer = null;
   let inFlight = false;
   let applyingRemote = false;
@@ -375,14 +378,15 @@ export function startHealthSync({
     status('syncing');
 
     try {
-      await saveCloudModuleState({
+      const savedState = await saveCloudModuleState({
         athleteId,
         moduleKey: 'health',
         payload,
         schemaVersion: 3,
       });
 
-      lastSavedFingerprint = nextFingerprint;
+      lastSavedFingerprint = fingerprint(savedState?.payload || payload);
+      lastRemoteRevision = Math.max(lastRemoteRevision, Number(savedState?.revision || 0));
       status('synced');
     } catch (error) {
       console.warn('health cloud save failed; local cache retained.', error);
@@ -421,24 +425,32 @@ export function startHealthSync({
   const applyRemote = cloudState => {
     if (stopped || !cloudState) return;
 
+    const revision = Number(cloudState.revision || 0);
+    if (revision && lastRemoteRevision && revision <= lastRemoteRevision) return;
+
+    // Never overwrite a local edit that is waiting to be sent. The next poll
+    // will reconcile after that save completes.
+    if (queuedPayload || inFlight) return;
+
     const payload = normalizeHealthPayload(cloudState.payload);
     const nextFingerprint = fingerprint(payload);
     const currentFingerprint = fingerprint(store.getState().health);
 
+    lastRemoteRevision = Math.max(lastRemoteRevision, revision);
     lastSavedFingerprint = nextFingerprint;
 
-    if (nextFingerprint !== currentFingerprint) {
-      applyingRemote = true;
-      store.update(state => {
-        state.health = clone(payload);
-        state.meta.healthCloudReceivedAt = new Date().toISOString();
-      });
-      applyingRemote = false;
-    }
+    if (nextFingerprint === currentFingerprint) return;
+
+    applyingRemote = true;
+    store.update(state => {
+      state.health = clone(payload);
+      state.meta.healthCloudReceivedAt = new Date().toISOString();
+    });
+    applyingRemote = false;
 
     status(allowWrite ? 'synced' : 'readonly');
     window.dispatchEvent(new CustomEvent('tpos:module-cloud-updated', {
-      detail: { moduleKey: 'health', source: 'remote' },
+      detail: { moduleKey: 'health', source: 'poll' },
     }));
   };
 
@@ -459,20 +471,6 @@ export function startHealthSync({
   const unsubscribeStore = allowWrite
     ? store.subscribe(state => queue(state.health))
     : () => {};
-
-  const stopRealtime = subscribeCloudModuleState({
-    athleteId,
-    moduleKey: 'health',
-    onChange: ({ eventType, state }) => {
-      if (eventType === 'DELETE') return;
-      applyRemote(state);
-    },
-    onStatus: realtimeStatus => {
-      if (['CHANNEL_ERROR', 'TIMED_OUT'].includes(realtimeStatus)) {
-        console.warn(`TPOS Realtime Body & Health: ${realtimeStatus}; fallback polling remains active.`);
-      }
-    },
-  });
 
   const retryOnline = () => {
     if (queuedPayload) {
@@ -502,7 +500,6 @@ export function startHealthSync({
     window.clearTimeout(timer);
     window.clearInterval(pollingTimer);
     unsubscribeStore();
-    stopRealtime?.();
     window.removeEventListener('online', retryOnline);
     window.removeEventListener('focus', refreshOnFocus);
     document.removeEventListener('visibilitychange', refreshOnFocus);

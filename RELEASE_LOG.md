@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.1.5 — Stabilità sync multi-device
+- Disattivata lato client la subscription Realtime introdotta in 1.1.4, che poteva innescare un feedback loop di aggiornamenti.
+- **Nutrition & Recovery** e **Body & Health** controllano ora il cloud ogni **3 secondi** e immediatamente quando la PWA torna in primo piano.
+- Ogni refresh confronta la `revision` del record cloud e aggiorna l’interfaccia soltanto se esiste davvero una versione più recente.
+- I salvataggi locali restano debounced a circa **350 ms**; la propagazione tra dispositivi avviene quindi normalmente entro pochi secondi.
+- Nessuna nuova migration: la tabella può restare nella publication Realtime, ma il client 1.1.5 non apre canali Realtime.
+
 ## v1.1.4 — Cross-device Recovery & Health sync
 - **Nutrition & Recovery** sincronizza ora in entrambe le direzioni tra dispositivi tramite Supabase Realtime.
 - Aggiunto un refresh di sicurezza ogni **30 secondi**, oltre al refresh immediato quando la PWA torna in primo piano.

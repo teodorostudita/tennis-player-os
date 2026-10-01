@@ -8,8 +8,7 @@ import {
 
 import {
   loadCloudModuleState,
-  saveCloudModuleState,
-  subscribeCloudModuleState,
+  saveCloudModuleState
 } from './moduleStateCloud.js';
 
 import { store } from '../data/store.js';
@@ -18,7 +17,7 @@ import { fileProvider } from '../data/providers/provider.js';
 const SAVE_DELAY_MS = 350;
 const RETRY_MIN_MS = 4000;
 const RETRY_MAX_MS = 60000;
-const REMOTE_REFRESH_MS = 30000;
+const REMOTE_REFRESH_MS = 3000;
 
 const LIBRARY_MODULES = [
   'development',
@@ -470,17 +469,17 @@ async function loadManagedSlice(moduleKey) {
   }
 }
 
-function startManagedSliceSync(moduleKey) {
+function startManagedSliceSync(moduleKey, initialCloudState = null) {
   const config = MANAGED_SLICES[moduleKey];
 
   if (!config || !canReadModule(moduleKey)) return () => {};
 
   const athleteId = getCurrentAccess().athleteId;
   const writable = canWriteModule(moduleKey);
-  let lastSavedFingerprint = fingerprint(
-    config.normalize,
-    store.getState()[moduleKey],
-  );
+  let lastRemoteRevision = Number(initialCloudState?.revision || 0);
+  let lastSavedFingerprint = initialCloudState
+    ? fingerprint(config.normalize, initialCloudState.payload)
+    : fingerprint(config.normalize, store.getState()[moduleKey]);
   let queuedPayload = null;
   let inFlight = false;
   let applyingRemote = false;
@@ -510,14 +509,15 @@ function startManagedSliceSync(moduleKey) {
     paintStatus(moduleKey, { status: 'syncing', message: '' });
 
     try {
-      await saveCloudModuleState({
+      const savedState = await saveCloudModuleState({
         athleteId,
         moduleKey,
         payload,
         schemaVersion: config.schemaVersion,
       });
 
-      lastSavedFingerprint = nextFingerprint;
+      lastSavedFingerprint = fingerprint(config.normalize, savedState?.payload || payload);
+      lastRemoteRevision = Math.max(lastRemoteRevision, Number(savedState?.revision || 0));
       retryDelayMs = RETRY_MIN_MS;
       paintStatus(moduleKey, { status: 'synced', message: '' });
     } catch (error) {
@@ -559,31 +559,36 @@ function startManagedSliceSync(moduleKey) {
   const applyRemote = cloudState => {
     if (stopped || !cloudState) return;
 
+    const revision = Number(cloudState.revision || 0);
+    if (revision && lastRemoteRevision && revision <= lastRemoteRevision) return;
+
     const remotePayload = config.normalize(cloudState.payload);
     const currentPayload = config.normalize(store.getState()[moduleKey]);
-    const mergedPayload = writable && config.merge
+    const hasPendingLocal = Boolean(queuedPayload) || inFlight;
+    const nextPayload = hasPendingLocal && writable && config.merge
       ? config.merge(currentPayload, remotePayload)
       : remotePayload;
 
     const remoteFingerprint = fingerprint(config.normalize, remotePayload);
     const currentFingerprint = fingerprint(config.normalize, currentPayload);
-    const mergedFingerprint = fingerprint(config.normalize, mergedPayload);
+    const nextFingerprint = fingerprint(config.normalize, nextPayload);
 
-    // Mark the actual server snapshot before mutating the store. If our local
-    // cache contains additional records, they are queued back to the server.
+    lastRemoteRevision = Math.max(lastRemoteRevision, revision);
     lastSavedFingerprint = remoteFingerprint;
 
-    if (mergedFingerprint !== currentFingerprint) {
+    let changed = false;
+    if (nextFingerprint !== currentFingerprint) {
+      changed = true;
       applyingRemote = true;
       store.update(state => {
-        state[moduleKey] = clone(mergedPayload);
+        state[moduleKey] = clone(nextPayload);
         state.meta[`${moduleKey}CloudReceivedAt`] = new Date().toISOString();
       });
       applyingRemote = false;
     }
 
-    if (writable && mergedFingerprint !== remoteFingerprint) {
-      queuedPayload = clone(mergedPayload);
+    if (hasPendingLocal && writable && nextFingerprint !== remoteFingerprint) {
+      queuedPayload = clone(nextPayload);
       scheduleFlush(50);
     }
 
@@ -593,7 +598,8 @@ function startManagedSliceSync(moduleKey) {
         ? { status: 'synced', message: '' }
         : { status: 'readonly', message: '' },
     );
-    dispatchCloudUpdate(moduleKey, 'remote');
+
+    if (changed) dispatchCloudUpdate(moduleKey, 'poll');
   };
 
   const refreshFromCloud = async () => {
@@ -610,20 +616,6 @@ function startManagedSliceSync(moduleKey) {
   const unsubscribeStore = writable
     ? store.subscribe(state => queue(state[moduleKey]))
     : () => {};
-
-  const stopRealtime = subscribeCloudModuleState({
-    athleteId,
-    moduleKey,
-    onChange: ({ eventType, state }) => {
-      if (eventType === 'DELETE') return;
-      applyRemote(state);
-    },
-    onStatus: status => {
-      if (['CHANNEL_ERROR', 'TIMED_OUT'].includes(status)) {
-        console.warn(`TPOS Realtime ${config.label}: ${status}; fallback polling remains active.`);
-      }
-    },
-  });
 
   const retryOnline = () => {
     retryDelayMs = RETRY_MIN_MS;
@@ -655,7 +647,6 @@ function startManagedSliceSync(moduleKey) {
     window.clearTimeout(timer);
     window.clearInterval(pollingTimer);
     unsubscribeStore();
-    stopRealtime?.();
     window.removeEventListener('online', retryOnline);
     window.removeEventListener('focus', refreshOnFocus);
     document.removeEventListener('visibilitychange', refreshOnFocus);
@@ -722,7 +713,7 @@ async function start() {
     const result = await loadManagedSlice(moduleKey);
 
     if (!result?.cloudError) {
-      startManagedSliceSync(moduleKey);
+      startManagedSliceSync(moduleKey, result.cloudState);
     }
   }
 

@@ -371,6 +371,7 @@ async function ensureCloud() {
     store,
     athleteId,
     allowWrite: canWriteModule('health'),
+    initialCloudState: result.cloudState,
     onStatus: ({ status, message }) => {
       setCloudIndicator(status, message);
     },

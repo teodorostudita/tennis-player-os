@@ -1,6 +1,6 @@
-// Tennis Player OS — service worker v1.1.4
+// Tennis Player OS — service worker v1.1.5
 // Application assets are network-fresh. Cache is only an offline navigation fallback.
-const CACHE_NAME = 'tpos-pwa-v1.1.4';
+const CACHE_NAME = 'tpos-pwa-v1.1.5';
 const OFFLINE_URL = './offline.html';
 
 self.addEventListener('install', (event) => {
