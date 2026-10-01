@@ -1,5 +1,6 @@
-TPOS v1.1.9 — Certificato agonistico semplificato
+TPOS v1.2.0 — Recuperi in Calendar
 
-Aggiunge in Body & Health un CTA chiaro per registrare il certificato agonistico.
-Form rapido: scadenza obbligatoria; medico e centro/studio opzionali.
-Nessuna migration SQL. Nessuna Edge Function modificata.
+Aggiunge il workflow completo per le sessioni saltate e da recuperare nel Calendar.
+Include nuova tabella cloud calendar_makeups e relativa migration Supabase.
+Include anche il CTA semplificato Certificato agonistico della v1.1.9.
+Nessuna Edge Function modificata.

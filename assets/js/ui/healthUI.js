@@ -1,12 +1,12 @@
-import '../bootstrap.js?v=1.1.8';
+import '../bootstrap.js';
 
-import { modules } from '../data/schema.js?v=1.1.8';
-import { store } from '../data/store.js?v=1.1.8';
+import { modules } from '../data/schema.js';
+import { store } from '../data/store.js';
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../cloud/access.js?v=1.1.8';
+} from '../cloud/access.js';
 import {
   MONITORING_STARTER_METRICS,
   RTP_CHECKLIST,
@@ -14,15 +14,15 @@ import {
   loadHealthModule,
   normalizeHealthPayload,
   startHealthSync,
-} from '../cloud/healthCloud.js?v=1.1.8';
+} from '../cloud/healthCloud.js';
 import {
   showInAppAlert,
   showInAppConfirm,
-} from './inAppMessages.js?v=1.1.8';
+} from './inAppMessages.js';
 import {
   BODY_HOTSPOTS,
   MUSCULOSKELETAL_DISTRICTS,
-} from '../data/healthBodyMapData.js?v=1.1.8';
+} from '../data/healthBodyMapData.js';
 
 
 const DISTRICT_BY_KEY = new Map(

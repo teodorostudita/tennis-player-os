@@ -124,6 +124,7 @@ class Store {
           events: plannerEvents,
           tournaments: Array.isArray(parsed.planner?.tournaments) ? parsed.planner.tournaments : clone(defaultState.planner.tournaments),
           recurringSeries: normalizedRecurringSeries,
+          makeups: Array.isArray(parsed.planner?.makeups) ? parsed.planner.makeups : clone(defaultState.planner.makeups),
           locationDefaults: parsed.planner?.locationDefaults && typeof parsed.planner.locationDefaults === 'object'
             ? parsed.planner.locationDefaults
             : clone(defaultState.planner.locationDefaults),

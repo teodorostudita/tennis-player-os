@@ -46,6 +46,7 @@ export const defaultState = {
     events: [],
     tournaments: [],
     recurringSeries: [],
+    makeups: [],
     locationDefaults: {},
   },
   training: {

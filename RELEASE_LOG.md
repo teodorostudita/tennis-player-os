@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.2.0 — Recuperi in Calendar
+- Le sessioni **Tennis** e **Preparazione fisica** possono essere segnate come **saltate** direttamente dal Calendar, con motivo e indicazione se debbano essere recuperate.
+- Nuova sezione **Recuperi** nel Calendar con stati **Da programmare → Programmato → Recuperato**, più **Non da recuperare**.
+- Un recupero può essere programmato direttamente dalla sua scheda: TPOS crea una normale attività Calendar collegata alla sessione originale.
+- Se un recupero programmato viene cancellato o salta, torna tra quelli da programmare; se viene completato resta nello storico.
+- Il planner evidenzia le sessioni saltate e le attività di recupero con badge dedicati e mostra un richiamo quando esistono recuperi aperti.
+- I recuperi hanno persistenza cloud dedicata (`calendar_makeups`) e sono già strutturati per alimentare la futura Home **Genitore**.
+- Include anche il CTA semplificato del certificato agonistico introdotto in v1.1.9.
+
 ## v1.1.9 — Certificato agonistico semplificato
 - In **Body & Health (modulo 8)** il riquadro Certificato mostra un CTA evidente **+ Aggiungi certificato** quando non esiste ancora un record.
 - Il form è ridotto alle informazioni operative: **scadenza** obbligatoria, **medico sportivo** e **centro/studio** opzionali.

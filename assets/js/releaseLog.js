@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.0',
+    date: '2026-10-01',
+    title: 'Recuperi in Calendar',
+    details: [
+      'Le sessioni Tennis e Preparazione fisica possono essere segnate come saltate direttamente dal Calendar, indicando motivo e necessità di recupero.',
+      'Nuova sezione Recuperi con stati Da programmare, Programmato, Recuperato e Non da recuperare.',
+      'La programmazione del recupero crea una normale attività Calendar collegata alla sessione originale; cancellazioni o tentativi saltati riportano il debito tra quelli aperti.',
+      'Il planner evidenzia sessioni saltate e attività di recupero e mostra un richiamo quando esistono recuperi aperti.',
+      'I recuperi sono salvati in una tabella cloud dedicata e potranno alimentare la futura Home Genitore.',
+      'Incluso anche il CTA semplificato del certificato agonistico della v1.1.9.',
+    ],
+  },
+  {
     version: '1.1.9',
     date: '2026-10-01',
     title: 'Certificato agonistico semplificato',

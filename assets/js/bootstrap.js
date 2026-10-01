@@ -38,6 +38,10 @@ import {
   loadRecoveryDailyIntoStore,
   startRecoveryDailySync,
 } from './cloud/recoveryDailyCloud.js';
+import {
+  loadCalendarMakeupsIntoStore,
+  startCalendarMakeupsCloudSync,
+} from './cloud/calendarMakeupsCloud.js';
 import { store } from './data/store.js';
 
 function showStartupError(message) {
@@ -299,6 +303,11 @@ if (session) {
             store,
             athleteId: cloudAthlete.id,
           });
+          await loadCalendarMakeupsIntoStore({
+            store,
+            athleteId: cloudAthlete.id,
+          });
+          cloudPlanner = store.getState().planner;
         }
 
         if (canReadModule('training')) {
@@ -364,8 +373,18 @@ if (session) {
             initialPlanner: cloudPlanner,
             onStatus: setCalendarCloudStatus,
           });
+          startCalendarMakeupsCloudSync({
+            store,
+            athleteId: cloudAthlete.id,
+            allowWrite: true,
+          });
         } else if (canReadModule('calendar')) {
           setCalendarCloudStatus({ status: 'readonly' });
+          startCalendarMakeupsCloudSync({
+            store,
+            athleteId: cloudAthlete.id,
+            allowWrite: false,
+          });
         } else {
           setCalendarCloudStatus({ status: 'unavailable' });
         }

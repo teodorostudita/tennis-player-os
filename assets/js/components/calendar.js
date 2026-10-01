@@ -13,6 +13,22 @@ const CATEGORY_LABELS = {
   mental: 'Mental',
 };
 
+const MAKEUP_ELIGIBLE_CATEGORIES = new Set(['tennis', 'physical']);
+const MAKEUP_STATUS_LABELS = {
+  pending: 'Da programmare',
+  planned: 'Programmato',
+  recovered: 'Recuperato',
+  waived: 'Non da recuperare',
+};
+const MISSED_REASON_SUGGESTIONS = [
+  'Malattia / infortunio',
+  'Meteo / campo indisponibile',
+  'Coach / circolo',
+  'Scuola / impegno familiare',
+  'Torneo / viaggio',
+  'Altro',
+];
+
 const MEAL_TYPE_LABELS = {
   breakfast: 'Colazione',
   snack: 'Spuntino',
@@ -72,17 +88,23 @@ export function renderCalendar({ main, title, store }) {
       </div>
       <div class="calendar-section-switch" role="tablist" aria-label="Sezione calendario">
         ${calendarSectionButton('planner', 'Planner settimanale')}
+        ${calendarSectionButton('makeups', 'Recuperi')}
         ${calendarSectionButton('tournaments', 'Tornei · Stagione')}
       </div>
     </section>
 
     <div id="calendar-section-content">
-      ${calendarSection === 'tournaments' ? renderTournamentPlanning(planner) : renderWeeklyPlanner(planner, nutritionTemplates)}
+      ${calendarSection === 'tournaments'
+        ? renderTournamentPlanning(planner)
+        : calendarSection === 'makeups'
+          ? renderMakeupPlanning(planner)
+          : renderWeeklyPlanner(planner, nutritionTemplates)}
     </div>
   `;
 
   bindSectionSwitch({ main, store });
   if (calendarSection === 'tournaments') bindTournamentPlanning({ main, store, planner });
+  else if (calendarSection === 'makeups') bindMakeupPlanning({ main, store, planner });
   else bindWeeklyPlanner({ main, store, planner, nutritionTemplates });
 }
 
@@ -92,6 +114,7 @@ function normalizePlanner(planner = {}) {
     events: Array.isArray(planner.events) ? planner.events : [],
     tournaments: Array.isArray(planner.tournaments) ? planner.tournaments : [],
     recurringSeries: Array.isArray(planner.recurringSeries) ? planner.recurringSeries : [],
+    makeups: Array.isArray(planner.makeups) ? planner.makeups : [],
     locationDefaults: planner.locationDefaults && typeof planner.locationDefaults === 'object' ? planner.locationDefaults : {},
   };
 }
@@ -115,6 +138,7 @@ function renderWeeklyPlanner(planner, nutritionTemplates = []) {
     return !getCompanionId(event);
   }).length;
   const scheduledMinutes = weekEvents.reduce((sum, event) => sum + durationMinutes(event), 0);
+  const openMakeups = planner.makeups.filter(item => ['pending', 'planned'].includes(item.status));
 
   return `
     <section class="planner-head calendar-subhead">
@@ -150,6 +174,15 @@ function renderWeeklyPlanner(planner, nutritionTemplates = []) {
       </div>
     </section>
 
+    ${openMakeups.length ? `
+      <section class="planner-makeup-banner">
+        <div>
+          <strong>↺ ${openMakeups.length} ${openMakeups.length === 1 ? 'recupero aperto' : 'recuperi aperti'}</strong>
+          <span>${openMakeups.filter(item => item.status === 'pending').length} da programmare · ${openMakeups.filter(item => item.status === 'planned').length} programmati</span>
+        </div>
+        <button class="button button-ghost" type="button" id="open-calendar-makeups">Apri recuperi</button>
+      </section>` : ''}
+
     ${calendarClipboard ? `
       <section class="calendar-clipboard-banner" aria-live="polite">
         <div><strong>Copiato:</strong> ${escapeHtml(calendarClipboard.title || 'Attività')} <span>· clicca in uno spazio vuoto per incollare mantenendo la durata.</span></div>
@@ -178,6 +211,7 @@ function renderWeeklyPlanner(planner, nutritionTemplates = []) {
     </section>
 
     ${renderEventDialog(planner.people, nutritionTemplates)}
+    ${renderMissedSessionDialog()}
     ${renderPeopleDialog(planner.people)}
     ${renderTournamentDialog(planner.people)}
   `;
@@ -395,14 +429,18 @@ function renderTimelineEvent(event, people, bounds, lane = 0, laneCount = 1) {
     : '';
   const sizeClass = duration < 25 ? 'tiny' : duration < 55 ? 'compact' : '';
   const logisticsOnly = plannerView === 'logistics';
+  const missed = event.attendanceStatus === 'missed';
+  const makeup = Boolean(event.isMakeup || event.makeupId);
   const titleText = `${event.startTime || ''}–${event.endTime || ''} · ${event.title || ''}${event.location ? ` · ${event.location}` : ''}`;
 
   return `
-    <button class="planner-event planner-timeline-event category-${escapeAttr(event.category)} ${sizeClass} ${logisticsOnly ? 'logistics-focus' : ''}"
+    <button class="planner-event planner-timeline-event category-${escapeAttr(event.category)} ${sizeClass} ${logisticsOnly ? 'logistics-focus' : ''} ${missed ? 'event-missed' : ''} ${makeup ? 'event-makeup' : ''}"
       type="button" data-event-id="${escapeAttr(event.id)}"
       title="${escapeAttr(titleText)}"
       style="top:${top}px; height:${height}px; left:calc(${left}% + 2px); width:calc(${width}% - 4px);">
       <span class="event-time">${escapeHtml(event.startTime || '—')}–${escapeHtml(event.endTime || '—')}</span>
+      ${missed ? '<span class="event-state-chip missed">Saltata</span>' : ''}
+      ${makeup ? '<span class="event-state-chip makeup">↺ Recupero</span>' : ''}
       ${event.category === 'nutrition' ? `<span class="event-meal-type">🍏 ${escapeHtml(MEAL_TYPE_LABELS[event.mealType] || MEAL_TYPE_LABELS.other)}</span>` : ''}
       <strong>${escapeHtml(event.title)}</strong>
       ${event.category === 'nutrition' && event.mealDetails ? `<span class="event-meal-details">${escapeHtml(event.mealDetails)}</span>` : ''}
@@ -465,9 +503,13 @@ function renderEvent(event, people) {
     : '';
 
   const logisticsOnly = plannerView === 'logistics';
+  const missed = event.attendanceStatus === 'missed';
+  const makeup = Boolean(event.isMakeup || event.makeupId);
   return `
-    <button class="planner-event category-${escapeAttr(event.category)} ${logisticsOnly ? 'logistics-focus' : ''}" type="button" data-event-id="${escapeAttr(event.id)}">
+    <button class="planner-event category-${escapeAttr(event.category)} ${logisticsOnly ? 'logistics-focus' : ''} ${missed ? 'event-missed' : ''} ${makeup ? 'event-makeup' : ''}" type="button" data-event-id="${escapeAttr(event.id)}">
       <span class="event-time">${escapeHtml(event.startTime || '—')}–${escapeHtml(event.endTime || '—')}</span>
+      ${missed ? '<span class="event-state-chip missed">Saltata</span>' : ''}
+      ${makeup ? '<span class="event-state-chip makeup">↺ Recupero</span>' : ''}
       ${event.category === 'nutrition' ? `<span class="event-meal-type">🍏 ${escapeHtml(MEAL_TYPE_LABELS[event.mealType] || MEAL_TYPE_LABELS.other)}</span>` : ''}
       <strong>${escapeHtml(event.title)}</strong>
       ${event.category === 'nutrition' && event.mealDetails ? `<span class="event-meal-details">${escapeHtml(event.mealDetails)}</span>` : ''}
@@ -555,6 +597,378 @@ function renderAthleteLoadSummary(events) {
       </div>
     </section>
   `;
+}
+
+
+function renderMakeupPlanning(planner) {
+  const makeups = [...planner.makeups].sort((a, b) => {
+    const rank = { pending: 0, planned: 1, recovered: 2, waived: 3 };
+    const statusDiff = (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
+    if (statusDiff) return statusDiff;
+    if (['pending', 'planned'].includes(a.status)) {
+      return String(a.originalDate || '').localeCompare(String(b.originalDate || ''));
+    }
+    return String(b.updatedAt || b.originalDate || '').localeCompare(String(a.updatedAt || a.originalDate || ''));
+  });
+  const open = makeups.filter(item => ['pending', 'planned'].includes(item.status));
+  const pending = makeups.filter(item => item.status === 'pending');
+  const planned = makeups.filter(item => item.status === 'planned');
+  const recovered = makeups.filter(item => item.status === 'recovered');
+  const waived = makeups.filter(item => item.status === 'waived');
+
+  return `
+    <section class="planner-head calendar-subhead makeup-head">
+      <div>
+        <div class="eyebrow">Session recovery</div>
+        <h2>Recuperi</h2>
+        <p>Sessioni saltate, recuperi da programmare e recuperi già effettuati.</p>
+      </div>
+      <div class="planner-head-actions">
+        <button class="button button-ghost" id="makeups-open-planner" type="button">Apri planner</button>
+      </div>
+    </section>
+
+    <section class="planner-kpis makeup-kpis" aria-label="Riepilogo recuperi">
+      <div class="planner-kpi ${pending.length ? 'attention' : ''}"><span>Da programmare</span><strong>${pending.length}</strong></div>
+      <div class="planner-kpi"><span>Programmati</span><strong>${planned.length}</strong></div>
+      <div class="planner-kpi"><span>Recuperati</span><strong>${recovered.length}</strong></div>
+      <div class="planner-kpi"><span>Non da recuperare</span><strong>${waived.length}</strong></div>
+    </section>
+
+    ${open.length ? `
+      <section class="makeup-open-list">
+        ${open.map(item => renderMakeupCard(item, planner)).join('')}
+      </section>
+    ` : `
+      <section class="panel makeup-empty-panel">
+        <div class="panel-body">
+          <div class="health-empty">Nessun recupero aperto. Quando una sessione Tennis o Preparazione fisica salta, puoi registrarla direttamente dall’attività del Calendar.</div>
+        </div>
+      </section>
+    `}
+
+    ${(recovered.length || waived.length) ? `
+      <details class="panel makeup-history">
+        <summary>
+          <span><strong>Storico recuperi</strong><small>${recovered.length + waived.length} registrazion${recovered.length + waived.length === 1 ? 'e' : 'i'}</small></span>
+          <b>Apri storico</b>
+        </summary>
+        <div class="makeup-history-list">
+          ${[...recovered, ...waived]
+            .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+            .map(item => renderMakeupCard(item, planner, true)).join('')}
+        </div>
+      </details>
+    ` : ''}
+
+    ${renderMakeupScheduleDialog()}
+  `;
+}
+
+function renderMakeupCard(item, planner, compact = false) {
+  const linkedEvent = item.scheduledEventId
+    ? planner.events.find(event => event.id === item.scheduledEventId)
+    : null;
+  const scheduledDate = linkedEvent?.date || item.scheduledDate || '';
+  const scheduledStart = linkedEvent?.startTime || item.scheduledStartTime || '';
+  const scheduledEnd = linkedEvent?.endTime || item.scheduledEndTime || '';
+  const statusLabel = MAKEUP_STATUS_LABELS[item.status] || item.status || 'Da programmare';
+  const categoryLabel = CATEGORY_LABELS[item.originalCategory] || 'Allenamento';
+
+  return `
+    <article class="panel makeup-card status-${escapeAttr(item.status || 'pending')} ${compact ? 'compact' : ''}" data-makeup-id="${escapeAttr(item.id)}">
+      <div class="panel-header makeup-card-head">
+        <div>
+          <div class="makeup-card-kicker">${escapeHtml(categoryLabel)} · ${escapeHtml(formatCalendarDate(item.originalDate))}</div>
+          <h3>${escapeHtml(item.originalTitle || 'Allenamento')}</h3>
+          <p>${escapeHtml(item.originalStartTime || '—')}–${escapeHtml(item.originalEndTime || '—')}${item.originalLocation ? ` · ${escapeHtml(item.originalLocation)}` : ''}</p>
+        </div>
+        <span class="makeup-status status-${escapeAttr(item.status || 'pending')}">${escapeHtml(statusLabel)}</span>
+      </div>
+      <div class="panel-body makeup-card-body">
+        ${item.reason ? `<div class="makeup-reason"><span>Motivo</span><strong>${escapeHtml(item.reason)}</strong></div>` : ''}
+        ${item.status === 'planned' ? `
+          <div class="makeup-schedule-summary">
+            <span>Recupero programmato</span>
+            <strong>${escapeHtml(formatCalendarDate(scheduledDate))} · ${escapeHtml(scheduledStart || '—')}–${escapeHtml(scheduledEnd || '—')}</strong>
+          </div>
+        ` : ''}
+        ${item.status === 'recovered' ? `
+          <div class="makeup-schedule-summary recovered">
+            <span>Recuperato</span>
+            <strong>${scheduledDate ? `${escapeHtml(formatCalendarDate(scheduledDate))}${scheduledStart ? ` · ${escapeHtml(scheduledStart)}–${escapeHtml(scheduledEnd || '')}` : ''}` : escapeHtml(formatCalendarDate(String(item.recoveredAt || '').slice(0, 10)))}</strong>
+          </div>
+        ` : ''}
+        ${item.notes ? `<p class="makeup-notes">${escapeHtml(item.notes)}</p>` : ''}
+        ${compact ? '' : `
+          <div class="makeup-actions">
+            ${item.status === 'pending' ? `
+              <button class="button button-primary" type="button" data-program-makeup="${escapeAttr(item.id)}">Programma recupero</button>
+              <button class="button button-ghost" type="button" data-waive-makeup="${escapeAttr(item.id)}">Non recuperare</button>
+            ` : ''}
+            ${item.status === 'planned' ? `
+              <button class="button button-primary" type="button" data-complete-makeup="${escapeAttr(item.id)}">Segna recuperato</button>
+              <button class="button button-ghost" type="button" data-program-makeup="${escapeAttr(item.id)}">Riprogramma</button>
+              <button class="button button-ghost" type="button" data-unschedule-makeup="${escapeAttr(item.id)}">Torna da programmare</button>
+            ` : ''}
+          </div>
+        `}
+        ${compact && item.status === 'waived' ? `<div class="makeup-actions"><button class="button button-ghost" type="button" data-reopen-makeup="${escapeAttr(item.id)}">Riattiva recupero</button></div>` : ''}
+      </div>
+    </article>
+  `;
+}
+
+function renderMakeupScheduleDialog() {
+  return `
+    <dialog id="makeup-schedule-dialog" class="planner-dialog makeup-dialog">
+      <form id="makeup-schedule-form" method="dialog">
+        <input type="hidden" name="makeupId" />
+        <div class="dialog-head">
+          <div><div class="eyebrow">Calendar · Recuperi</div><h3>Programma recupero</h3></div>
+          <button type="button" class="dialog-close" data-close-makeup-schedule aria-label="Chiudi">×</button>
+        </div>
+        <div class="dialog-body form-grid">
+          <div class="field full"><label>Sessione</label><input name="title" readonly /></div>
+          <div class="field"><label>Data recupero</label><input name="date" type="date" required /></div>
+          <div class="field"><label>Luogo</label><input name="location" /></div>
+          <div class="field"><label>Inizio</label><input name="startTime" type="time" required /></div>
+          <div class="field"><label>Fine</label><input name="endTime" type="time" required /></div>
+          <div class="field full"><label>Note</label><textarea name="notes" placeholder="Accordi con maestro/preparatore, dettagli del recupero…"></textarea></div>
+        </div>
+        <div class="dialog-actions">
+          <div></div>
+          <div class="dialog-save-actions">
+            <button type="button" class="button button-ghost" data-close-makeup-schedule>Annulla</button>
+            <button type="submit" class="button button-primary">Salva recupero</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+  `;
+}
+
+function renderMissedSessionDialog() {
+  return `
+    <dialog id="missed-session-dialog" class="planner-dialog makeup-dialog">
+      <form id="missed-session-form" method="dialog">
+        <input type="hidden" name="eventId" />
+        <div class="dialog-head">
+          <div><div class="eyebrow">Calendar</div><h3>Sessione saltata</h3></div>
+          <button type="button" class="dialog-close" data-close-missed-session aria-label="Chiudi">×</button>
+        </div>
+        <div class="dialog-body form-grid">
+          <div class="field full"><label>Sessione</label><input name="eventTitle" readonly /></div>
+          <div class="field full"><label>Motivo</label><input name="reason" list="missed-reason-options" placeholder="Perché è saltata?" /></div>
+          <datalist id="missed-reason-options">
+            ${MISSED_REASON_SUGGESTIONS.map(item => `<option value="${escapeAttr(item)}"></option>`).join('')}
+          </datalist>
+          <div class="field full makeup-required-toggle">
+            <label><input type="checkbox" name="needsMakeup" checked /> Questa sessione deve essere recuperata</label>
+            <small>Se la disattivi, resterà comunque nello storico come sessione saltata ma non da recuperare.</small>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <div></div>
+          <div class="dialog-save-actions">
+            <button type="button" class="button button-ghost" data-close-missed-session>Annulla</button>
+            <button type="submit" class="button button-primary">Registra sessione saltata</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+  `;
+}
+
+function bindMakeupPlanning({ main, store, planner }) {
+  main.querySelector('#makeups-open-planner')?.addEventListener('click', () => {
+    calendarSection = 'planner';
+    rerender(main, store);
+  });
+
+  const dialog = main.querySelector('#makeup-schedule-dialog');
+  const form = main.querySelector('#makeup-schedule-form');
+  main.querySelectorAll('[data-close-makeup-schedule]').forEach(button => {
+    button.addEventListener('click', () => dialog?.close());
+  });
+
+  const openSchedule = makeupId => {
+    const item = planner.makeups.find(row => row.id === makeupId);
+    if (!item || !dialog || !form) return;
+    const linkedEvent = item.scheduledEventId
+      ? planner.events.find(event => event.id === item.scheduledEventId)
+      : null;
+    form.reset();
+    form.elements.makeupId.value = item.id;
+    form.elements.title.value = item.originalTitle || 'Allenamento';
+    form.elements.date.value = linkedEvent?.date || item.scheduledDate || dateKey(new Date());
+    form.elements.location.value = linkedEvent?.location || item.originalLocation || '';
+    form.elements.startTime.value = linkedEvent?.startTime || item.scheduledStartTime || item.originalStartTime || '16:00';
+    form.elements.endTime.value = linkedEvent?.endTime || item.scheduledEndTime || item.originalEndTime || '17:30';
+    form.elements.notes.value = item.notes || '';
+    dialog.showModal();
+  };
+
+  main.querySelectorAll('[data-program-makeup]').forEach(button => {
+    button.addEventListener('click', () => openSchedule(button.dataset.programMakeup));
+  });
+
+  form?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (!data.makeupId || !data.date || !data.startTime || !data.endTime) return;
+    if (data.endTime <= data.startTime) {
+      await showInAppAlert('L’orario di fine deve essere successivo a quello di inizio.', { title: 'Orario non valido' });
+      return;
+    }
+
+    store.update(state => {
+      ensurePlannerShape(state);
+      const item = state.planner.makeups.find(row => row.id === data.makeupId);
+      if (!item) return;
+      const now = new Date().toISOString();
+      let scheduledEvent = item.scheduledEventId
+        ? state.planner.events.find(row => row.id === item.scheduledEventId)
+        : null;
+
+      const eventPayload = {
+        title: `Recupero — ${item.originalTitle || 'Allenamento'}`,
+        date: data.date,
+        category: item.originalCategory || 'tennis',
+        startTime: data.startTime,
+        endTime: data.endTime,
+        location: String(data.location || '').trim(),
+        notes: String(data.notes || '').trim(),
+        athleteId: state.athlete.id,
+        companionId: '',
+        responsibilities: { stay: '' },
+        nutritionTemplateId: '',
+        mealType: '',
+        mealDetails: '',
+        surface: item.originalSurface || '',
+        seriesId: '',
+        isMakeup: true,
+        makeupId: item.id,
+        makeupForEventId: item.originalEventId || '',
+        attendanceStatus: '',
+      };
+
+      if (scheduledEvent) {
+        Object.assign(scheduledEvent, eventPayload);
+      } else {
+        scheduledEvent = { ...eventPayload, id: uid('event') };
+        state.planner.events.push(scheduledEvent);
+      }
+
+      item.status = 'planned';
+      item.scheduledEventId = scheduledEvent.id;
+      item.scheduledDate = data.date;
+      item.scheduledStartTime = data.startTime;
+      item.scheduledEndTime = data.endTime;
+      item.notes = String(data.notes || '').trim();
+      item.waivedAt = '';
+      item.recoveredAt = '';
+      item.updatedAt = now;
+    });
+
+    dialog.close();
+    rerender(main, store);
+  });
+
+  main.querySelectorAll('[data-complete-makeup]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const item = planner.makeups.find(row => row.id === button.dataset.completeMakeup);
+      if (!item) return;
+      const confirmed = await showInAppConfirm(`Segnare come recuperata “${item.originalTitle || 'questa sessione'}”?`, {
+        title: 'Recupero completato',
+        confirmLabel: 'Segna recuperato',
+      });
+      if (!confirmed) return;
+      store.update(state => {
+        ensurePlannerShape(state);
+        const current = state.planner.makeups.find(row => row.id === item.id);
+        if (!current) return;
+        const now = new Date().toISOString();
+        current.status = 'recovered';
+        current.recoveredAt = now;
+        current.waivedAt = '';
+        current.updatedAt = now;
+        const scheduled = state.planner.events.find(event => event.id === current.scheduledEventId);
+        if (scheduled) scheduled.attendanceStatus = 'completed';
+      });
+      rerender(main, store);
+    });
+  });
+
+  main.querySelectorAll('[data-waive-makeup]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const item = planner.makeups.find(row => row.id === button.dataset.waiveMakeup);
+      if (!item) return;
+      const confirmed = await showInAppConfirm('Segnare questa sessione come non da recuperare?', {
+        title: 'Chiudi recupero',
+        confirmLabel: 'Non recuperare',
+      });
+      if (!confirmed) return;
+      store.update(state => {
+        ensurePlannerShape(state);
+        const current = state.planner.makeups.find(row => row.id === item.id);
+        if (!current) return;
+        const now = new Date().toISOString();
+        current.status = 'waived';
+        current.waivedAt = now;
+        current.updatedAt = now;
+      });
+      rerender(main, store);
+    });
+  });
+
+  main.querySelectorAll('[data-unschedule-makeup]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const item = planner.makeups.find(row => row.id === button.dataset.unscheduleMakeup);
+      if (!item) return;
+      const confirmed = await showInAppConfirm('Rimuovere la sessione di recupero programmata e riportarla tra quelle da programmare?', {
+        title: 'Annulla programmazione',
+        confirmLabel: 'Torna da programmare',
+      });
+      if (!confirmed) return;
+      store.update(state => {
+        ensurePlannerShape(state);
+        const current = state.planner.makeups.find(row => row.id === item.id);
+        if (!current) return;
+        if (current.scheduledEventId) {
+          state.planner.events = state.planner.events.filter(event => event.id !== current.scheduledEventId);
+        }
+        current.status = 'pending';
+        current.scheduledEventId = '';
+        current.scheduledDate = '';
+        current.scheduledStartTime = '';
+        current.scheduledEndTime = '';
+        current.updatedAt = new Date().toISOString();
+      });
+      rerender(main, store);
+    });
+  });
+
+  main.querySelectorAll('[data-reopen-makeup]').forEach(button => {
+    button.addEventListener('click', () => {
+      store.update(state => {
+        ensurePlannerShape(state);
+        const current = state.planner.makeups.find(row => row.id === button.dataset.reopenMakeup);
+        if (!current) return;
+        current.status = 'pending';
+        current.waivedAt = '';
+        current.updatedAt = new Date().toISOString();
+      });
+      rerender(main, store);
+    });
+  });
+}
+
+function formatCalendarDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return value || '—';
+  const [year, month, day] = String(value).split('-').map(Number);
+  return new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
+    .format(new Date(year, month - 1, day));
 }
 
 function renderTournamentPlanning(planner) {
@@ -779,6 +1193,8 @@ function renderEventDialog(people, nutritionTemplates = []) {
         <div class="dialog-actions">
           <div class="dialog-delete-actions">
             <button type="button" class="button button-ghost" id="copy-event" hidden>Copia</button>
+            <button type="button" class="button button-ghost makeup-mark-missed" id="mark-event-missed" hidden>Segna saltata</button>
+            <button type="button" class="button button-ghost" id="restore-event-attendance" hidden>Ripristina come svolta</button>
             <button type="button" class="button button-danger" id="delete-event" hidden>Elimina</button>
             <button type="button" class="button button-danger-ghost" id="delete-series" hidden>Elimina serie</button>
           </div>
@@ -837,6 +1253,10 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
   main.querySelector('#next-week').addEventListener('click', () => { weekAnchor = addDays(weekAnchor, 7); rerender(main, store); });
   main.querySelector('#today-week').addEventListener('click', () => { weekAnchor = startOfWeek(new Date()); rerender(main, store); });
   main.querySelector('#print-planner').addEventListener('click', () => window.print());
+  main.querySelector('#open-calendar-makeups')?.addEventListener('click', () => {
+    calendarSection = 'makeups';
+    rerender(main, store);
+  });
 
   main.querySelectorAll('[data-planner-view]').forEach(button => {
     button.addEventListener('click', () => {
@@ -850,6 +1270,8 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
   const intervalInput = eventForm.elements.repeatIntervalWeeks;
   const nutritionFields = main.querySelector('#calendar-nutrition-fields');
   const mealTemplateSelect = eventForm.elements.nutritionTemplateId;
+  const missedDialog = main.querySelector('#missed-session-dialog');
+  const missedForm = main.querySelector('#missed-session-form');
   let locationTouched = false;
 
   const syncNutritionControls = () => {
@@ -911,9 +1333,17 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
     main.querySelector('#recurrence-box').hidden = false;
     main.querySelector('#series-edit-note').hidden = !event?.seriesId;
     const copyButton = main.querySelector('#copy-event');
+    const markMissedButton = main.querySelector('#mark-event-missed');
+    const restoreAttendanceButton = main.querySelector('#restore-event-attendance');
     const deleteButton = main.querySelector('#delete-event');
     const deleteSeriesButton = main.querySelector('#delete-series');
+    const linkedMakeup = event
+      ? (planner.makeups || []).find(item => item.id === event.makeupId || item.id === event.makeupRecordId || item.originalEventId === event.id)
+      : null;
     copyButton.hidden = !event;
+    markMissedButton.hidden = !event || !MAKEUP_ELIGIBLE_CATEGORIES.has(event.category) || event.attendanceStatus === 'missed';
+    restoreAttendanceButton.hidden = !event || event.attendanceStatus !== 'missed'
+      || (!event.makeupId && linkedMakeup && !['pending', 'waived'].includes(linkedMakeup.status));
     deleteButton.hidden = !event;
     deleteSeriesButton.hidden = !event?.seriesId;
     eventDialog.showModal();
@@ -926,6 +1356,137 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
     openEvent(planner.events.find(event => event.id === button.dataset.eventId));
   }));
   main.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => eventDialog.close()));
+
+  main.querySelectorAll('[data-close-missed-session]').forEach(button => {
+    button.addEventListener('click', () => missedDialog?.close());
+  });
+
+  main.querySelector('#mark-event-missed')?.addEventListener('click', () => {
+    const id = eventForm.elements.id.value;
+    const source = planner.events.find(item => item.id === id);
+    if (!source || !missedDialog || !missedForm) return;
+    eventDialog.close();
+    missedForm.reset();
+    missedForm.elements.eventId.value = source.id;
+    missedForm.elements.eventTitle.value = source.title || 'Allenamento';
+    missedForm.elements.reason.value = source.missedReason || '';
+    missedForm.elements.needsMakeup.checked = true;
+    missedDialog.showModal();
+  });
+
+  missedForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(missedForm).entries());
+    const needsMakeup = missedForm.elements.needsMakeup.checked;
+    const reason = String(data.reason || '').trim();
+
+    store.update(state => {
+      ensurePlannerShape(state);
+      const current = state.planner.events.find(item => item.id === data.eventId);
+      if (!current) return;
+      const now = new Date().toISOString();
+      current.attendanceStatus = 'missed';
+      current.missedReason = reason;
+      current.missedAt = now;
+
+      if (current.makeupId) {
+        const item = state.planner.makeups.find(row => row.id === current.makeupId);
+        if (!item) return;
+        item.status = needsMakeup ? 'pending' : 'waived';
+        item.scheduledEventId = '';
+        item.scheduledDate = '';
+        item.scheduledStartTime = '';
+        item.scheduledEndTime = '';
+        item.recoveredAt = '';
+        item.waivedAt = needsMakeup ? '' : now;
+        item.updatedAt = now;
+        if (reason) {
+          const attemptNote = `Tentativo di recupero saltato: ${reason}`;
+          item.notes = item.notes ? `${item.notes}\n${attemptNote}` : attemptNote;
+        }
+        return;
+      }
+
+      let item = state.planner.makeups.find(row => row.id === current.makeupRecordId || row.originalEventId === current.id);
+      if (!item) {
+        item = {
+          id: uid('makeup'),
+          originalEventId: current.id,
+          originalSeriesId: current.seriesId || '',
+          originalTitle: current.title || 'Allenamento',
+          originalCategory: current.category || 'tennis',
+          originalDate: current.date || '',
+          originalStartTime: current.startTime || '',
+          originalEndTime: current.endTime || '',
+          originalLocation: current.location || '',
+          originalSurface: current.surface || '',
+          reason,
+          notes: '',
+          status: needsMakeup ? 'pending' : 'waived',
+          scheduledEventId: '',
+          scheduledDate: '',
+          scheduledStartTime: '',
+          scheduledEndTime: '',
+          createdAt: now,
+          updatedAt: now,
+          recoveredAt: '',
+          waivedAt: needsMakeup ? '' : now,
+        };
+        state.planner.makeups.push(item);
+      } else {
+        item.reason = reason;
+        item.status = needsMakeup ? 'pending' : 'waived';
+        item.updatedAt = now;
+        item.waivedAt = needsMakeup ? '' : now;
+      }
+      current.makeupRecordId = item.id;
+    });
+
+    missedDialog.close();
+    rerender(main, store);
+  });
+
+  main.querySelector('#restore-event-attendance')?.addEventListener('click', async () => {
+    const id = eventForm.elements.id.value;
+    const source = planner.events.find(item => item.id === id);
+    if (!source) return;
+    const confirmed = await showInAppConfirm('Ripristinare questa sessione come svolta?', {
+      title: 'Ripristina sessione',
+      confirmLabel: 'Ripristina',
+    });
+    if (!confirmed) return;
+
+    store.update(state => {
+      ensurePlannerShape(state);
+      const current = state.planner.events.find(item => item.id === id);
+      if (!current) return;
+      const now = new Date().toISOString();
+      current.attendanceStatus = current.makeupId ? 'completed' : '';
+      current.missedReason = '';
+      current.missedAt = '';
+
+      if (current.makeupId) {
+        const item = state.planner.makeups.find(row => row.id === current.makeupId);
+        if (item) {
+          item.status = 'recovered';
+          item.scheduledEventId = current.id;
+          item.scheduledDate = current.date || '';
+          item.scheduledStartTime = current.startTime || '';
+          item.scheduledEndTime = current.endTime || '';
+          item.recoveredAt = now;
+          item.waivedAt = '';
+          item.updatedAt = now;
+        }
+      } else {
+        state.planner.makeups = state.planner.makeups.filter(item => (
+          item.id !== current.makeupRecordId && item.originalEventId !== current.id
+        ));
+        current.makeupRecordId = '';
+      }
+    });
+    eventDialog.close();
+    rerender(main, store);
+  });
 
   const clearClipboardButton = main.querySelector('#clear-calendar-clipboard');
   if (clearClipboardButton) {
@@ -1003,6 +1564,7 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
 
         if (recurrenceMode === 'none') {
           state.planner.events[index] = { ...current, ...base, seriesId: '' };
+          syncMakeupRecordFromEvent(state.planner, state.planner.events[index]);
         } else {
           // Conversione affidabile attività singola → serie: eliminiamo la vecchia
           // occorrenza e costruiamo subito l'intera serie, applicando la stessa
@@ -1030,7 +1592,22 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
       title: 'Elimina attività', confirmLabel: 'Elimina', danger: true,
     });
     if (!confirmed) return;
-    store.update(state => { state.planner.events = state.planner.events.filter(event => event.id !== id); });
+    store.update(state => {
+      ensurePlannerShape(state);
+      const current = state.planner.events.find(event => event.id === id);
+      if (current?.makeupId) {
+        const item = state.planner.makeups.find(row => row.id === current.makeupId);
+        if (item && item.status === 'planned') {
+          item.status = 'pending';
+          item.scheduledEventId = '';
+          item.scheduledDate = '';
+          item.scheduledStartTime = '';
+          item.scheduledEndTime = '';
+          item.updatedAt = new Date().toISOString();
+        }
+      }
+      state.planner.events = state.planner.events.filter(event => event.id !== id);
+    });
     eventDialog.close();
   });
 
@@ -1231,6 +1808,7 @@ function ensurePlannerShape(state) {
   if (!Array.isArray(state.planner.events)) state.planner.events = [];
   if (!Array.isArray(state.planner.tournaments)) state.planner.tournaments = [];
   if (!Array.isArray(state.planner.recurringSeries)) state.planner.recurringSeries = [];
+  if (!Array.isArray(state.planner.makeups)) state.planner.makeups = [];
   if (!state.planner.locationDefaults || typeof state.planner.locationDefaults !== 'object') state.planner.locationDefaults = {};
 }
 
@@ -1549,12 +2127,22 @@ function snapMinutes(value, snap = 15) {
 }
 
 function makeStandaloneCopyTemplate(event) {
-  const { id, seriesId, date, startTime, endTime, ...rest } = event || {};
+  const {
+    id, seriesId, date, startTime, endTime,
+    isMakeup, makeupId, makeupForEventId, makeupRecordId,
+    attendanceStatus, missedReason, missedAt,
+    ...rest
+  } = event || {};
   return { ...rest };
 }
 
 function makeRecurringBaseFromEvent(event, patch = {}) {
-  const { id, seriesId, ...rest } = event || {};
+  const {
+    id, seriesId,
+    isMakeup, makeupId, makeupForEventId, makeupRecordId,
+    attendanceStatus, missedReason, missedAt,
+    ...rest
+  } = event || {};
   return { ...rest, ...patch };
 }
 
@@ -1575,7 +2163,19 @@ function applyDirectCalendarChange(store, sourceEvent, patch) {
     }
 
     state.planner.events[index] = { ...current, ...patch };
+    syncMakeupRecordFromEvent(state.planner, state.planner.events[index]);
   });
+}
+
+function syncMakeupRecordFromEvent(planner, event) {
+  if (!event?.makeupId || !Array.isArray(planner?.makeups)) return;
+  const item = planner.makeups.find(row => row.id === event.makeupId);
+  if (!item || item.status !== 'planned') return;
+  item.scheduledEventId = event.id || item.scheduledEventId || '';
+  item.scheduledDate = event.date || '';
+  item.scheduledStartTime = event.startTime || '';
+  item.scheduledEndTime = event.endTime || '';
+  item.updatedAt = new Date().toISOString();
 }
 
 function calendarSectionButton(value, label) {
