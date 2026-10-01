@@ -38,11 +38,12 @@ const MANAGED_SLICES = {
     label: 'Drills',
   },
   nutrition: {
-    schemaVersion: 3,
-    normalize: normalizeNutrition,
-    merge: mergeNutrition,
-    meaningful: hasMeaningfulNutrition,
-    label: 'Nutrition & Recovery',
+    schemaVersion: 4,
+    normalize: normalizeNutritionCore,
+    merge: mergeNutritionCore,
+    meaningful: hasMeaningfulNutritionCore,
+    applyState: applyNutritionCore,
+    label: 'Nutrition',
   },
 };
 
@@ -117,13 +118,12 @@ function hasMeaningfulDrills(payload = {}) {
   );
 }
 
-function normalizeNutrition(payload = {}) {
+function normalizeNutritionCore(payload = {}) {
   const source = normalizeObject(payload);
   const planner = normalizeObject(source.planner);
   const guidance = normalizeObject(source.guidance);
 
   return {
-    ...source,
     planner: {
       ...planner,
       entries: Array.isArray(planner.entries) ? planner.entries : [],
@@ -136,56 +136,15 @@ function normalizeNutrition(payload = {}) {
       recoveryDay: String(guidance.recoveryDay || ''),
       hydration: String(guidance.hydration || ''),
     },
-    sleepLogs: Array.isArray(source.sleepLogs) ? source.sleepLogs : [],
-    recoveryLogs: Array.isArray(source.recoveryLogs) ? source.recoveryLogs : [],
-    trainingCheckouts: Array.isArray(source.trainingCheckouts) ? source.trainingCheckouts : [],
     checkinDefaults: normalizeObject(source.checkinDefaults),
   };
 }
 
-function rowTimestamp(row = {}) {
-  const value = row.updatedAt || row.updated_at || row.createdAt || row.created_at || '';
-  const parsed = Date.parse(String(value || ''));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
+function mergeNutritionCore(localPayload = {}, cloudPayload = {}) {
+  const local = normalizeNutritionCore(localPayload);
+  const cloud = normalizeNutritionCore(cloudPayload);
 
-function mergeRows(localRows = [], cloudRows = [], keyOf = item => item?.id || '') {
-  const merged = new Map();
-
-  for (const row of cloudRows) {
-    const key = String(keyOf(row) || '');
-    if (!key) continue;
-    merged.set(key, clone(row));
-  }
-
-  for (const row of localRows) {
-    const key = String(keyOf(row) || '');
-    if (!key) continue;
-
-    const cloudRow = merged.get(key);
-    if (!cloudRow) {
-      merged.set(key, clone(row));
-      continue;
-    }
-
-    const localTime = rowTimestamp(row);
-    const cloudTime = rowTimestamp(cloudRow);
-
-    // If both copies carry timestamps, the newest edit wins. Legacy rows often
-    // have no timestamp; in a same-key tie the cloud copy remains canonical.
-    if (localTime > cloudTime) merged.set(key, clone(row));
-  }
-
-  return [...merged.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, row]) => row);
-}
-
-function mergeNutrition(localPayload = {}, cloudPayload = {}) {
-  const local = normalizeNutrition(localPayload);
-  const cloud = normalizeNutrition(cloudPayload);
-
-  return normalizeNutrition({
+  return normalizeNutritionCore({
     ...local,
     ...cloud,
     planner: {
@@ -206,13 +165,6 @@ function mergeNutrition(localPayload = {}, cloudPayload = {}) {
       ...local.guidance,
       ...cloud.guidance,
     },
-    sleepLogs: mergeRows(local.sleepLogs, cloud.sleepLogs, item => item?.date || item?.id || ''),
-    recoveryLogs: mergeRows(local.recoveryLogs, cloud.recoveryLogs, item => item?.date || item?.id || ''),
-    trainingCheckouts: mergeRows(
-      local.trainingCheckouts,
-      cloud.trainingCheckouts,
-      item => item?.date || item?.id || '',
-    ),
     checkinDefaults: {
       ...local.checkinDefaults,
       ...cloud.checkinDefaults,
@@ -220,18 +172,35 @@ function mergeNutrition(localPayload = {}, cloudPayload = {}) {
   });
 }
 
-function hasMeaningfulNutrition(payload = {}) {
-  const nutrition = normalizeNutrition(payload);
+function hasMeaningfulNutritionCore(payload = {}) {
+  const nutrition = normalizeNutritionCore(payload);
 
   return Boolean(
     nutrition.planner.entries.length
     || nutrition.templates.length
-    || nutrition.sleepLogs.length
-    || nutrition.recoveryLogs.length
-    || nutrition.trainingCheckouts.length
     || Object.keys(nutrition.checkinDefaults).length
     || Object.values(nutrition.guidance).some(value => String(value || '').trim())
   );
+}
+
+function applyNutritionCore(state, payload) {
+  const current = normalizeObject(state.nutrition);
+  const core = normalizeNutritionCore(payload);
+  state.nutrition = {
+    ...current,
+    ...clone(core),
+    recoveryLogs: Array.isArray(current.recoveryLogs) ? current.recoveryLogs : [],
+    sleepLogs: Array.isArray(current.sleepLogs) ? current.sleepLogs : [],
+    trainingCheckouts: Array.isArray(current.trainingCheckouts) ? current.trainingCheckouts : [],
+  };
+}
+
+function applyModulePayload(state, moduleKey, payload, config) {
+  if (typeof config?.applyState === 'function') {
+    config.applyState(state, payload);
+    return;
+  }
+  state[moduleKey] = clone(payload);
 }
 
 function hasMeaningfulHealth(payload = {}) {
@@ -444,7 +413,7 @@ async function loadManagedSlice(moduleKey) {
       }
 
       store.update(state => {
-        state[moduleKey] = clone(payload);
+        applyModulePayload(state, moduleKey, payload, config);
         state.meta[`${moduleKey}CloudLoadedAt`] = new Date().toISOString();
         if (source === 'cloud-merged-local') {
           state.meta[`${moduleKey}CloudRecoveredAt`] = new Date().toISOString();
@@ -475,7 +444,7 @@ async function loadManagedSlice(moduleKey) {
       });
 
       store.update(state => {
-        state[moduleKey] = clone(reconciled.payload);
+        applyModulePayload(state, moduleKey, reconciled.payload, config);
         state.meta[`${moduleKey}CloudMigratedAt`] = new Date().toISOString();
       });
 
@@ -594,7 +563,7 @@ function startManagedSliceSync(moduleKey, initialCloudState = null) {
       if (currentFingerprint !== lastSavedFingerprint) {
         applyingRemote = true;
         store.update(state => {
-          state[moduleKey] = clone(savedPayload);
+          applyModulePayload(state, moduleKey, savedPayload, config);
           state.meta[`${moduleKey}CloudReceivedAt`] = new Date().toISOString();
         });
         applyingRemote = false;
@@ -667,7 +636,7 @@ function startManagedSliceSync(moduleKey, initialCloudState = null) {
       changed = true;
       applyingRemote = true;
       store.update(state => {
-        state[moduleKey] = clone(nextPayload);
+        applyModulePayload(state, moduleKey, nextPayload, config);
         state.meta[`${moduleKey}CloudReceivedAt`] = new Date().toISOString();
       });
       applyingRemote = false;

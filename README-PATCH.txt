@@ -1,5 +1,5 @@
-TPOS v1.1.6 — Conflict-safe Recovery sync
+TPOS v1.1.7 — Recovery daily cloud dedicato
 
-Corregge la mancata convergenza delle cronologie Nutrition & Recovery tra dispositivi.
-Ogni salvataggio fonde l’ultima revisione cloud con la cache locale e usa optimistic concurrency, evitando overwrite dell’intero storico.
-Nessuna migration SQL. Nessuna Edge Function modificata.
+Introduce tabelle cloud record-level per Check-in e Training checkout.
+Migra automaticamente lo storico locale e legacy, salva direttamente al submit e sincronizza gli altri dispositivi ogni 3 secondi.
+Include una nuova migration Supabase; nessuna Edge Function modificata.

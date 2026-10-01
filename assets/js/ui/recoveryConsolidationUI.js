@@ -1,11 +1,17 @@
-import '../bootstrap.js?v=1.1.3';
+import '../bootstrap.js';
 
-import { store } from '../data/store.js?v=1.1.3';
-import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js?v=1.1.3';
-import { loadCloudModuleState, saveCloudModuleState } from '../cloud/moduleStateCloud.js?v=1.1.3';
-import { normalizeHealthPayload } from '../cloud/healthCloud.js?v=1.1.3';
-import { BODY_HOTSPOTS, MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js?v=1.1.3';
-import { showInAppAlert, showInAppConfirm } from './inAppMessages.js?v=1.1.3';
+import { store } from '../data/store.js';
+import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js';
+import { loadCloudModuleState, saveCloudModuleState } from '../cloud/moduleStateCloud.js';
+import { normalizeHealthPayload } from '../cloud/healthCloud.js';
+import {
+  saveRecoveryCheckinCloud,
+  deleteRecoveryCheckinCloud,
+  saveTrainingCheckoutCloud,
+  deleteTrainingCheckoutCloud,
+} from '../cloud/recoveryDailyCloud.js';
+import { BODY_HOTSPOTS, MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js';
+import { showInAppAlert, showInAppConfirm } from './inAppMessages.js';
 
 const SYSTEM_DEFAULTS = Object.freeze({
   sleepHours: 8,
@@ -1163,6 +1169,18 @@ function renderCombinedRecovery() {
     });
 
     try {
+      await saveRecoveryCheckinCloud({
+        athleteId: getCurrentAccess().athleteId,
+        row,
+      });
+    } catch (error) {
+      console.error('Salvataggio cloud del check-in fallito.', error);
+      await showInAppAlert('Il check-in resta salvato su questo dispositivo, ma non è stato ancora sincronizzato nel cloud. TPOS riproverà automaticamente.', {
+        title: 'Recovery cloud non aggiornato',
+      });
+    }
+
+    try {
       await saveHealthSoreness({
         date: row.date,
         severity: soreness,
@@ -1192,7 +1210,7 @@ function renderCombinedRecovery() {
   }
   checkoutForm?.elements.noTraining.addEventListener('change', () => syncCheckoutDisabled(checkoutForm));
   checkoutForm?.elements.date.addEventListener('change', event => fillCheckoutFormForDate(checkoutForm, event.target.value));
-  checkoutForm?.addEventListener('submit', event => {
+  checkoutForm?.addEventListener('submit', async event => {
     event.preventDefault();
     if (!event.currentTarget.reportValidity()) return;
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
@@ -1211,6 +1229,17 @@ function renderCombinedRecovery() {
       state.nutrition.trainingCheckouts = state.nutrition.trainingCheckouts.filter(item => item.date !== row.date);
       state.nutrition.trainingCheckouts.push(row);
     });
+    try {
+      await saveTrainingCheckoutCloud({
+        athleteId: getCurrentAccess().athleteId,
+        row,
+      });
+    } catch (error) {
+      console.error('Salvataggio cloud del checkout fallito.', error);
+      await showInAppAlert('Il checkout resta salvato su questo dispositivo, ma non è stato ancora sincronizzato nel cloud. TPOS riproverà automaticamente.', {
+        title: 'Recovery cloud non aggiornato',
+      });
+    }
     renderCombinedRecovery();
   });
 
@@ -1228,6 +1257,14 @@ function renderCombinedRecovery() {
         state.nutrition.sleepLogs = state.nutrition.sleepLogs.filter(item => item.date !== date);
         state.nutrition.recoveryLogs = state.nutrition.recoveryLogs.filter(item => item.date !== date);
       });
+      try {
+        await deleteRecoveryCheckinCloud({
+          athleteId: getCurrentAccess().athleteId,
+          date,
+        });
+      } catch (error) {
+        console.warn('Eliminazione check-in dal cloud non riuscita.', error);
+      }
       try {
         await saveHealthSoreness({ date, severity: 1, scope: 'general', locations: [] });
       } catch (error) {
@@ -1250,6 +1287,14 @@ function renderCombinedRecovery() {
         ensureState(state);
         state.nutrition.trainingCheckouts = state.nutrition.trainingCheckouts.filter(item => item.date !== date);
       });
+      try {
+        await deleteTrainingCheckoutCloud({
+          athleteId: getCurrentAccess().athleteId,
+          date,
+        });
+      } catch (error) {
+        console.warn('Eliminazione checkout dal cloud non riuscita.', error);
+      }
       renderCombinedRecovery();
     });
   });

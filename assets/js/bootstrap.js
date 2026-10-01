@@ -34,6 +34,10 @@ import {
   loadEquipmentIntoLocalStore,
   startEquipmentCloudSync,
 } from './cloud/equipmentCloud.js';
+import {
+  loadRecoveryDailyIntoStore,
+  startRecoveryDailySync,
+} from './cloud/recoveryDailyCloud.js';
 import { store } from './data/store.js';
 
 function showStartupError(message) {
@@ -193,6 +197,28 @@ function setTrainingCloudStatus({ status, message = '' }) {
   saveIndicator.title = 'Athletics letto e salvato su Supabase; la copia locale resta come cache.';
 }
 
+function setRecoveryDailyCloudStatus({ status, message = '' }) {
+  const saveIndicator = document.querySelector('#save-indicator');
+  if (!saveIndicator) return;
+  const route = location.hash.replace(/^#\/?/, '') || 'dashboard';
+  if (route !== 'nutrition') return;
+
+  if (status === 'error') {
+    saveIndicator.textContent = 'Recovery · cache locale';
+    saveIndicator.title = message || 'I dati Recovery restano locali finché il cloud non torna disponibile.';
+    return;
+  }
+
+  if (status === 'readonly') {
+    saveIndicator.textContent = 'Recovery cloud · sola lettura';
+    saveIndicator.title = 'Questo account può leggere Recovery ma non modificarlo.';
+    return;
+  }
+
+  saveIndicator.textContent = 'Recovery cloud ✓';
+  saveIndicator.title = 'Check-in e checkout sono sincronizzati nel cloud dedicato.';
+}
+
 function escapeHtml(value = '') {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -291,6 +317,14 @@ if (session) {
           });
         }
 
+        if (canReadModule('nutrition')) {
+          await loadRecoveryDailyIntoStore({
+            store,
+            athleteId: cloudAthlete.id,
+            allowWrite: canWriteModule('nutrition'),
+          });
+        }
+
         await import('./app.js');
         mountAuthControls(session.user);
         mountAthleteControls({
@@ -344,6 +378,15 @@ if (session) {
           setTrainingCloudStatus({ status: 'readonly' });
         } else {
           setTrainingCloudStatus({ status: 'unavailable' });
+        }
+
+        if (canReadModule('nutrition')) {
+          startRecoveryDailySync({
+            store,
+            athleteId: cloudAthlete.id,
+            allowWrite: canWriteModule('nutrition'),
+            onStatus: setRecoveryDailyCloudStatus,
+          });
         }
 
         window.addEventListener('hashchange', () => {

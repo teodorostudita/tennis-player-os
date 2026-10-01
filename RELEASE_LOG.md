@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.1.7 — Recovery daily cloud dedicato
+- **Check-in** e **Training checkout** passano a persistenza cloud record-level: una riga per atleta e data, invece di un unico JSON Nutrition condiviso.
+- All'avvio vengono recuperati e migrati automaticamente i record presenti nella cache locale e nel vecchio payload Nutrition.
+- Il salvataggio del check-in/checkout scrive direttamente nel cloud; gli altri dispositivi aggiornano la cronologia ogni 3 secondi e al ritorno in foreground.
+- Le cancellazioni sono propagate con tombstone, evitando che una cache vecchia faccia ricomparire un record eliminato.
+- Il sync generico Nutrition continua a gestire solo planner, template, guidance e default del check-in, senza più toccare lo storico Recovery.
+
 ## v1.1.6 — Conflict-safe Recovery sync
 - Corretto il caso in cui Mac e iPhone mantenevano **cronologie Recovery complementari** invece di convergere sullo stesso storico.
 - Prima di ogni salvataggio Nutrition & Recovery viene riletta l'ultima revisione cloud e vengono fusi i record locali/remoti per data.

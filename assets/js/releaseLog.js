@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.7',
+    date: '2026-10-01',
+    title: 'Recovery daily cloud dedicato',
+    details: [
+      'Check-in e Training checkout non vengono più sincronizzati dentro un unico payload JSON del modulo Nutrition.',
+      'Introdotte due tabelle cloud record-level, una riga per atleta e data, così Mac e iPhone condividono una cronologia unica.',
+      'All’avvio TPOS recupera e migra automaticamente sia lo storico locale sia gli eventuali record legacy già presenti nel vecchio payload Nutrition.',
+      'Le modifiche vengono salvate direttamente nel cloud al momento del submit e gli altri dispositivi rileggono i record ogni 3 secondi e al ritorno in foreground.',
+      'Le eliminazioni usano tombstone cloud, evitando che una vecchia cache locale possa far ricomparire un record cancellato da un altro dispositivo.',
+      'Il vecchio sync generico Nutrition resta attivo solo per planner, template, guidance e valori abituali; non può più sovrascrivere check-in e checkout.',
+    ],
+  },
+  {
     version: '1.1.6',
     date: '2026-10-01',
     title: 'Conflict-safe Recovery sync',
