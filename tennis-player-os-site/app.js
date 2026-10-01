@@ -26,38 +26,62 @@ function updateBetaSubmitLabel() {
   }
 }
 
+const BETA_STATUS_REFRESH_MS = 5000;
+const BETA_STATUS_RETRY_MS = 30000;
+let betaStatusTimer = null;
+let betaStatusInFlight = false;
+
+function renderBetaStatus(data = {}) {
+  const capacity = Number.isFinite(Number(data.capacity)) ? Number(data.capacity) : 30;
+  const active = Math.max(0, Number.isFinite(Number(data.active)) ? Number(data.active) : 0);
+  const remaining = Math.max(0, Number.isFinite(Number(data.remaining)) ? Number(data.remaining) : capacity - active);
+  betaIsFull = Boolean(data.full) || remaining <= 0;
+
+  if (betaRemaining) betaRemaining.textContent = String(remaining);
+  if (betaAssigned) betaAssigned.textContent = String(Math.min(active, capacity));
+  if (betaCapacity) betaCapacity.textContent = String(capacity);
+  if (betaProgress) {
+    const pct = capacity > 0 ? Math.min(100, Math.max(0, (active / capacity) * 100)) : 100;
+    betaProgress.style.setProperty('--beta-progress', pct.toFixed(1) + '%');
+    betaProgress.setAttribute('aria-valuemax', String(capacity));
+    betaProgress.setAttribute('aria-valuenow', String(Math.min(active, capacity)));
+  }
+  if (betaWaitlist) betaWaitlist.hidden = !betaIsFull;
+  if (betaProgramState) betaProgramState.value = betaIsFull ? 'waitlist' : 'open';
+  updateBetaSubmitLabel();
+}
+
+function scheduleBetaStatusRefresh(delay) {
+  if (betaStatusTimer) window.clearTimeout(betaStatusTimer);
+  betaStatusTimer = window.setTimeout(() => {
+    void loadBetaStatus();
+  }, delay);
+}
+
 async function loadBetaStatus() {
+  if (betaStatusInFlight) return;
+  betaStatusInFlight = true;
+
   try {
-    const response = await fetch('beta-status.php', {
+    const response = await fetch(`beta-status.php?t=${Date.now()}`, {
       headers: { 'Accept': 'application/json' },
       cache: 'no-store'
     });
     if (!response.ok) throw new Error('beta_status_failed');
-    const data = await response.json();
-    const capacity = Number.isFinite(Number(data.capacity)) ? Number(data.capacity) : 30;
-    const active = Math.max(0, Number.isFinite(Number(data.active)) ? Number(data.active) : 0);
-    const remaining = Math.max(0, Number.isFinite(Number(data.remaining)) ? Number(data.remaining) : capacity - active);
-    betaIsFull = Boolean(data.full) || remaining <= 0;
 
-    if (betaRemaining) betaRemaining.textContent = String(remaining);
-    if (betaAssigned) betaAssigned.textContent = String(Math.min(active, capacity));
-    if (betaCapacity) betaCapacity.textContent = String(capacity);
-    if (betaProgress) {
-      const pct = capacity > 0 ? Math.min(100, Math.max(0, (active / capacity) * 100)) : 100;
-      betaProgress.style.setProperty('--beta-progress', pct.toFixed(1) + '%');
-      betaProgress.setAttribute('aria-valuemax', String(capacity));
-      betaProgress.setAttribute('aria-valuenow', String(Math.min(active, capacity)));
-    }
-    if (betaWaitlist) betaWaitlist.hidden = !betaIsFull;
-    if (betaProgramState) betaProgramState.value = betaIsFull ? 'waitlist' : 'open';
-    updateBetaSubmitLabel();
-  } catch (err) {
-    // Graceful fallback: the public offer remains usable even if the status endpoint is temporarily unavailable.
-    betaIsFull = false;
-    if (betaProgramState) betaProgramState.value = 'open';
-    updateBetaSubmitLabel();
+    const data = await response.json();
+    if (!data || data.ok === false) throw new Error('beta_status_invalid');
+
+    renderBetaStatus(data);
+    scheduleBetaStatusRefresh(BETA_STATUS_REFRESH_MS);
+  } catch (_) {
+    // Keep the last valid count on screen and retry quietly at a slower cadence.
+    scheduleBetaStatusRefresh(BETA_STATUS_RETRY_MS);
+  } finally {
+    betaStatusInFlight = false;
   }
 }
+
 
 if (form) {
   form.addEventListener('submit', async (e) => {
@@ -106,6 +130,13 @@ if (form) {
 }
 
 loadBetaStatus();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') void loadBetaStatus();
+});
+window.addEventListener('focus', () => {
+  void loadBetaStatus();
+});
 
 const previewDialog = document.getElementById('previewDialog');
 const openPreview = document.getElementById('openPreview');

@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.0.28 — Profili account e preset privilegi
+- Aggiunto `profiles.user_type`: **Atleta, Coach, Preparatore atletico, Fisioterapista, Genitore, Custom**.
+- Il profilo non concede accesso: privilegi e ruoli restano indipendenti e sempre personalizzabili.
+- Durante la creazione di un account, il profilo applica un preset iniziale ai moduli assegnati.
+- Sugli account esistenti il cambio profilo non altera automaticamente i permessi; il preset può essere applicato con un comando esplicito.
+- Il tipo utente viene caricato globalmente all’avvio, predisponendo la futura **Home contestuale**.
+
 ## v1.0.27 — Founding Beta counter cleanup
 - `beta-request.php` legge ora direttamente da Supabase lo stesso stato Founding Beta usato dal contatore pubblico.
 - Eliminata la dipendenza dal vecchio `beta-program.php` locale.

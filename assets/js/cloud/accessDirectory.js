@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { normalizeUserType } from '../data/userTypes.js';
 
 function normalizePermission(permission = {}) {
   return {
@@ -40,6 +41,7 @@ function normalizeWorkspace(payload = {}) {
           email: String(user.email || ''),
           contactEmail: String(user.contactEmail || user.email || ''),
           displayName: String(user.displayName || ''),
+          userType: normalizeUserType(user.userType),
           accountRole: String(user.accountRole || 'member'),
           strongestRole: String(user.strongestRole || 'member'),
           hasOwnerRole: Boolean(user.hasOwnerRole),
@@ -113,21 +115,41 @@ export async function saveOwnerUserAccountOptions({
   userId,
   contactEmail = '',
   isBetaOwner = false,
+  userType = 'custom',
 } = {}) {
   const normalizedUserId = String(userId || '').trim();
   if (!normalizedUserId) {
     throw new Error('Utente non specificato.');
   }
 
-  const { data, error } = await supabase.rpc('set_owner_user_account_options', {
-    p_user_id: normalizedUserId,
-    p_contact_email: String(contactEmail || '').trim() || null,
-    p_is_beta_owner: Boolean(isBetaOwner),
-  });
+  const { data: accountData, error: accountError } = await supabase.rpc(
+    'set_owner_user_account_options',
+    {
+      p_user_id: normalizedUserId,
+      p_contact_email: String(contactEmail || '').trim() || null,
+      p_is_beta_owner: Boolean(isBetaOwner),
+    },
+  );
 
-  if (error) {
-    throw new Error(`Impossibile salvare email/Founding Beta: ${error.message}`);
+  if (accountError) {
+    throw new Error(`Impossibile salvare email/Founding Beta: ${accountError.message}`);
   }
 
-  return data || { ok: true };
+  const { data: profileData, error: profileError } = await supabase.rpc(
+    'set_owner_user_type',
+    {
+      p_user_id: normalizedUserId,
+      p_user_type: normalizeUserType(userType),
+    },
+  );
+
+  if (profileError) {
+    throw new Error(`Impossibile salvare il profilo utente: ${profileError.message}`);
+  }
+
+  return {
+    ...(accountData || {}),
+    ...(profileData || {}),
+    ok: true,
+  };
 }

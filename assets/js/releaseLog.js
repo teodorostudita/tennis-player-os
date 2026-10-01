@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.28',
+    date: '2026-10-01',
+    title: 'Profili account e preset privilegi',
+    details: [
+      'Aggiunto il profilo globale dell’utente: Atleta, Coach, Preparatore atletico, Fisioterapista, Genitore o Custom.',
+      'Il profilo descrive l’utente e non concede permessi: i privilegi effettivi restano indipendenti e sempre personalizzabili.',
+      'Alla creazione di un account, la scelta del profilo applica automaticamente un preset iniziale di lettura/scrittura ai moduli assegnati.',
+      'Sugli account esistenti, cambiare profilo non sovrascrive i privilegi correnti; un comando separato permette di applicare volontariamente il preset consigliato.',
+      'Il profilo viene caricato all’avvio insieme all’account access ed è quindi disponibile globalmente per la prossima Home contestuale.',
+    ],
+  },
+  {
     version: '1.0.27',
     date: '2026-09-30',
     title: 'Founding Beta counter cleanup',

@@ -8,6 +8,7 @@ const APP_URL = 'https://tennis.polidorionline.it';
 const TECHNICAL_LOGIN_DOMAIN = 'users.tennis.polidorionline.it';
 const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,39}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const USER_TYPES = new Set(['athlete', 'coach', 'trainer', 'physio', 'parent', 'custom']);
 
 const ALLOWED_ORIGINS = new Set([
   APP_URL,
@@ -46,6 +47,7 @@ type RequestBody = {
   email?: string;
   contactEmail?: string;
   isBetaOwner?: boolean;
+  userType?: string;
   temporaryPassword?: string;
   role?: 'admin' | 'member';
   permissions?: PermissionInput[];
@@ -80,6 +82,11 @@ function json(
 
 function normalizeEmail(value: unknown) {
   return String(value ?? '').trim().toLowerCase();
+}
+
+function normalizeUserType(value: unknown) {
+  const userType = String(value ?? '').trim().toLowerCase();
+  return USER_TYPES.has(userType) ? userType : 'custom';
 }
 
 function normalizeUsername(value: unknown) {
@@ -255,6 +262,7 @@ Deno.serve(async req => {
     const login = resolvedLogin.login;
     const email = resolvedLogin.email;
     const contactEmail = normalizeEmail(body.contactEmail || email);
+    const userType = normalizeUserType(body.userType);
     const temporaryPassword = String(body.temporaryPassword ?? '');
     const role = body.role === 'admin' ? 'admin' : 'member';
     const permissions = normalizePermissions(body.permissions);
@@ -432,12 +440,15 @@ Deno.serve(async req => {
       }
     }
 
-    const { error: contactEmailError } = await adminClient
+    const { error: profileUpdateError } = await adminClient
       .from('profiles')
-      .update({ contact_email: contactEmail })
+      .update({
+        contact_email: contactEmail,
+        user_type: userType,
+      })
       .eq('id', targetUser.id);
 
-    if (contactEmailError) throw contactEmailError;
+    if (profileUpdateError) throw profileUpdateError;
 
     const { data: existingMemberships, error: membershipReadError } =
       await adminClient
@@ -657,6 +668,7 @@ Deno.serve(async req => {
         email,
         contactEmail,
         isBetaOwner,
+        userType,
         beta: betaStatus,
         role,
         accountCreated,

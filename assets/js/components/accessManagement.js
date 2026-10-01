@@ -1,5 +1,12 @@
 import { modules } from '../data/schema.js';
 import {
+  normalizeUserType,
+  permissionPresetForUserType,
+  userTypeDescription,
+  userTypeLabel,
+  userTypeOptionsMarkup,
+} from '../data/userTypes.js';
+import {
   createOrUpdateAthleteAccess,
   deleteManagedAccount,
   getCurrentAccess,
@@ -70,6 +77,53 @@ function defaultAssignment(athleteId, role = 'member') {
     permissions: blankPermissionMap(),
     protectedOwner: false,
   };
+}
+
+function applyUserTypePresetToAssignment(assignment, userType) {
+  if (!assignment || assignment.protectedOwner) return false;
+
+  const preset = permissionPresetForUserType(
+    userType,
+    modules.map(module => module.id),
+  );
+
+  if (!preset) return false;
+
+  assignment.role = preset.role;
+  assignment.permissions = {
+    ...blankPermissionMap(),
+    ...preset.permissions,
+  };
+
+  return true;
+}
+
+function defaultAssignmentForUserType(
+  athleteId,
+  userType = 'custom',
+  isBetaOwner = false,
+) {
+  if (isBetaOwner) {
+    return defaultAssignment(athleteId, 'admin');
+  }
+
+  const assignment = defaultAssignment(athleteId, 'member');
+  applyUserTypePresetToAssignment(assignment, userType);
+  return assignment;
+}
+
+function applyUserTypePreset(gate, userType) {
+  const state = editorState(gate);
+  if (!state?.draft) return false;
+
+  persistActiveAssignment(gate);
+
+  let changed = false;
+  for (const assignment of Object.values(state.draft.assignments || {})) {
+    changed = applyUserTypePresetToAssignment(assignment, userType) || changed;
+  }
+
+  return changed;
 }
 
 function assignmentDraft(assignment = {}) {
@@ -173,6 +227,24 @@ function renderShell(gate) {
                 />
                 <small id="access-contact-email-help">L’email tecnica di login resta separata. Se non inserisci una mail reale, resta quella tecnica generata dal nome utente.</small>
               </label>
+
+              <div class="access-profile-block">
+                <label class="access-field">
+                  <span>Profilo utente</span>
+                  <select name="userType">
+                    ${userTypeOptionsMarkup()}
+                  </select>
+                  <small id="access-user-type-help">Il profilo definisce i privilegi consigliati e sarà la base della Home personale. I permessi restano sempre modificabili.</small>
+                </label>
+                <button
+                  class="auth-text-button access-profile-preset"
+                  type="button"
+                  id="access-apply-profile-preset"
+                  hidden
+                >
+                  Applica privilegi consigliati
+                </button>
+              </div>
 
               <label class="access-beta-toggle" id="access-beta-toggle" hidden>
                 <input name="isBetaOwner" type="checkbox" />
@@ -371,6 +443,7 @@ function memberCards(gate) {
           <span class="access-member-name">
             ${escapeHtml(login)}
             <span class="access-role-badge role-${escapeAttr(role)}">${escapeHtml(roleLabel(role))}</span>
+            <span class="access-role-badge role-profile">${escapeHtml(userTypeLabel(user.userType))}</span>
             ${user.isBetaOwner ? '<span class="access-role-badge role-beta">Beta</span>' : ''}
           </span>
           <span class="access-member-summary">${escapeHtml(memberSummary(gate, user))}</span>
@@ -421,6 +494,7 @@ function userToDraft(user) {
     userId: user.userId,
     login: userLogin(user),
     contactEmail: String(user.contactEmail || user.email || ''),
+    userType: normalizeUserType(user.userType),
     isBetaOwner: Boolean(user.isBetaOwner),
     athleteCreationLimit: user.athleteCreationLimit == null ? null : Number(user.athleteCreationLimit),
     hasOwnerRole: Boolean(user.hasOwnerRole),
@@ -443,6 +517,7 @@ function newDraft(gate) {
     userId: '',
     login: '',
     contactEmail: '',
+    userType: 'custom',
     isBetaOwner: false,
     athleteCreationLimit: null,
     hasOwnerRole: false,
@@ -593,9 +668,10 @@ function renderAthleteChoices(gate) {
       const athleteId = input.value;
 
       if (input.checked) {
-        state.draft.assignments[athleteId] ||= defaultAssignment(
+        state.draft.assignments[athleteId] ||= defaultAssignmentForUserType(
           athleteId,
-          state.draft.isBetaOwner ? 'admin' : 'member',
+          state.draft.userType,
+          state.draft.isBetaOwner,
         );
         state.draft.activeAthleteId = athleteId;
       } else {
@@ -617,6 +693,8 @@ function setFormMode(gate) {
   const passwordBlock = gate.querySelector('#access-password-block');
   const loginHelp = gate.querySelector('#access-login-help');
   const contactHelp = gate.querySelector('#access-contact-email-help');
+  const userTypeHelp = gate.querySelector('#access-user-type-help');
+  const profilePresetButton = gate.querySelector('#access-apply-profile-preset');
   const betaToggle = gate.querySelector('#access-beta-toggle');
   const modifyButton = gate.querySelector('#access-modify');
   const saveButton = gate.querySelector('#access-save');
@@ -631,16 +709,38 @@ function setFormMode(gate) {
   form.elements.userId.value = state.draft.userId || '';
   form.elements.login.value = state.draft.login || '';
   form.elements.contactEmail.value = state.draft.contactEmail || '';
+  form.elements.userType.value = normalizeUserType(state.draft.userType);
   form.elements.isBetaOwner.checked = Boolean(state.draft.isBetaOwner);
   form.elements.login.readOnly = !isNew;
-  form.elements.contactEmail.readOnly = !isAppOwner() || isView || protectedUser;
+  form.elements.contactEmail.readOnly = !isAppOwner() || isView;
   setControlDisabled(form.elements.login, false);
+  setControlDisabled(
+    form.elements.userType,
+    isView || (!isNew && !isAppOwner()),
+  );
   setControlDisabled(form.elements.isBetaOwner, !isAppOwner() || isView || protectedUser);
   if (betaToggle) betaToggle.hidden = !isAppOwner();
   if (contactHelp) {
     contactHelp.textContent = state.draft.isBetaOwner
       ? 'Email amministrativa/di contatto. Non modifica il nome utente tecnico usato per il login.'
       : 'Se non conosci una mail reale, puoi lasciare quella tecnica generata dal nome utente.';
+  }
+
+  const normalizedUserType = normalizeUserType(state.draft.userType);
+  if (userTypeHelp) {
+    userTypeHelp.textContent = `${userTypeDescription(normalizedUserType)} I permessi restano sempre modificabili.`;
+  }
+  if (profilePresetButton) {
+    const canApplyPreset = (
+      isEditableMode(gate)
+      && !protectedUser
+      && normalizedUserType !== 'custom'
+      && assignmentIds(state.draft).length > 0
+    );
+    profilePresetButton.hidden = !canApplyPreset;
+    profilePresetButton.textContent = isNew
+      ? 'Ripristina privilegi consigliati'
+      : 'Applica privilegi consigliati';
   }
 
   if (passwordBlock) passwordBlock.hidden = !isNew;
@@ -657,18 +757,23 @@ function setFormMode(gate) {
     if (!isNew) input.value = '';
   }
 
-  if (modifyButton) modifyButton.hidden = !isView || protectedUser;
+  if (modifyButton) {
+    modifyButton.hidden = !isView || (protectedUser && !isAppOwner());
+    modifyButton.textContent = protectedUser ? 'Modifica profilo' : 'Modifica';
+  }
   if (saveButton) saveButton.hidden = !(isNew || isEdit);
   if (deleteButton) deleteButton.hidden = !isView || protectedUser;
 
   gate.querySelector('#access-editor-kicker').textContent = isNew ? 'Nuovo account' : protectedUser ? 'Account protetto' : 'Account';
   gate.querySelector('#access-editor-title').textContent = isNew ? 'Nuovo utente' : state.draft.login;
   gate.querySelector('#access-editor-subtitle').textContent = isNew
-    ? 'Crea l’account, inserisci l’email di contatto e configura eventuali atleti/privilegi.'
+    ? 'Crea l’account, scegli il profilo e configura eventuali atleti/privilegi.'
     : protectedUser
-      ? 'Puoi consultare le assegnazioni Owner, ma non modificarle o eliminarle.'
+      ? isEdit
+        ? 'Puoi modificare profilo utente ed email di contatto; assegnazioni e privilegi Owner restano protetti.'
+        : 'Le assegnazioni Owner sono protette. Profilo utente ed email di contatto possono essere modificati separatamente.'
       : isEdit
-        ? 'Modifica atleti, ruoli e privilegi. Le modifiche valgono indipendentemente dall’atleta aperto nell’app.'
+        ? 'Modifica profilo, atleti, ruoli e privilegi. Cambiare profilo non sovrascrive automaticamente i permessi esistenti.'
         : 'Configurazione attuale dell’utente in tutto il workspace gestibile.';
 
   renderAthleteChoices(gate);
@@ -776,6 +881,7 @@ async function saveEditor(gate) {
   const isNew = state.mode === 'new';
   const login = String(form.elements.login?.value || '').trim();
   const contactEmail = String(form.elements.contactEmail?.value || '').trim();
+  const userType = normalizeUserType(form.elements.userType?.value);
   const isBetaOwner = Boolean(form.elements.isBetaOwner?.checked) && isAppOwner();
   const originalUser = state.draft?.userId
     ? workspace(gate).users.find(user => user.userId === state.draft.userId)
@@ -844,6 +950,7 @@ async function saveEditor(gate) {
         login,
         contactEmail,
         isBetaOwner,
+        userType,
         temporaryPassword: String(form.elements.temporaryPassword?.value || ''),
         role: 'member',
         permissions: [],
@@ -857,7 +964,7 @@ async function saveEditor(gate) {
       }
     }
 
-    if (assignments.length) {
+    if (assignments.length && !state.draft.hasOwnerRole) {
       await replaceOwnerUserAccess({
         userId,
         assignments,
@@ -873,6 +980,7 @@ async function saveEditor(gate) {
         userId,
         contactEmail,
         isBetaOwner,
+        userType,
       });
     }
 
@@ -889,7 +997,7 @@ async function saveEditor(gate) {
       gate,
       isNew
         ? isBetaOwner
-          ? 'Founding Beta Owner creato. Potrà creare un solo atleta; i privilegi restano personalizzabili.'
+          ? `Founding Beta Owner creato con profilo ${userTypeLabel(userType)}. Potrà creare un solo atleta; i privilegi restano personalizzabili.`
           : accountCreated
             ? 'Utente creato. Atleti, email e privilegi sono stati salvati.'
             : 'Account esistente trovato: assegnazioni, email e privilegi sono stati salvati.'
@@ -1001,6 +1109,44 @@ function bindStaticEvents(gate) {
     state.draft.contactEmail = String(event.target.value || '');
   });
 
+  gate.querySelector('#access-form')?.elements.userType?.addEventListener('change', event => {
+    const state = editorState(gate);
+    if (!state || !isEditableMode(gate)) return;
+
+    persistActiveAssignment(gate);
+    const nextType = normalizeUserType(event.target.value);
+    state.draft.userType = nextType;
+
+    // On first creation the selected profile is a true preset: apply it
+    // immediately. On existing users, changing profile only changes the
+    // classification/Home; permissions stay untouched unless requested.
+    if (state.mode === 'new' && nextType !== 'custom') {
+      applyUserTypePreset(gate, nextType);
+      renderAthleteChoices(gate);
+      renderAssignmentTabs(gate);
+    }
+
+    setFormMode(gate);
+  });
+
+  gate.querySelector('#access-apply-profile-preset')?.addEventListener('click', () => {
+    const state = editorState(gate);
+    if (!state || !isEditableMode(gate)) return;
+
+    const userType = normalizeUserType(state.draft.userType);
+    if (userType === 'custom') return;
+
+    if (applyUserTypePreset(gate, userType)) {
+      renderAthleteChoices(gate);
+      renderAssignmentTabs(gate);
+      setMessage(
+        gate,
+        `Applicati i privilegi consigliati per ${userTypeLabel(userType)}. Puoi ancora modificarli prima di salvare.`,
+        'success',
+      );
+    }
+  });
+
   gate.querySelector('#access-form')?.elements.isBetaOwner?.addEventListener('change', event => {
     const state = editorState(gate);
     if (!state || !isEditableMode(gate) || !isAppOwner()) return;
@@ -1031,7 +1177,8 @@ function bindStaticEvents(gate) {
 
   gate.querySelector('#access-modify')?.addEventListener('click', () => {
     const state = editorState(gate);
-    if (!state?.draft?.userId || state.draft.hasOwnerRole) return;
+    if (!state?.draft?.userId) return;
+    if (state.draft.hasOwnerRole && !isAppOwner()) return;
     openExistingUser(gate, state.draft.userId, 'edit');
   });
 

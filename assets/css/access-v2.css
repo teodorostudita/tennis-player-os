@@ -356,3 +356,21 @@
   background: #eef5ff;
   color: #315b89;
 }
+
+
+/* v1.0.28 — global user profiles + permission presets */
+.access-profile-block {
+  display: grid;
+  gap: 5px;
+}
+
+.access-profile-preset {
+  justify-self: start;
+  margin-top: -2px;
+}
+
+.access-role-badge.role-profile {
+  border-color: #dde3ea;
+  background: #f5f7fa;
+  color: #536276;
+}
