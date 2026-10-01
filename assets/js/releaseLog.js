@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.0.29',
+    date: '2026-10-01',
+    title: 'Rimozione Reset demo',
+    details: [
+      'Rimosso dalla topbar il comando Reset demo, residuo della fase prototipale.',
+      'Eliminata la relativa logica UI da app.js; nessuna modifica ai dati cloud o ai normali meccanismi di persistenza.',
+      'La funzione interna store.reset() resta disponibile al codice per eventuali strumenti di sviluppo futuri, ma non è più esposta all’utente.',
+    ],
+  },
+  {
     version: '1.0.28',
     date: '2026-10-01',
     title: 'Profili account e preset privilegi',

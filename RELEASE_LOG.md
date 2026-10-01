@@ -1,5 +1,10 @@
 # Tennis Player OS — Release Log
 
+## v1.0.29 — Rimozione Reset demo
+- Rimosso dalla topbar il comando **Reset demo**, residuo della fase prototipale.
+- Eliminata la relativa logica UI.
+- Nessuna modifica ai dati cloud; `store.reset()` resta disponibile internamente ma non è più esposto all’utente.
+
 ## v1.0.28 — Profili account e preset privilegi
 - Aggiunto `profiles.user_type`: **Atleta, Coach, Preparatore atletico, Fisioterapista, Genitore, Custom**.
 - Il profilo non concede accesso: privilegi e ruoli restano indipendenti e sempre personalizzabili.

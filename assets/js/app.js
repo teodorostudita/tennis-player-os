@@ -8,14 +8,12 @@ import { renderDrills } from './components/drills.js';
 import { renderEconomics } from './components/economics.js';
 import { renderNutrition } from './components/nutrition.js';
 import { renderResourceLibrary } from './components/resourceLibrary.js';
-import { showInAppConfirm } from './ui/inAppMessages.js';
 
 const sidebar = document.querySelector('#sidebar');
 const main = document.querySelector('#main-content');
 const title = document.querySelector('#page-title');
 const saveIndicator = document.querySelector('#save-indicator');
 const mobileMenuButton = document.querySelector('#mobile-menu-button');
-const resetButton = document.querySelector('#reset-demo');
 
 const LIBRARY_MODULES = new Set(['development', 'training', 'drills', 'equipment', 'health', 'nutrition', 'mental', 'visual']);
 const moduleWorkspaceView = new Map();
@@ -273,14 +271,6 @@ function escapeAttr(value = '') { return escapeHtml(value); }
 
 window.addEventListener('hashchange', render);
 mobileMenuButton.addEventListener('click', () => sidebar.classList.toggle('open'));
-resetButton.addEventListener('click', async () => {
-  const confirmed = await showInAppConfirm('Ripristinare i dati demo locali?', {
-    title: 'Ripristina dati demo', confirmLabel: 'Ripristina', danger: true,
-  });
-  if (!confirmed) return;
-  store.reset();
-  render();
-});
 store.subscribe(() => {
   saveIndicator.textContent = 'Salvato';
   const route = getRoute();
