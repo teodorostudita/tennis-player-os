@@ -296,6 +296,13 @@ function paintStatus(moduleKey, nextStatus) {
   const config = MANAGED_SLICES[moduleKey];
   const label = config?.label || moduleKey;
 
+  // The Recovery daily cloud owns the normal status while on Nutrition.
+  // Suppress the generic Nutrition core success/readonly repaint so the
+  // top-right indicator does not alternate every polling cycle.
+  if (moduleKey === 'nutrition' && ['synced', 'readonly'].includes(nextStatus.status)) {
+    return;
+  }
+
   if (nextStatus.status === 'syncing') {
     indicator.textContent = `${label} → cloud…`;
     indicator.title = `Sincronizzazione ${label} con Supabase in corso.`;

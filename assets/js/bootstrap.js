@@ -197,26 +197,28 @@ function setTrainingCloudStatus({ status, message = '' }) {
   saveIndicator.title = 'Athletics letto e salvato su Supabase; la copia locale resta come cache.';
 }
 
+let recoveryDailyStatusSnapshot = { status: 'synced', message: '' };
+
 function setRecoveryDailyCloudStatus({ status, message = '' }) {
+  recoveryDailyStatusSnapshot = { status, message };
   const saveIndicator = document.querySelector('#save-indicator');
   if (!saveIndicator) return;
   const route = location.hash.replace(/^#\/?/, '') || 'dashboard';
   if (route !== 'nutrition') return;
 
+  let text = 'Recovery cloud ✓';
+  let title = 'Check-in e checkout sono sincronizzati nel cloud dedicato.';
+
   if (status === 'error') {
-    saveIndicator.textContent = 'Recovery · cache locale';
-    saveIndicator.title = message || 'I dati Recovery restano locali finché il cloud non torna disponibile.';
-    return;
+    text = 'Recovery · cache locale';
+    title = message || 'I dati Recovery restano locali finché il cloud non torna disponibile.';
+  } else if (status === 'readonly') {
+    text = 'Recovery cloud · sola lettura';
+    title = 'Questo account può leggere Recovery ma non modificarlo.';
   }
 
-  if (status === 'readonly') {
-    saveIndicator.textContent = 'Recovery cloud · sola lettura';
-    saveIndicator.title = 'Questo account può leggere Recovery ma non modificarlo.';
-    return;
-  }
-
-  saveIndicator.textContent = 'Recovery cloud ✓';
-  saveIndicator.title = 'Check-in e checkout sono sincronizzati nel cloud dedicato.';
+  if (saveIndicator.textContent !== text) saveIndicator.textContent = text;
+  if (saveIndicator.title !== title) saveIndicator.title = title;
 }
 
 function escapeHtml(value = '') {
@@ -399,6 +401,8 @@ if (session) {
             } else {
               setTrainingCloudStatus({ status: 'unavailable' });
             }
+          } else if (route === 'nutrition' && canReadModule('nutrition')) {
+            setRecoveryDailyCloudStatus(recoveryDailyStatusSnapshot);
           }
         });
       }

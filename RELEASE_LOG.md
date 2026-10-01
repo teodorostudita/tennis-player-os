@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.1.8 — Recovery UI stability
+- Corretto il polling Recovery che causava un **falso aggiornamento dello store ogni 3 secondi** anche quando i dati cloud non erano cambiati.
+- Il confronto dei record ignora ora metadati tecnici (ID/timestamp) e considera soltanto i valori effettivi di check-in e checkout.
+- L'indicatore cloud in alto a destra resta stabile: il sync generico Nutrition non alterna più il proprio stato con quello del Recovery dedicato.
+- Gli analitici **Ultimi check-in** e **Ultimi checkout** conservano lo stato aperto/chiuso anche durante un vero aggiornamento remoto.
+- Nessuna migration SQL e nessuna modifica alle tabelle Recovery dedicate della v1.1.7.
+
 ## v1.1.7 — Recovery daily cloud dedicato
 - **Check-in** e **Training checkout** passano a persistenza cloud record-level: una riga per atleta e data, invece di un unico JSON Nutrition condiviso.
 - All'avvio vengono recuperati e migrati automaticamente i record presenti nella cache locale e nel vecchio payload Nutrition.

@@ -48,6 +48,8 @@ let sorenessHydrationToken = 0;
 let enhancementQueued = false;
 let checkinRange = 30;
 let checkoutRange = 30;
+let checkinHistoryOpen = false;
+let checkoutHistoryOpen = false;
 const RECOVERY_FOCUS_KEY = 'tpos.recovery.focus';
 let focusTimer = null;
 
@@ -864,7 +866,7 @@ function renderCheckinAnalytics(logs, writable) {
           </div>
         </div>
 
-        <details class="recovery-recent-details">
+        <details class="recovery-recent-details" data-recovery-details="checkins" ${checkinHistoryOpen ? 'open' : ''}>
           <summary>
             <span><strong>Ultimi check-in</strong><small>${logs.length} registrazion${logs.length === 1 ? 'e' : 'i'}</small></span>
             <b>Apri analitico</b>
@@ -924,7 +926,7 @@ function renderCheckoutAnalytics(checkouts, writable) {
           </div>
         </div>
 
-        <details class="recovery-recent-details">
+        <details class="recovery-recent-details" data-recovery-details="checkouts" ${checkoutHistoryOpen ? 'open' : ''}>
           <summary>
             <span><strong>Ultimi checkout</strong><small>${checkouts.length} registrazion${checkouts.length === 1 ? 'e' : 'i'}</small></span>
             <b>Apri analitico</b>
@@ -1066,6 +1068,13 @@ function renderCombinedRecovery() {
   `;
 
   bindChartLegendInteractions(content);
+
+  content.querySelectorAll('[data-recovery-details]').forEach(details => {
+    details.addEventListener('toggle', () => {
+      if (details.dataset.recoveryDetails === 'checkins') checkinHistoryOpen = details.open;
+      if (details.dataset.recoveryDetails === 'checkouts') checkoutHistoryOpen = details.open;
+    });
+  });
 
   content.querySelectorAll('[data-scroll-recovery]').forEach(button => {
     button.addEventListener('click', () => {

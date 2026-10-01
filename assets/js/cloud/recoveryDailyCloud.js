@@ -144,6 +144,37 @@ function cleanClientRows(events) {
     });
 }
 
+
+function semanticCheckinRows(rows = []) {
+  return [...rows]
+    .filter(item => item?.date)
+    .map(item => ({
+      date: String(item.date),
+      sleepHours: Number(item.sleepHours || 0),
+      sleepQuality: Number(item.sleepQuality || 0),
+      fatigue: Number(item.fatigue || 0),
+      soreness: Number(item.soreness || 0),
+      sorenessScope: item.sorenessScope === 'localized' ? 'localized' : 'general',
+      mood: Number(item.mood || 0),
+      motivation: Number(item.motivation || 0),
+      concentration: Number(item.concentration || 0),
+      notes: String(item.notes || '').trim(),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function semanticCheckoutRows(rows = []) {
+  return [...rows]
+    .filter(item => item?.date)
+    .map(item => ({
+      date: String(item.date),
+      trained: item.trained !== false,
+      quality: Number(item.quality || 0),
+      notes: String(item.notes || '').trim(),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 function checkinToRow(athleteId, item) {
   return {
     athlete_id: athleteId,
@@ -220,8 +251,16 @@ function applyRowsToStore(store, checkins, checkouts, source = 'cloud') {
   const nextCheckins = cleanClientRows(checkins);
   const nextCheckouts = cleanClientRows(checkouts);
 
-  const before = JSON.stringify({ checkins: currentCheckins, checkouts: currentCheckouts });
-  const after = JSON.stringify({ checkins: nextCheckins, checkouts: nextCheckouts });
+  // Compare only user-visible Recovery data. Transport metadata such as IDs,
+  // deletedAt and cloud timestamps must not trigger a store update every poll.
+  const before = JSON.stringify({
+    checkins: semanticCheckinRows(currentCheckins),
+    checkouts: semanticCheckoutRows(currentCheckouts),
+  });
+  const after = JSON.stringify({
+    checkins: semanticCheckinRows(nextCheckins),
+    checkouts: semanticCheckoutRows(nextCheckouts),
+  });
   if (before === after && !(current.sleepLogs || []).length) return false;
 
   store.update(state => {
@@ -316,8 +355,14 @@ export async function deleteTrainingCheckoutCloud({ athleteId, date }) {
 export function startRecoveryDailySync({ store, athleteId, allowWrite = false, onStatus = null } = {}) {
   let stopped = false;
   let refreshing = false;
+  let lastStatusKey = '';
 
-  const status = (value, message = '') => onStatus?.({ status: value, message });
+  const status = (value, message = '') => {
+    const key = `${value}|${message}`;
+    if (key === lastStatusKey) return;
+    lastStatusKey = key;
+    onStatus?.({ status: value, message });
+  };
 
   const refresh = async () => {
     if (stopped || refreshing || document.visibilityState === 'hidden') return;

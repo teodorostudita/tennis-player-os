@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.8',
+    date: '2026-10-01',
+    title: 'Recovery UI stability',
+    details: [
+      'Corretto il polling Recovery che provocava un falso aggiornamento dello store ogni 3 secondi anche quando i dati cloud erano identici.',
+      'Il confronto ignora ora metadati tecnici come ID e timestamp e considera soltanto i valori effettivamente visibili del check-in e checkout.',
+      'L’indicatore cloud in alto a destra non viene più ridisegnato ad ogni polling e il sync generico Nutrition non compete con lo stato del Recovery dedicato.',
+      'Gli analitici espandibili di check-in e checkout mantengono il proprio stato aperto/chiuso anche quando arriva un vero aggiornamento da un altro dispositivo.',
+      'Nessuna modifica alle tabelle cloud o alla logica di sincronizzazione record-level introdotta in v1.1.7.',
+    ],
+  },
+  {
     version: '1.1.7',
     date: '2026-10-01',
     title: 'Recovery daily cloud dedicato',
