@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.2',
+    date: '2026-10-01',
+    title: 'Recovery trend readability + Body & Health soreness link',
+    details: [
+      'I grafici Recovery usano ora linee reali più marcate senza riempimenti/poligoni sovrapposti, migliorando la leggibilità dei trend.',
+      'Gli elenchi analitici degli ultimi check-in e checkout sono ora compatti e apribili solo quando servono.',
+      'Quando l’indolenzimento è presente, l’atleta può indicare se è generale oppure localizzato e selezionare uno o più distretti sulla Body map.',
+      'Il punteggio generico resta nel Recovery; le localizzazioni vengono salvate in Body & Health come log dedicati collegati al check-in.',
+      'Body & Health mostra sulla propria mappa l’ultimo indolenzimento localizzato proveniente dal Recovery e conserva uno storico espandibile.',
+    ],
+  },
+  {
     version: '1.1.1',
     date: '2026-10-01',
     title: 'Recovery charts + emoji checkout',

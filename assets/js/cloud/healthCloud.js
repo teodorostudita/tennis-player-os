@@ -169,6 +169,32 @@ function normalizeObservation(observation, index = 0) {
   };
 }
 
+function normalizeSorenessLocation(location = {}) {
+  return {
+    districtKey: text(location?.districtKey),
+    view: text(location?.view),
+    side: text(location?.side) || 'center',
+  };
+}
+
+function normalizeSorenessLog(log, index = 0) {
+  const locations = Array.isArray(log?.locations)
+    ? log.locations
+        .map(normalizeSorenessLocation)
+        .filter(item => item.districtKey && item.view && item.side)
+    : [];
+
+  return {
+    id: text(log?.id) || `soreness-${index + 1}`,
+    date: text(log?.date),
+    severity: Math.max(1, Math.min(5, Number(log?.severity || 1))),
+    scope: text(log?.scope) === 'localized' ? 'localized' : 'general',
+    locations,
+    source: text(log?.source) || 'recovery-checkin',
+    notes: text(log?.notes),
+  };
+}
+
 export function normalizeHealthPayload(payload = {}) {
   const source = payload && typeof payload === 'object' && !Array.isArray(payload)
     ? payload
@@ -252,6 +278,12 @@ export function normalizeHealthPayload(payload = {}) {
     },
     injuries: Array.isArray(source.injuries)
       ? source.injuries.map(normalizeInjury)
+      : [],
+    sorenessLogs: Array.isArray(source.sorenessLogs)
+      ? source.sorenessLogs
+          .map(normalizeSorenessLog)
+          .filter(item => item.date)
+          .sort((a, b) => String(b.date).localeCompare(String(a.date)))
       : [],
     screening: {
       protocols,
@@ -344,7 +376,7 @@ export function startHealthSync({
         athleteId,
         moduleKey: 'health',
         payload,
-        schemaVersion: 1,
+        schemaVersion: 2,
       });
 
       lastSavedFingerprint = nextFingerprint;

@@ -1,4 +1,9 @@
-TPOS v1.1.1 — Recovery charts + emoji checkout
+TPOS v1.1.2 — Recovery trend readability + Body & Health soreness link
 
-Aggiunge grafici di andamento per check-in e training checkout, con intervalli 7/14/30/90/Tutto, media mobile sul checkout e selettore a faccine per la qualità dell'allenamento.
-Aggiorna anche la copertura cloud del modulo Nutrition per includere trainingCheckouts e checkinDefaults.
+Modifiche principali:
+- grafici Recovery a linee, senza riempimenti/poligoni;
+- storico check-in e checkout compatto/espandibile;
+- indolenzimento generale vs localizzato con selezione multipla sulla Body map;
+- salvataggio delle localizzazioni in Body & Health e visualizzazione sulla relativa mappa/storico.
+
+Nessuna migration SQL. Nessuna Edge Function modificata.

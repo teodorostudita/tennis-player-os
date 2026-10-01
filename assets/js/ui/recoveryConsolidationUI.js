@@ -1,8 +1,11 @@
 import '../bootstrap.js';
 
 import { store } from '../data/store.js';
-import { canWriteModule } from '../cloud/access.js';
-import { showInAppConfirm } from './inAppMessages.js';
+import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js';
+import { loadCloudModuleState, saveCloudModuleState } from '../cloud/moduleStateCloud.js';
+import { normalizeHealthPayload } from '../cloud/healthCloud.js';
+import { BODY_HOTSPOTS, MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js';
+import { showInAppAlert, showInAppConfirm } from './inAppMessages.js';
 
 const SYSTEM_DEFAULTS = Object.freeze({
   sleepHours: 8,
@@ -30,6 +33,11 @@ const CHECKIN_SERIES = [
   { key: 'soreness', label: 'Indolenzimento', css: 'soreness' },
   { key: 'mood', label: 'Umore', css: 'mood' },
 ];
+
+const SIDE_LABELS = { left: 'Sinistra', right: 'Destra', center: 'Centrale', bilateral: 'Bilaterale', none: '' };
+const DISTRICT_BY_KEY = new Map(MUSCULOSKELETAL_DISTRICTS.map(item => [item.key, item]));
+let sorenessPickerState = { date: '', scope: 'general', locations: [] };
+let sorenessHydrationToken = 0;
 
 let enhancementQueued = false;
 let checkinRange = 30;
@@ -66,6 +74,202 @@ function escapeHtml(value = '') {
 
 function escapeAttr(value = '') {
   return escapeHtml(value);
+}
+
+function sorenessLocationKey(location = {}) {
+  return `${location.districtKey || ''}|${location.view || ''}|${location.side || ''}`;
+}
+
+function sorenessLocationLabel(location = {}) {
+  const district = DISTRICT_BY_KEY.get(String(location.districtKey || ''));
+  const side = ['center', 'none'].includes(location.side) ? '' : ` · ${SIDE_LABELS[location.side] || location.side}`;
+  const view = location.view === 'back' ? ' · posteriore' : location.view === 'front' ? ' · anteriore' : '';
+  return `${district?.label || location.districtKey || 'Distretto'}${side}${view}`;
+}
+
+function selectedSorenessLocation(location) {
+  const key = sorenessLocationKey(location);
+  return sorenessPickerState.locations.some(item => sorenessLocationKey(item) === key);
+}
+
+function resetSorenessPicker(date, scope = 'general', locations = []) {
+  sorenessPickerState = {
+    date: String(date || ''),
+    scope: scope === 'localized' ? 'localized' : 'general',
+    locations: Array.isArray(locations) ? locations.map(item => ({
+      districtKey: String(item?.districtKey || ''),
+      view: String(item?.view || ''),
+      side: String(item?.side || 'center'),
+    })).filter(item => item.districtKey && item.view) : [],
+  };
+}
+
+function currentHealthSorenessLog(date) {
+  const logs = Array.isArray(store.getState().health?.sorenessLogs)
+    ? store.getState().health.sorenessLogs
+    : [];
+  return logs.find(item => item.date === date && item.source === 'recovery-checkin') || null;
+}
+
+function currentRecoveryScope(date) {
+  const recovery = normalizeNutritionState().recoveryLogs.find(item => item.date === date);
+  return recovery?.sorenessScope === 'localized' ? 'localized' : 'general';
+}
+
+function renderSorenessPickerMarkup(sorenessValue) {
+  const healthWritable = canWriteModule('health');
+  const active = Number(sorenessValue || 1) > 1;
+  const localized = sorenessPickerState.scope === 'localized';
+
+  if (!active) return '';
+
+  if (!healthWritable) {
+    return `
+      <div class="recovery-soreness-link-note">
+        <strong>Indolenzimento presente</strong>
+        <span>La localizzazione sulla Body map richiede accesso in scrittura a Body & Health.</span>
+      </div>
+    `;
+  }
+
+  const hotspots = BODY_HOTSPOTS.map(hotspot => {
+    const district = DISTRICT_BY_KEY.get(hotspot.districtKey);
+    if (!district) return '';
+    const selected = selectedSorenessLocation(hotspot);
+    return `
+      <button
+        type="button"
+        class="recovery-soreness-hotspot ${selected ? 'selected' : ''}"
+        style="left:${hotspot.x}%;top:${hotspot.y}%"
+        data-soreness-hotspot
+        data-district-key="${escapeAttr(hotspot.districtKey)}"
+        data-view="${escapeAttr(hotspot.view)}"
+        data-side="${escapeAttr(hotspot.side)}"
+        aria-pressed="${selected ? 'true' : 'false'}"
+        title="${escapeAttr(sorenessLocationLabel(hotspot))}"
+      ><span></span></button>
+    `;
+  }).join('');
+
+  return `
+    <div class="recovery-soreness-link" data-soreness-link>
+      <div class="recovery-soreness-scope">
+        <span>È un indolenzimento generale o localizzato?</span>
+        <div>
+          <label><input type="radio" name="sorenessScope" value="general" ${localized ? '' : 'checked'} /> Generale</label>
+          <label><input type="radio" name="sorenessScope" value="localized" ${localized ? 'checked' : ''} /> Localizzato</label>
+        </div>
+      </div>
+      <div class="recovery-soreness-map-wrap" ${localized ? '' : 'hidden'} data-soreness-localized>
+        <div class="recovery-soreness-map-copy">
+          <strong>Dove?</strong>
+          <span>Puoi selezionare più di un distretto. Il dettaglio viene registrato in Body & Health.</span>
+        </div>
+        <div class="recovery-soreness-map-canvas">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Silhouette_humain_asexue_anterieur_posterieur.svg"
+            alt="Body chart anteriore e posteriore"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
+          ${hotspots}
+        </div>
+        <div class="recovery-soreness-selected" data-soreness-selected>
+          ${sorenessPickerState.locations.length
+            ? sorenessPickerState.locations.map(item => `<span>${escapeHtml(sorenessLocationLabel(item))}</span>`).join('')
+            : '<em>Nessun distretto selezionato.</em>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function paintSorenessPicker(container) {
+  if (!container) return;
+  const form = container.closest('form');
+  const soreness = Number(form?.elements?.soreness?.value || 1);
+  container.innerHTML = renderSorenessPickerMarkup(soreness);
+
+  container.querySelectorAll('input[name="sorenessScope"]').forEach(input => {
+    input.addEventListener('change', () => {
+      sorenessPickerState.scope = input.value === 'localized' ? 'localized' : 'general';
+      if (sorenessPickerState.scope !== 'localized') sorenessPickerState.locations = [];
+      paintSorenessPicker(container);
+    });
+  });
+
+  container.querySelectorAll('[data-soreness-hotspot]').forEach(button => {
+    button.addEventListener('click', () => {
+      const location = {
+        districtKey: button.dataset.districtKey,
+        view: button.dataset.view,
+        side: button.dataset.side,
+      };
+      const key = sorenessLocationKey(location);
+      const exists = sorenessPickerState.locations.some(item => sorenessLocationKey(item) === key);
+      sorenessPickerState.locations = exists
+        ? sorenessPickerState.locations.filter(item => sorenessLocationKey(item) !== key)
+        : [...sorenessPickerState.locations, location];
+      paintSorenessPicker(container);
+    });
+  });
+}
+
+async function hydrateHealthSoreness(date, container) {
+  if (!date || !canReadModule('health')) return;
+  const token = ++sorenessHydrationToken;
+
+  try {
+    const athleteId = getCurrentAccess().athleteId;
+    if (!athleteId) return;
+    const cloudState = await loadCloudModuleState({ athleteId, moduleKey: 'health' });
+    if (token !== sorenessHydrationToken) return;
+
+    const health = normalizeHealthPayload(cloudState?.payload || store.getState().health || {});
+    const log = health.sorenessLogs.find(item => item.date === date && item.source === 'recovery-checkin') || null;
+    store.update(state => {
+      state.health = health;
+    });
+    if (token !== sorenessHydrationToken) return;
+    resetSorenessPicker(date, log?.scope || currentRecoveryScope(date), log?.locations || []);
+    paintSorenessPicker(container);
+  } catch (error) {
+    console.warn('Impossibile caricare la localizzazione dell’indolenzimento da Body & Health.', error);
+  }
+}
+
+async function saveHealthSoreness({ date, severity, scope, locations }) {
+  if (!canWriteModule('health')) return;
+  const athleteId = getCurrentAccess().athleteId;
+  if (!athleteId) return;
+
+  const cloudState = await loadCloudModuleState({ athleteId, moduleKey: 'health' });
+  const health = normalizeHealthPayload(cloudState?.payload || store.getState().health || {});
+  health.sorenessLogs = (health.sorenessLogs || []).filter(item => !(item.date === date && item.source === 'recovery-checkin'));
+
+  if (Number(severity) > 1 && scope === 'localized' && locations.length) {
+    health.sorenessLogs.push({
+      id: `soreness-${date}`,
+      date,
+      severity: Number(severity),
+      scope: 'localized',
+      locations,
+      source: 'recovery-checkin',
+      notes: '',
+    });
+  }
+
+  const normalized = normalizeHealthPayload(health);
+  await saveCloudModuleState({
+    athleteId,
+    moduleKey: 'health',
+    payload: normalized,
+    schemaVersion: 2,
+  });
+
+  store.update(state => {
+    state.health = normalized;
+  });
 }
 
 function formatDate(value) {
@@ -235,6 +439,7 @@ function mergedLogForDate(date) {
     sleepQuality,
     fatigue: Number(recovery?.fatigue || 0),
     soreness: Number(recovery?.soreness || 0),
+    sorenessScope: recovery?.sorenessScope === 'localized' ? 'localized' : 'general',
     mood: Number(recovery?.mood || 0),
     motivation: Number(recovery?.motivation || 0),
     concentration: Number(recovery?.concentration || 0),
@@ -510,7 +715,7 @@ function buildLineChart({ rows, series, yMin = 1, yMax = 5, height = 230, emptyL
         ${series.map(serie => {
           const values = rows.map(row => Number(row[serie.key]) > 0 ? Number(row[serie.key]) : NaN);
           return `
-            <polyline class="recovery-chart-line recovery-series-${serie.css}" points="${polylinePoints(values, xFromIndex, yFromValue)}"></polyline>
+            <polyline class="recovery-chart-line recovery-series-${serie.css}" fill="none" points="${polylinePoints(values, xFromIndex, yFromValue)}"></polyline>
             ${singlePointMarkers(values, xFromIndex, yFromValue, `recovery-chart-point recovery-series-${serie.css}`)}
           `;
         }).join('')}
@@ -602,15 +807,15 @@ function renderCheckinAnalytics(logs, writable) {
           ${buildBarChart({ rows: ranged, key: 'sleepHours', yMax: Math.ceil(maxSleep), height: 150, emptyLabel: 'Nessuna informazione sul sonno nel periodo selezionato.' })}
         </div>
 
-        <div class="recovery-recent-block">
-          <div class="recovery-chart-head">
-            <strong>Ultimi check-in</strong>
-            <span>Vista compatta con eliminazione rapida</span>
-          </div>
+        <details class="recovery-recent-details">
+          <summary>
+            <span><strong>Ultimi check-in</strong><small>${logs.length} registrazion${logs.length === 1 ? 'e' : 'i'}</small></span>
+            <b>Apri analitico</b>
+          </summary>
           <div class="recovery-history-list">
-            ${logs.length ? logs.slice(0, 6).map(log => renderHistoryRow(log, writable)).join('') : '<div class="wellbeing-empty">Nessun check-in registrato.</div>'}
+            ${logs.length ? logs.slice(0, 10).map(log => renderHistoryRow(log, writable)).join('') : '<div class="wellbeing-empty">Nessun check-in registrato.</div>'}
           </div>
-        </div>
+        </details>
       </div>
     </article>
   `;
@@ -660,15 +865,15 @@ function renderCheckoutAnalytics(checkouts, writable) {
           </div>
         </div>
 
-        <div class="recovery-recent-block">
-          <div class="recovery-chart-head">
-            <strong>Ultimi checkout</strong>
-            <span>Con note ed eventuale eliminazione</span>
-          </div>
+        <details class="recovery-recent-details">
+          <summary>
+            <span><strong>Ultimi checkout</strong><small>${checkouts.length} registrazion${checkouts.length === 1 ? 'e' : 'i'}</small></span>
+            <b>Apri analitico</b>
+          </summary>
           <div class="recovery-checkout-list">
-            ${checkouts.length ? checkouts.slice(0, 8).map(item => renderCheckoutRow(item, writable)).join('') : '<div class="wellbeing-empty">Nessun checkout registrato.</div>'}
+            ${checkouts.length ? checkouts.slice(0, 12).map(item => renderCheckoutRow(item, writable)).join('') : '<div class="wellbeing-empty">Nessun checkout registrato.</div>'}
           </div>
-        </div>
+        </details>
       </div>
     </article>
   `;
@@ -696,6 +901,13 @@ function renderCombinedRecovery() {
     concentration: todayLog.concentration || checkinDefaults.concentration,
     notes: todayLog.notes || '',
   } : { ...checkinDefaults, notes: '' };
+
+  const localSorenessLog = currentHealthSorenessLog(today);
+  resetSorenessPicker(
+    today,
+    localSorenessLog?.scope || todayLog?.sorenessScope || 'general',
+    localSorenessLog?.locations || [],
+  );
 
   content.innerHTML = `
     <section class="nutrition-subhead recovery-combined-head">
@@ -744,6 +956,7 @@ function renderCombinedRecovery() {
                 <div class="field"><label>Voglia di allenarsi · 1–5</label><select name="motivation">${scoreOptions('motivation', initialCheckin.motivation)}</select></div>
                 <div class="field"><label>Stanchezza · 1–5</label><select name="fatigue">${scoreOptions('fatigue', initialCheckin.fatigue)}</select></div>
                 <div class="field"><label>Indolenzimento · 1–5</label><select name="soreness">${scoreOptions('soreness', initialCheckin.soreness)}</select></div>
+                <div class="field full recovery-soreness-location-host" id="recovery-soreness-location-host">${renderSorenessPickerMarkup(initialCheckin.soreness)}</div>
                 <div class="field"><label>Umore · 1–5</label><select name="mood">${scoreOptions('mood', initialCheckin.mood)}</select></div>
                 <div class="field"><label>Concentrazione · 1–5</label><select name="concentration">${scoreOptions('concentration', initialCheckin.concentration)}</select></div>
                 <div class="field full"><label>Note</label><textarea name="notes" placeholder="Sonno interrotto, viaggio, sensazioni, recupero, carico…">${escapeHtml(initialCheckin.notes)}</textarea></div>
@@ -833,18 +1046,53 @@ function renderCombinedRecovery() {
   });
 
   const checkinForm = content.querySelector('#combined-recovery-form');
-  checkinForm?.elements.date.addEventListener('change', event => fillCheckinFormForDate(checkinForm, event.target.value));
-  checkinForm?.addEventListener('submit', event => {
+  const sorenessHost = content.querySelector('#recovery-soreness-location-host');
+  paintSorenessPicker(sorenessHost);
+  if (checkinForm) void hydrateHealthSoreness(checkinForm.elements.date.value, sorenessHost);
+
+  checkinForm?.elements.soreness.addEventListener('change', () => {
+    if (Number(checkinForm.elements.soreness.value || 1) <= 1) {
+      sorenessPickerState.scope = 'general';
+      sorenessPickerState.locations = [];
+    }
+    paintSorenessPicker(sorenessHost);
+  });
+
+  checkinForm?.elements.date.addEventListener('change', event => {
+    fillCheckinFormForDate(checkinForm, event.target.value);
+    const localLog = currentHealthSorenessLog(event.target.value);
+    resetSorenessPicker(
+      event.target.value,
+      localLog?.scope || currentRecoveryScope(event.target.value),
+      localLog?.locations || [],
+    );
+    paintSorenessPicker(sorenessHost);
+    void hydrateHealthSoreness(event.target.value, sorenessHost);
+  });
+
+  checkinForm?.addEventListener('submit', async event => {
     event.preventDefault();
     if (!event.currentTarget.reportValidity()) return;
     const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const soreness = Number(data.soreness || 0);
+    const sorenessScope = soreness > 1 && sorenessPickerState.scope === 'localized' ? 'localized' : 'general';
+    const sorenessLocations = sorenessScope === 'localized' ? [...sorenessPickerState.locations] : [];
+
+    if (sorenessScope === 'localized' && !sorenessLocations.length) {
+      await showInAppAlert('Hai indicato un indolenzimento localizzato. Seleziona almeno un distretto sulla Body map oppure scegli “Generale”.', {
+        title: 'Dove senti indolenzimento?',
+      });
+      return;
+    }
+
     const row = {
       id: uid('recovery'),
       date: data.date,
       sleepHours: Number(data.sleepHours || 0),
       sleepQuality: Number(data.sleepQuality || 0),
       fatigue: Number(data.fatigue || 0),
-      soreness: Number(data.soreness || 0),
+      soreness,
+      sorenessScope,
       mood: Number(data.mood || 0),
       motivation: Number(data.motivation || 0),
       concentration: Number(data.concentration || 0),
@@ -858,6 +1106,21 @@ function renderCombinedRecovery() {
       state.nutrition.recoveryLogs = state.nutrition.recoveryLogs.filter(item => item.date !== row.date);
       state.nutrition.recoveryLogs.push(row);
     });
+
+    try {
+      await saveHealthSoreness({
+        date: row.date,
+        severity: soreness,
+        scope: sorenessScope,
+        locations: sorenessLocations,
+      });
+    } catch (error) {
+      console.error('Salvataggio localizzazione indolenzimento fallito.', error);
+      await showInAppAlert('Il check-in è stato salvato, ma la localizzazione dell’indolenzimento non è stata sincronizzata con Body & Health. Riprova aprendo il check-in.', {
+        title: 'Body & Health non aggiornato',
+      });
+    }
+
     renderCombinedRecovery();
   });
 
@@ -910,6 +1173,11 @@ function renderCombinedRecovery() {
         state.nutrition.sleepLogs = state.nutrition.sleepLogs.filter(item => item.date !== date);
         state.nutrition.recoveryLogs = state.nutrition.recoveryLogs.filter(item => item.date !== date);
       });
+      try {
+        await saveHealthSoreness({ date, severity: 1, scope: 'general', locations: [] });
+      } catch (error) {
+        console.warn('Rimozione localizzazione indolenzimento da Body & Health non riuscita.', error);
+      }
       renderCombinedRecovery();
     });
   });

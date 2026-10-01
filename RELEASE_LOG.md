@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.1.2 — Recovery trend readability + Body & Health soreness link
+- I grafici del **Recovery** usano ora linee vere e più marcate, senza riempimenti che trasformavano le serie in poligoni sovrapposti.
+- Gli elenchi degli **ultimi check-in** e **ultimi checkout** sono ora chiusi di default e apribili solo quando serve il dettaglio analitico.
+- Se l'**indolenzimento** è maggiore di 1, l'atleta può indicare se è **generale** oppure **localizzato**.
+- Per l'indolenzimento localizzato compare la stessa Body map di Body & Health, con selezione multipla dei distretti.
+- Il valore 1–5 rimane nel Recovery; le localizzazioni vengono registrate in **Body & Health** in un log dedicato collegato alla data del check-in.
+- Body & Health evidenzia sulla propria mappa l'ultimo indolenzimento localizzato e mantiene uno storico espandibile delle segnalazioni provenienti dal Recovery.
+
 ## v1.1.1 — Recovery charts + emoji checkout
 - Il lato destro di **Nutrition & Recovery** è ora una vista analitica con grafici, invece di una lunga lista di valori ripetuti.
 - **Check-in**: grafico multilinea dei punteggi giornalieri + grafico delle ore di sonno.
