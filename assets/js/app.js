@@ -8,6 +8,8 @@ import { renderDrills } from './components/drills.js';
 import { renderEconomics } from './components/economics.js';
 import { renderNutrition } from './components/nutrition.js';
 import { renderResourceLibrary } from './components/resourceLibrary.js';
+import { renderAthleteHome } from './components/contextualHome.js';
+import { getCurrentUserType } from './cloud/accountAccess.js';
 
 const sidebar = document.querySelector('#sidebar');
 const main = document.querySelector('#main-content');
@@ -18,8 +20,12 @@ const mobileMenuButton = document.querySelector('#mobile-menu-button');
 const LIBRARY_MODULES = new Set(['development', 'training', 'drills', 'equipment', 'health', 'nutrition', 'mental', 'visual']);
 const moduleWorkspaceView = new Map();
 
+function defaultRoute() {
+  return getCurrentUserType() === 'athlete' ? 'home' : 'dashboard';
+}
+
 function getRoute() {
-  return location.hash.replace(/^#\/?/, '') || 'dashboard';
+  return location.hash.replace(/^#\/?/, '') || defaultRoute();
 }
 
 function setRoute(route) {
@@ -45,7 +51,7 @@ function dashboardModuleIcon(module) {
 function renderDashboard() {
   const { athlete } = store.getState();
   const fullName = [athlete.firstName, athlete.lastName].filter(Boolean).join(' ') || 'Nuovo atleta';
-  title.textContent = 'Dashboard';
+  title.textContent = getCurrentUserType() === 'athlete' ? 'Overview' : 'Dashboard';
 
   main.innerHTML = `
     <section class="hero">
@@ -222,7 +228,14 @@ function render() {
   sidebar.innerHTML = renderSidebar(route);
   sidebar.classList.remove('open');
 
-  if (route === 'dashboard') renderDashboard();
+  if (route === 'home') {
+    if (getCurrentUserType() !== 'athlete') {
+      setRoute('dashboard');
+      return;
+    }
+    renderAthleteHome({ main, title, store });
+  }
+  else if (route === 'dashboard') renderDashboard();
   else if (route === 'athlete') renderAthleteProfile();
   else if (route === 'calendar') renderCalendar({ main, title, store });
   else if (route === 'economics') renderEconomics({ main, title, store });
@@ -275,7 +288,9 @@ store.subscribe(() => {
   saveIndicator.textContent = 'Salvato';
   const route = getRoute();
 
-  if (route === 'dashboard') {
+  if (route === 'home' && getCurrentUserType() === 'athlete') {
+    renderAthleteHome({ main, title, store });
+  } else if (route === 'dashboard') {
     // renderDashboard() replaces the dashboard DOM. Rebind its route buttons
     // immediately, otherwise a background/cloud store update leaves the new
     // "Apri modulo" buttons without click handlers while the sidebar still works.
@@ -286,5 +301,5 @@ store.subscribe(() => {
   }
 });
 
-if (!location.hash) setRoute('dashboard');
+if (!location.hash) setRoute(defaultRoute());
 else render();

@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.0',
+    date: '2026-10-01',
+    title: 'Prima Home contestuale — Atleta',
+    details: [
+      'Gli account con profilo Atleta aprono ora una Home personale invece della Dashboard generale.',
+      'La Home mostra in tempo reale cosa sta succedendo adesso, il prossimo impegno e la timeline compatta della giornata leggendo direttamente il Calendar.',
+      'Check-in e Training checkout compaiono come azioni contestuali con stato completato, da fare ora o da fare dopo l’allenamento.',
+      'I pulsanti Check-in e Checkout aprono direttamente la relativa sezione di Nutrition & Recovery.',
+      'La Dashboard precedente resta disponibile all’atleta come Overview, senza perdere l’accesso completo ai moduli.',
+      'La Home si aggiorna automaticamente con il passare del tempo e rispetta i privilegi effettivi dell’account.',
+    ],
+  },
+  {
     version: '1.0.29',
     date: '2026-10-01',
     title: 'Rimozione Reset demo',

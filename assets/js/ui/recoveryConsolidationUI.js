@@ -15,6 +15,8 @@ const SYSTEM_DEFAULTS = Object.freeze({
 });
 
 let enhancementQueued = false;
+const RECOVERY_FOCUS_KEY = 'tpos.recovery.focus';
+let focusTimer = null;
 
 function route() {
   return window.location.hash.replace(/^#\/?/, '') || 'dashboard';
@@ -624,6 +626,58 @@ function queueEnhancement() {
   });
 }
 
+function pendingRecoveryFocus() {
+  try {
+    return sessionStorage.getItem(RECOVERY_FOCUS_KEY) || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function clearRecoveryFocus() {
+  try {
+    sessionStorage.removeItem(RECOVERY_FOCUS_KEY);
+  } catch (_) {
+    // Ignore storage failures.
+  }
+}
+
+function queuePendingRecoveryFocus() {
+  const targetId = pendingRecoveryFocus();
+  if (!targetId || !isNutritionRoute()) return;
+
+  if (focusTimer) clearTimeout(focusTimer);
+
+  let attempts = 0;
+  const focus = () => {
+    focusTimer = null;
+    if (!isNutritionRoute()) return;
+
+    const recoveryButton = document.querySelector('[data-nutrition-section="recovery"]');
+    if (recoveryButton && !recoveryButton.classList.contains('active')) {
+      recoveryButton.click();
+    }
+
+    const target = document.getElementById(targetId);
+    if (target) {
+      clearRecoveryFocus();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.setTimeout(() => {
+        const firstControl = target.querySelector('input:not([type="hidden"]), select, textarea, button');
+        firstControl?.focus?.({ preventScroll: true });
+      }, 350);
+      return;
+    }
+
+    attempts += 1;
+    if (attempts < 10) {
+      focusTimer = window.setTimeout(focus, 60);
+    }
+  };
+
+  focusTimer = window.setTimeout(focus, 0);
+}
+
 document.addEventListener('click', event => {
   if (!isNutritionRoute()) return;
   const sectionButton = event.target.closest?.('[data-nutrition-section]');
@@ -632,7 +686,17 @@ document.addEventListener('click', event => {
 });
 
 window.addEventListener('hashchange', () => {
-  if (isNutritionRoute()) queueEnhancement();
+  if (isNutritionRoute()) {
+    queueEnhancement();
+    queuePendingRecoveryFocus();
+  }
+});
+
+window.addEventListener('tpos:route-rendered', event => {
+  if (event?.detail?.route !== 'nutrition') return;
+  queueEnhancement();
+  queuePendingRecoveryFocus();
 });
 
 queueEnhancement();
+queuePendingRecoveryFocus();

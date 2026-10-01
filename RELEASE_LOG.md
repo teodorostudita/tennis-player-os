@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.1.0 — Prima Home contestuale — Atleta
+- Gli account con profilo **Atleta** aprono ora una Home personale come pagina iniziale.
+- **Adesso / Prossimo** legge il Calendar e mostra l’attività corrente o il prossimo impegno con orari, luogo e tempo residuo/attesa.
+- **Da fare oggi** integra Check-in e Training checkout, distinguendo stato completato, da fare ora e da fare dopo l’ultimo allenamento.
+- I pulsanti rapidi aprono direttamente le sezioni **Check-in** e **Training checkout** di Nutrition & Recovery.
+- La timeline **Oggi** mostra il planner giornaliero con passato, attività corrente e futuro.
+- La vecchia Dashboard rimane disponibile all’atleta come **Overview**.
+- La Home si aggiorna automaticamente con il passare del tempo e rispetta i permessi effettivi dell’account.
+
 ## v1.0.29 — Rimozione Reset demo
 - Rimosso dalla topbar il comando **Reset demo**, residuo della fase prototipale.
 - Eliminata la relativa logica UI.

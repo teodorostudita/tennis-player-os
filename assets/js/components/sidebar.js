@@ -1,7 +1,9 @@
 import { modules } from '../data/schema.js';
 import { APP_VERSION } from '../version.js';
+import { getCurrentUserType } from '../cloud/accountAccess.js';
 
 export function renderSidebar(activeRoute) {
+  const athleteHome = getCurrentUserType() === 'athlete';
   const items = modules.map(m => `
     <button class="nav-item ${activeRoute === m.id ? 'active' : ''}" data-route="${m.id}">
       <span class="nav-icon">${m.icon}</span>
@@ -13,13 +15,24 @@ export function renderSidebar(activeRoute) {
     <div class="brand">
       <h2 class="brand-title">Tennis Player OS</h2>
       <p class="brand-subtitle">One player. A complete journey.</p>
-      ${activeRoute === 'dashboard' ? `<div class="brand-version">v${APP_VERSION}</div>` : ''}
+      ${activeRoute === 'dashboard' || activeRoute === 'home' ? `<div class="brand-version">v${APP_VERSION}</div>` : ''}
     </div>
     <nav class="nav">
-      <button class="nav-item ${activeRoute === 'dashboard' ? 'active' : ''}" data-route="dashboard">
-        <span class="nav-icon">⌂</span>
-        <span class="nav-label">Dashboard</span>
-      </button>
+      ${athleteHome ? `
+        <button class="nav-item ${activeRoute === 'home' ? 'active' : ''}" data-route="home">
+          <span class="nav-icon">⌂</span>
+          <span class="nav-label">Home</span>
+        </button>
+        <button class="nav-item ${activeRoute === 'dashboard' ? 'active' : ''}" data-route="dashboard">
+          <span class="nav-icon">◎</span>
+          <span class="nav-label">Overview</span>
+        </button>
+      ` : `
+        <button class="nav-item ${activeRoute === 'dashboard' ? 'active' : ''}" data-route="dashboard">
+          <span class="nav-icon">⌂</span>
+          <span class="nav-label">Dashboard</span>
+        </button>
+      `}
       <button class="nav-item ${activeRoute === 'athlete' ? 'active' : ''}" data-route="athlete">
         <span class="nav-icon">♙</span>
         <span class="nav-label">Athlete profile</span>
