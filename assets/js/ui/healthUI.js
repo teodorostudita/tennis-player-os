@@ -1,12 +1,12 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.1.8';
 
-import { modules } from '../data/schema.js';
-import { store } from '../data/store.js';
+import { modules } from '../data/schema.js?v=1.1.8';
+import { store } from '../data/store.js?v=1.1.8';
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../cloud/access.js';
+} from '../cloud/access.js?v=1.1.8';
 import {
   MONITORING_STARTER_METRICS,
   RTP_CHECKLIST,
@@ -14,15 +14,15 @@ import {
   loadHealthModule,
   normalizeHealthPayload,
   startHealthSync,
-} from '../cloud/healthCloud.js';
+} from '../cloud/healthCloud.js?v=1.1.8';
 import {
   showInAppAlert,
   showInAppConfirm,
-} from './inAppMessages.js';
+} from './inAppMessages.js?v=1.1.8';
 import {
   BODY_HOTSPOTS,
   MUSCULOSKELETAL_DISTRICTS,
-} from '../data/healthBodyMapData.js';
+} from '../data/healthBodyMapData.js?v=1.1.8';
 
 
 const DISTRICT_BY_KEY = new Map(
@@ -787,16 +787,22 @@ function bodyMapSvg(injuries, sorenessLog = null) {
 }
 
 function certificateCard(health, certificate) {
+  const hasCertificate = Boolean(
+    health.certificate.expiryDate
+    || health.certificate.doctor
+    || health.certificate.facility
+  );
+
   return `
     <article class="panel health-certificate-card">
       <div class="panel-header health-card-header">
         <div>
           <h3>Certificato sportivo agonistico</h3>
-          <p>Scadenza e medico sportivo di riferimento.</p>
+          <p>Scadenza e riferimento del medico o della struttura.</p>
         </div>
 
         ${canWriteModule('health')
-          ? '<button class="button button-ghost" type="button" data-edit-certificate>Modifica</button>'
+          ? `<button class="button ${hasCertificate ? 'button-ghost' : 'button-primary'}" type="button" data-edit-certificate>${hasCertificate ? 'Modifica' : '+ Aggiungi certificato'}</button>`
           : ''}
       </div>
 
@@ -806,11 +812,12 @@ function certificateCard(health, certificate) {
           <span>${health.certificate.expiryDate ? formatDate(health.certificate.expiryDate) : 'Scadenza non inserita'}</span>
         </div>
 
-        <div class="health-detail-list">
-          <div><span>Medico sportivo</span><strong>${escapeHtml(health.certificate.doctor || '—')}</strong></div>
-          <div><span>Centro / struttura</span><strong>${escapeHtml(health.certificate.facility || '—')}</strong></div>
-          <div><span>Rilascio</span><strong>${escapeHtml(formatDate(health.certificate.issueDate))}</strong></div>
-        </div>
+        ${hasCertificate ? `
+          <div class="health-detail-list">
+            <div><span>Medico sportivo</span><strong>${escapeHtml(health.certificate.doctor || '—')}</strong></div>
+            <div><span>Centro / studio</span><strong>${escapeHtml(health.certificate.facility || '—')}</strong></div>
+          </div>
+        ` : '<div class="health-empty">Nessun certificato agonistico registrato.</div>'}
       </div>
     </article>
   `;
@@ -864,11 +871,9 @@ function openCertificateDialog(host, health) {
       </div>
 
       <div class="dialog-body form-grid">
-        <div class="field"><label>Data rilascio</label><input type="date" name="issueDate" value="${escapeAttr(health.certificate.issueDate)}" /></div>
-        <div class="field"><label>Scadenza</label><input type="date" name="expiryDate" value="${escapeAttr(health.certificate.expiryDate)}" /></div>
-        <div class="field"><label>Medico sportivo</label><input name="doctor" value="${escapeAttr(health.certificate.doctor)}" /></div>
-        <div class="field"><label>Centro / struttura</label><input name="facility" value="${escapeAttr(health.certificate.facility)}" /></div>
-        <div class="field full"><label>Note</label><textarea name="notes">${escapeHtml(health.certificate.notes)}</textarea></div>
+        <div class="field"><label>Scadenza</label><input type="date" name="expiryDate" value="${escapeAttr(health.certificate.expiryDate)}" required /></div>
+        <div class="field"><label>Medico sportivo <span class="field-optional">opzionale</span></label><input name="doctor" value="${escapeAttr(health.certificate.doctor)}" /></div>
+        <div class="field full"><label>Centro / studio <span class="field-optional">opzionale</span></label><input name="facility" value="${escapeAttr(health.certificate.facility)}" /></div>
       </div>
 
       <div class="dialog-actions">
@@ -895,11 +900,10 @@ function openCertificateDialog(host, health) {
     store.update(state => {
       const next = normalizeHealthPayload(state.health);
       next.certificate = {
-        issueDate: String(data.issueDate || ''),
+        ...next.certificate,
         expiryDate: String(data.expiryDate || ''),
         doctor: String(data.doctor || '').trim(),
         facility: String(data.facility || '').trim(),
-        notes: String(data.notes || '').trim(),
       };
       state.health = next;
     });

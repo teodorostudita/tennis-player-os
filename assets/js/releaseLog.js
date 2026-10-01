@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.9',
+    date: '2026-10-01',
+    title: 'Certificato agonistico semplificato',
+    details: [
+      'In Body & Health il riquadro Certificato mostra + Aggiungi certificato quando non esiste ancora un record.',
+      'Il form rapido richiede solo la scadenza; medico sportivo e centro/studio sono opzionali.',
+      'Quando il certificato è già presente il comando diventa Modifica, senza perdere eventuali vecchi metadati già salvati.',
+    ],
+  },
+  {
     version: '1.1.8',
     date: '2026-10-01',
     title: 'Recovery UI stability',

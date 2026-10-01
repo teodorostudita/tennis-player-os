@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.1.9 — Certificato agonistico semplificato
+- In **Body & Health (modulo 8)** il riquadro Certificato mostra un CTA evidente **+ Aggiungi certificato** quando non esiste ancora un record.
+- Il form è ridotto alle informazioni operative: **scadenza** obbligatoria, **medico sportivo** e **centro/studio** opzionali.
+- Se il certificato è già presente, lo stesso comando diventa **Modifica**.
+- Eventuali vecchi dati di rilascio/note restano conservati nel payload anche se non sono più richiesti dall’interfaccia rapida.
+
 ## v1.1.8 — Recovery UI stability
 - Corretto il polling Recovery che causava un **falso aggiornamento dello store ogni 3 secondi** anche quando i dati cloud non erano cambiati.
 - Il confronto dei record ignora ora metadati tecnici (ID/timestamp) e considera soltanto i valori effettivi di check-in e checkout.
