@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.1.3 — Recovery chart readability + Health soreness fix
+- Le serie del grafico check-in combinano ora **colore + tratteggio**, così le linee coincidenti restano distinguibili.
+- La legenda mostra il campione reale della serie ed è **interattiva**: cliccando una voce si evidenzia quella metrica e si attenuano le altre.
+- **Ore di sonno**: linea giornaliera compatta + **media mobile a 5 notti**, al posto delle barre.
+- Il grafico checkout usa la stessa legenda interattiva e mantiene la media mobile a 5 sessioni.
+- Corretto il crash della **Overview Body & Health** introdotto in v1.1.2: mappa corporea e storico degli indolenzimenti localizzati provenienti dal Recovery tornano visibili.
+
 ## v1.1.2 — Recovery trend readability + Body & Health soreness link
 - I grafici del **Recovery** usano ora linee vere e più marcate, senza riempimenti che trasformavano le serie in poligoni sovrapposti.
 - Gli elenchi degli **ultimi check-in** e **ultimi checkout** sono ora chiusi di default e apribili solo quando serve il dettaglio analitico.

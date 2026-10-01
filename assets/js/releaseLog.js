@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.3',
+    date: '2026-10-01',
+    title: 'Recovery chart readability + Health soreness fix',
+    details: [
+      'Le serie del grafico check-in usano ora tratteggi differenti oltre al colore, così due linee coincidenti restano riconoscibili.',
+      'La legenda mostra il campione reale di colore/tratteggio ed è interattiva: cliccando una metrica si attenuano temporaneamente le altre serie.',
+      'Le ore di sonno sono ora rappresentate con una linea compatta e una media mobile a 5 notti, al posto del grafico a barre.',
+      'Il grafico checkout usa la stessa legenda interattiva e mantiene la media mobile a 5 sessioni.',
+      'Corretto il crash della Overview Body & Health introdotto dal collegamento Recovery → Health: la mappa corporea e i record di indolenzimento localizzato tornano visibili.',
+    ],
+  },
+  {
     version: '1.1.2',
     date: '2026-10-01',
     title: 'Recovery trend readability + Body & Health soreness link',

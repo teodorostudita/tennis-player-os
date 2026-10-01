@@ -509,8 +509,6 @@ function overallStatus(health) {
   const injuries = activeInjuries(health);
   const restrictions = restrictionSummary(health);
   const certificate = certificateStatus(health.certificate);
-  const sorenessLogs = localizedSorenessLogs(health);
-  const latestSoreness = sorenessLogs[0] || null;
 
   if (
     certificate.tone === 'danger'
@@ -583,6 +581,8 @@ function renderOverview(container, health, host) {
   const injuries = activeInjuries(health);
   const restrictions = restrictionSummary(health);
   const certificate = certificateStatus(health.certificate);
+  const sorenessLogs = localizedSorenessLogs(health);
+  const latestSoreness = sorenessLogs[0] || null;
 
   container.innerHTML = `
     <section class="health-kpis">

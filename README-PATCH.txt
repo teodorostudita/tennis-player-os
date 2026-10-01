@@ -1,9 +1,7 @@
-TPOS v1.1.2 — Recovery trend readability + Body & Health soreness link
+TPOS v1.1.3 — Recovery chart readability + Health soreness fix
 
-Modifiche principali:
-- grafici Recovery a linee, senza riempimenti/poligoni;
-- storico check-in e checkout compatto/espandibile;
-- indolenzimento generale vs localizzato con selezione multipla sulla Body map;
-- salvataggio delle localizzazioni in Body & Health e visualizzazione sulla relativa mappa/storico.
+- Distingue le serie sovrapposte con colore + tratteggio e legenda interattiva.
+- Sostituisce le barre del sonno con linea + media mobile a 5 notti.
+- Corregge il crash della Overview Body & Health della v1.1.2.
 
 Nessuna migration SQL. Nessuna Edge Function modificata.

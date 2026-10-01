@@ -685,7 +685,32 @@ function xTicksMarkup(rows, width, paddingLeft, innerWidth, height) {
   }).join('');
 }
 
-function buildLineChart({ rows, series, yMin = 1, yMax = 5, height = 230, emptyLabel = 'Nessun dato disponibile.' }) {
+function chartLegendMarkup(series) {
+  return series.map(serie => `
+    <button
+      type="button"
+      class="recovery-chart-legend-item"
+      data-chart-highlight="${escapeAttr(serie.css)}"
+      aria-pressed="false"
+      title="Evidenzia ${escapeAttr(serie.label)}"
+    >
+      <svg viewBox="0 0 34 10" aria-hidden="true">
+        <line class="recovery-chart-line recovery-series-${escapeAttr(serie.css)}" x1="2" y1="5" x2="32" y2="5"></line>
+      </svg>
+      <span>${escapeHtml(serie.label)}</span>
+    </button>
+  `).join('');
+}
+
+function buildLineChart({
+  rows,
+  series,
+  yMin = 1,
+  yMax = 5,
+  height = 230,
+  tickCount = 5,
+  emptyLabel = 'Nessun dato disponibile.',
+}) {
   if (!rows.length) {
     return `<div class="recovery-chart-empty">${escapeHtml(emptyLabel)}</div>`;
   }
@@ -697,16 +722,17 @@ function buildLineChart({ rows, series, yMin = 1, yMax = 5, height = 230, emptyL
   const xFromIndex = index => rows.length === 1
     ? padding.left + (innerWidth / 2)
     : padding.left + (innerWidth * index / Math.max(1, rows.length - 1));
-  const yFromValue = value => padding.top + ((yMax - value) / (yMax - yMin)) * innerHeight;
-  const ticks = chartTicks(yMin, yMax, 5);
+  const safeRange = Math.max(0.001, yMax - yMin);
+  const yFromValue = value => padding.top + ((yMax - value) / safeRange) * innerHeight;
+  const ticks = chartTicks(yMin, yMax, tickCount);
 
   return `
-    <svg class="recovery-chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Grafico andamento">
+    <svg class="recovery-chart-svg" style="height:${height}px" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Grafico andamento">
       <g class="recovery-chart-grid">
         ${ticks.map(value => `
           <g>
             <line x1="${padding.left}" y1="${yFromValue(value)}" x2="${width - padding.right}" y2="${yFromValue(value)}"></line>
-            <text x="${padding.left - 10}" y="${yFromValue(value) + 4}" text-anchor="end">${escapeHtml(String(Math.round(value * 10) / 10).replace('.', ','))}</text>
+            <text x="${padding.left - 10}" y="${yFromValue(value) + 4}" text-anchor="end">${escapeHtml(formatDecimal(value, Number.isInteger(value) ? 0 : 1))}</text>
           </g>
         `).join('')}
       </g>
@@ -715,8 +741,10 @@ function buildLineChart({ rows, series, yMin = 1, yMax = 5, height = 230, emptyL
         ${series.map(serie => {
           const values = rows.map(row => Number(row[serie.key]) > 0 ? Number(row[serie.key]) : NaN);
           return `
-            <polyline class="recovery-chart-line recovery-series-${serie.css}" fill="none" points="${polylinePoints(values, xFromIndex, yFromValue)}"></polyline>
-            ${singlePointMarkers(values, xFromIndex, yFromValue, `recovery-chart-point recovery-series-${serie.css}`)}
+            <g class="recovery-chart-series-item" data-chart-series="${escapeAttr(serie.css)}">
+              <polyline class="recovery-chart-line recovery-series-${serie.css}" fill="none" points="${polylinePoints(values, xFromIndex, yFromValue)}"></polyline>
+              ${singlePointMarkers(values, xFromIndex, yFromValue, `recovery-chart-point recovery-series-${serie.css}`)}
+            </g>
           `;
         }).join('')}
       </g>
@@ -724,39 +752,35 @@ function buildLineChart({ rows, series, yMin = 1, yMax = 5, height = 230, emptyL
   `;
 }
 
-function buildBarChart({ rows, key, yMax, height = 150, emptyLabel = 'Nessun dato disponibile.' }) {
-  if (!rows.length) return `<div class="recovery-chart-empty">${escapeHtml(emptyLabel)}</div>`;
-  const width = 760;
-  const padding = { top: 16, right: 16, bottom: 30, left: 32 };
-  const innerWidth = width - padding.left - padding.right;
-  const innerHeight = height - padding.top - padding.bottom;
-  const barWidth = Math.max(10, Math.min(36, innerWidth / Math.max(1, rows.length) - 6));
-  const xFromIndex = index => padding.left + (innerWidth * index / Math.max(1, rows.length - 1));
-  const yFromValue = value => padding.top + ((yMax - value) / yMax) * innerHeight;
-  const ticks = [0, Math.round(yMax / 2), yMax];
+function bindChartLegendInteractions(container) {
+  container.querySelectorAll('.recovery-chart-card').forEach(card => {
+    const buttons = [...card.querySelectorAll('[data-chart-highlight]')];
+    if (!buttons.length) return;
 
-  return `
-    <svg class="recovery-chart-svg recovery-chart-svg-small" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Grafico ore di sonno">
-      <g class="recovery-chart-grid">
-        ${ticks.map(value => `
-          <g>
-            <line x1="${padding.left}" y1="${yFromValue(value)}" x2="${width - padding.right}" y2="${yFromValue(value)}"></line>
-            <text x="${padding.left - 10}" y="${yFromValue(value) + 4}" text-anchor="end">${escapeHtml(String(value))}</text>
-          </g>
-        `).join('')}
-      </g>
-      <g class="recovery-chart-xaxis">${xTicksMarkup(rows, width, padding.left, innerWidth, height)}</g>
-      <g class="recovery-chart-bars">
-        ${rows.map((row, index) => {
-          const value = Math.max(0, Number(row[key] || 0));
-          const x = xFromIndex(index) - (barWidth / 2);
-          const y = yFromValue(value);
-          const h = padding.top + innerHeight - y;
-          return `<rect class="recovery-chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${h}" rx="4"></rect>`;
-        }).join('')}
-      </g>
-    </svg>
-  `;
+    const seriesItems = [...card.querySelectorAll('[data-chart-series]')];
+
+    const applyFocus = activeSeries => {
+      seriesItems.forEach(item => {
+        item.classList.toggle('muted', Boolean(activeSeries) && item.dataset.chartSeries !== activeSeries);
+      });
+      buttons.forEach(button => {
+        const active = button.dataset.chartHighlight === activeSeries;
+        button.classList.toggle('active', active);
+        button.classList.toggle('muted', Boolean(activeSeries) && !active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    };
+
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const next = card.dataset.highlightedSeries === button.dataset.chartHighlight
+          ? ''
+          : button.dataset.chartHighlight;
+        card.dataset.highlightedSeries = next;
+        applyFocus(next);
+      });
+    });
+  });
 }
 
 function renderCheckinAnalytics(logs, writable) {
@@ -766,7 +790,16 @@ function renderCheckinAnalytics(logs, writable) {
   const avgMood = average(ranged.map(item => item.mood));
   const avgMotivation = average(ranged.map(item => item.motivation));
   const lastDate = ranged.at(-1)?.date;
-  const maxSleep = Math.max(10, ...ranged.map(item => Number(item.sleepHours || 0)));
+  const sleepValues = ranged.map(item => Number(item.sleepHours || 0)).filter(value => value > 0);
+  const sleepAverageSeries = movingAverage(ranged, 'sleepHours', 5);
+  const sleepRows = ranged.map(item => ({
+    ...item,
+    sleepMovingAverage: sleepAverageSeries.find(entry => entry.date === item.date)?.value,
+  }));
+  const sleepMinValue = sleepValues.length ? Math.min(...sleepValues) : 7;
+  const sleepMaxValue = sleepValues.length ? Math.max(...sleepValues) : 9;
+  const sleepYMin = Math.max(0, Math.floor(sleepMinValue - 1));
+  const sleepYMax = Math.max(sleepYMin + 2, Math.ceil(sleepMaxValue + 1));
 
   return `
     <article class="panel wellbeing-history-panel recovery-analytics-panel">
@@ -795,16 +828,34 @@ function renderCheckinAnalytics(logs, writable) {
           </div>
           ${buildLineChart({ rows: ranged, series: CHECKIN_SERIES, yMin: 1, yMax: 5, height: 240, emptyLabel: 'Nessun check-in nel periodo selezionato.' })}
           <div class="recovery-chart-legend">
-            ${CHECKIN_SERIES.map(item => `<span><i class="recovery-legend-dot recovery-series-${item.css}"></i>${escapeHtml(item.label)}</span>`).join('')}
+            ${chartLegendMarkup(CHECKIN_SERIES)}
           </div>
+          <div class="recovery-chart-hint">Linee con tratteggi diversi restano distinguibili anche quando coincidono. Clicca una voce della legenda per isolarla.</div>
         </div>
 
-        <div class="recovery-chart-card">
+        <div class="recovery-chart-card recovery-chart-card-compact">
           <div class="recovery-chart-head">
             <strong>Ore di sonno</strong>
-            <span>Barre giornaliere</span>
+            <span>Valore giornaliero + media mobile 5 notti</span>
           </div>
-          ${buildBarChart({ rows: ranged, key: 'sleepHours', yMax: Math.ceil(maxSleep), height: 150, emptyLabel: 'Nessuna informazione sul sonno nel periodo selezionato.' })}
+          ${buildLineChart({
+            rows: sleepRows,
+            series: [
+              { key: 'sleepHours', label: 'Ore di sonno', css: 'sleep-hours' },
+              { key: 'sleepMovingAverage', label: 'Media mobile', css: 'sleep-moving-average' },
+            ],
+            yMin: sleepYMin,
+            yMax: sleepYMax,
+            height: 170,
+            tickCount: 4,
+            emptyLabel: 'Nessuna informazione sul sonno nel periodo selezionato.',
+          })}
+          <div class="recovery-chart-legend">
+            ${chartLegendMarkup([
+              { label: 'Ore di sonno', css: 'sleep-hours' },
+              { label: 'Media mobile 5', css: 'sleep-moving-average' },
+            ])}
+          </div>
         </div>
 
         <details class="recovery-recent-details">
@@ -858,10 +909,12 @@ function renderCheckoutAnalytics(checkouts, writable) {
           ${buildLineChart({ rows: chartRows, series: [
             { key: 'quality', label: 'Qualità', css: 'checkout' },
             { key: 'movingAverage', label: 'Media mobile', css: 'moving-average' },
-          ], yMin: 1, yMax: 5, height: 240, emptyLabel: 'Non ci sono ancora allenamenti registrati nel periodo selezionato.' })}
+          ], yMin: 1, yMax: 5, height: 220, emptyLabel: 'Non ci sono ancora allenamenti registrati nel periodo selezionato.' })}
           <div class="recovery-chart-legend">
-            <span><i class="recovery-legend-dot recovery-series-checkout"></i>Qualità</span>
-            <span><i class="recovery-legend-dot recovery-series-moving-average"></i>Media mobile 5</span>
+            ${chartLegendMarkup([
+              { label: 'Qualità', css: 'checkout' },
+              { label: 'Media mobile 5', css: 'moving-average' },
+            ])}
           </div>
         </div>
 
@@ -1005,6 +1058,8 @@ function renderCombinedRecovery() {
 
     ${renderDefaultsDialog(checkinDefaults)}
   `;
+
+  bindChartLegendInteractions(content);
 
   content.querySelectorAll('[data-scroll-recovery]').forEach(button => {
     button.addEventListener('click', () => {
