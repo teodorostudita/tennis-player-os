@@ -1,18 +1,18 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.0.29';
 
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from './access.js';
+} from './access.js?v=1.0.29';
 
 import {
   loadCloudModuleState,
   saveCloudModuleState,
-} from './moduleStateCloud.js';
+} from './moduleStateCloud.js?v=1.0.29';
 
-import { store } from '../data/store.js';
-import { fileProvider } from '../data/providers/provider.js';
+import { store } from '../data/store.js?v=1.0.29';
+import { fileProvider } from '../data/providers/provider.js?v=1.0.29';
 
 const SAVE_DELAY_MS = 350;
 const RETRY_MIN_MS = 4000;
@@ -136,6 +136,8 @@ function normalizeNutrition(payload = {}) {
     },
     sleepLogs: Array.isArray(source.sleepLogs) ? source.sleepLogs : [],
     recoveryLogs: Array.isArray(source.recoveryLogs) ? source.recoveryLogs : [],
+    trainingCheckouts: Array.isArray(source.trainingCheckouts) ? source.trainingCheckouts : [],
+    checkinDefaults: normalizeObject(source.checkinDefaults),
   };
 }
 
@@ -147,6 +149,8 @@ function hasMeaningfulNutrition(payload = {}) {
     || nutrition.templates.length
     || nutrition.sleepLogs.length
     || nutrition.recoveryLogs.length
+    || nutrition.trainingCheckouts.length
+    || Object.keys(nutrition.checkinDefaults).length
     || Object.values(nutrition.guidance).some(value => String(value || '').trim())
   );
 }

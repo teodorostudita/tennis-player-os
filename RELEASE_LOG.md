@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.1.1 — Recovery charts + emoji checkout
+- Il lato destro di **Nutrition & Recovery** è ora una vista analitica con grafici, invece di una lunga lista di valori ripetuti.
+- **Check-in**: grafico multilinea dei punteggi giornalieri + grafico delle ore di sonno.
+- **Training checkout**: grafico della qualità dell'allenamento con **media mobile a 5 sessioni**.
+- Intervalli rapidi selezionabili: **7g, 14g, 30g, 90g, Tutto**.
+- La qualità dell’allenamento si inserisce ora con **5 faccine**, mantenendo anche il valore numerico 1–5 per statistiche e grafici.
+- La sincronizzazione cloud di Nutrition copre anche **trainingCheckouts** e **checkinDefaults**.
+
 ## v1.1.0 — Prima Home contestuale — Atleta
 - Gli account con profilo **Atleta** aprono ora una Home personale come pagina iniziale.
 - **Adesso / Prossimo** legge il Calendar e mostra l’attività corrente o il prossimo impegno con orari, luogo e tempo residuo/attesa.

@@ -14,7 +14,26 @@ const SYSTEM_DEFAULTS = Object.freeze({
   concentration: 4,
 });
 
+const RANGE_OPTIONS = [7, 14, 30, 90, 'all'];
+const CHECKOUT_EMOJIS = {
+  1: { emoji: '😢', label: 'Molto scarso' },
+  2: { emoji: '😕', label: 'Sotto tono' },
+  3: { emoji: '🙂', label: 'Normale' },
+  4: { emoji: '😄', label: 'Buono' },
+  5: { emoji: '🥳', label: 'Eccellente' },
+};
+const CHECKIN_SERIES = [
+  { key: 'sleepQuality', label: 'Qualità sonno', css: 'sleep-quality' },
+  { key: 'motivation', label: 'Voglia', css: 'motivation' },
+  { key: 'concentration', label: 'Concentrazione', css: 'concentration' },
+  { key: 'fatigue', label: 'Stanchezza', css: 'fatigue' },
+  { key: 'soreness', label: 'Indolenzimento', css: 'soreness' },
+  { key: 'mood', label: 'Umore', css: 'mood' },
+];
+
 let enhancementQueued = false;
+let checkinRange = 30;
+let checkoutRange = 30;
 const RECOVERY_FOCUS_KEY = 'tpos.recovery.focus';
 let focusTimer = null;
 
@@ -60,6 +79,21 @@ function formatDate(value) {
   }).format(new Date(year, month - 1, day));
 }
 
+function formatShortDate(value) {
+  if (!value) return '—';
+  const [year, month, day] = String(value).split('-').map(Number);
+  if (!year || !month || !day) return value;
+  return new Intl.DateTimeFormat('it-IT', {
+    day: '2-digit',
+    month: 'short',
+  }).format(new Date(year, month - 1, day));
+}
+
+function dateToMs(value) {
+  if (!value) return 0;
+  return new Date(`${value}T00:00:00`).getTime();
+}
+
 function decimalHoursFromTimes(bedtime, wakeTime) {
   const toMinutes = value => {
     const match = /^(\d{1,2}):(\d{2})$/.exec(String(value || ''));
@@ -80,6 +114,15 @@ function formatHours(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(hours)} h`;
+}
+
+function formatDecimal(value, digits = 1) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+  return new Intl.NumberFormat('it-IT', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(number);
 }
 
 function clampScore(value, fallback) {
@@ -119,29 +162,29 @@ function scoreOptions(kind, selected) {
     .join('');
 }
 
-function checkoutQualityOptions(selected = 3) {
-  const labels = [
-    '1 — Molto scarso',
-    '2 — Sotto tono',
-    '3 — Normale',
-    '4 — Buono',
-    '5 — Eccellente',
-  ];
-
-  return labels.map((label, index) => {
-    const value = index + 1;
-    return `<option value="${value}" ${Number(selected) === value ? 'selected' : ''}>${label}</option>`;
-  }).join('');
+function checkoutQualityLabel(value) {
+  return CHECKOUT_EMOJIS[Number(value)]?.label || '—';
 }
 
-function checkoutQualityLabel(value) {
-  return {
-    1: 'Molto scarso',
-    2: 'Sotto tono',
-    3: 'Normale',
-    4: 'Buono',
-    5: 'Eccellente',
-  }[Number(value)] || '—';
+function checkoutEmoji(value) {
+  return CHECKOUT_EMOJIS[Number(value)]?.emoji || '🙂';
+}
+
+function qualityPickerButtons(selected = 3) {
+  return Object.entries(CHECKOUT_EMOJIS)
+    .map(([value, item]) => `
+      <button
+        type="button"
+        class="recovery-quality-choice ${Number(selected) === Number(value) ? 'active' : ''}"
+        data-checkout-quality="${value}"
+        aria-pressed="${Number(selected) === Number(value) ? 'true' : 'false'}"
+        title="${escapeAttr(value)} — ${escapeAttr(item.label)}"
+      >
+        <span class="recovery-quality-choice-emoji">${item.emoji}</span>
+        <span class="recovery-quality-choice-score">${value}</span>
+      </button>
+    `)
+    .join('');
 }
 
 function normalizeNutritionState() {
@@ -233,7 +276,7 @@ function renderMetric(label, value) {
 
 function renderHistoryRow(log, writable) {
   return `
-    <article class="recovery-history-row">
+    <article class="recovery-history-row compact">
       <div class="recovery-history-main">
         <div class="recovery-history-date">
           <strong>${escapeHtml(formatDate(log.date))}</strong>
@@ -264,12 +307,13 @@ function renderHistoryRow(log, writable) {
 
 function renderCheckoutRow(item, writable) {
   const trained = item.trained !== false;
+  const quality = Number(item.quality || 0);
   return `
-    <article class="recovery-checkout-row">
+    <article class="recovery-checkout-row compact">
       <div>
         <strong>${escapeHtml(formatDate(item.date))}</strong>
         <span>${trained
-          ? `Qualità ${escapeHtml(item.quality || '—')}/5 · ${escapeHtml(checkoutQualityLabel(item.quality))}`
+          ? `${checkoutEmoji(quality)} Qualità ${escapeHtml(item.quality || '—')}/5 · ${escapeHtml(checkoutQualityLabel(item.quality))}`
           : 'Nessun allenamento nella giornata'}</span>
         ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ''}
       </div>
@@ -304,16 +348,31 @@ function fillCheckinFormForDate(form, date) {
     motivation: existing.motivation || defaults.motivation,
     concentration: existing.concentration || defaults.concentration,
     notes: existing.notes || '',
-  } : { ...defaults, notes: '' });
+  } : {
+    ...defaults,
+    notes: '',
+  });
+}
+
+function updateQualityPicker(form, value = Number(form.elements.quality.value || 3)) {
+  const quality = Math.min(5, Math.max(1, Number(value) || 3));
+  form.elements.quality.value = quality;
+  form.querySelectorAll('[data-checkout-quality]').forEach(button => {
+    const active = Number(button.dataset.checkoutQuality) === quality;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  const label = form.querySelector('[data-checkout-quality-label]');
+  if (label) label.textContent = `${quality}/5 · ${checkoutQualityLabel(quality)}`;
 }
 
 function fillCheckoutFormForDate(form, date) {
   const existing = checkoutForDate(date);
-  const noTraining = existing ? existing.trained === false : false;
+  form.elements.noTraining.checked = existing?.trained === false;
   form.elements.quality.value = existing?.quality || 3;
   form.elements.notes.value = existing?.notes || '';
-  form.elements.noTraining.checked = noTraining;
-  form.elements.quality.disabled = noTraining;
+  syncCheckoutDisabled(form);
+  updateQualityPicker(form, existing?.quality || 3);
 }
 
 function defaultsSummary(defaults) {
@@ -322,47 +381,306 @@ function defaultsSummary(defaults) {
 
 function renderDefaultsDialog(defaults) {
   return `
-    <dialog class="planner-dialog recovery-defaults-dialog" id="recovery-defaults-dialog">
-      <form method="dialog" id="recovery-defaults-form">
+    <dialog id="recovery-defaults-dialog" class="dialog recovery-defaults-dialog">
+      <form method="dialog" class="dialog-shell">
         <div class="dialog-head">
           <div>
-            <div class="eyebrow">Check-in rapido</div>
+            <span class="eyebrow">Check-in rapido</span>
             <h3>Valori abituali</h3>
             <p>Questi valori precompilano ogni nuovo check-in. L'atleta modifica soltanto ciò che oggi è diverso dal solito.</p>
           </div>
-          <button class="dialog-close" type="button" data-close-defaults aria-label="Chiudi">×</button>
+          <button type="button" class="icon-button" data-close-defaults aria-label="Chiudi">×</button>
         </div>
         <div class="dialog-body">
-          <div class="form-grid">
-            <div class="field"><label>Ore di sonno</label><input type="number" name="sleepHours" min="0" max="24" step="0.25" value="${escapeAttr(defaults.sleepHours)}" required /></div>
+          <form id="recovery-defaults-form" class="form-grid">
+            <div class="field"><label>Ore di sonno</label><input name="sleepHours" type="number" min="0" max="24" step="0.25" value="${escapeAttr(defaults.sleepHours)}" required></div>
             <div class="field"><label>Qualità del sonno · 1–5</label><select name="sleepQuality">${scoreOptions('sleepQuality', defaults.sleepQuality)}</select></div>
             <div class="field"><label>Stanchezza · 1–5</label><select name="fatigue">${scoreOptions('fatigue', defaults.fatigue)}</select></div>
             <div class="field"><label>Indolenzimento · 1–5</label><select name="soreness">${scoreOptions('soreness', defaults.soreness)}</select></div>
             <div class="field"><label>Umore · 1–5</label><select name="mood">${scoreOptions('mood', defaults.mood)}</select></div>
             <div class="field"><label>Voglia di allenarsi · 1–5</label><select name="motivation">${scoreOptions('motivation', defaults.motivation)}</select></div>
             <div class="field"><label>Concentrazione · 1–5</label><select name="concentration">${scoreOptions('concentration', defaults.concentration)}</select></div>
-          </div>
+          </form>
         </div>
-        <div class="dialog-actions">
-          <div></div>
-          <div class="dialog-save-actions">
-            <button class="button button-ghost" type="button" data-close-defaults>Annulla</button>
-            <button class="button button-primary" type="submit">Salva valori abituali</button>
-          </div>
+        <div class="dialog-foot">
+          <button type="button" class="button button-ghost" data-close-defaults>Annulla</button>
+          <button type="submit" class="button button-primary" form="recovery-defaults-form">Salva valori abituali</button>
         </div>
       </form>
     </dialog>
   `;
 }
 
+function sortChronological(items) {
+  return [...items].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
+function sliceByRange(items, range) {
+  if (range === 'all' || !items.length) return items;
+  const last = dateToMs(items[items.length - 1]?.date);
+  const cutoff = last - ((Number(range) - 1) * 24 * 60 * 60 * 1000);
+  return items.filter(item => dateToMs(item.date) >= cutoff);
+}
+
+function average(values) {
+  const filtered = values.filter(value => Number.isFinite(Number(value)) && Number(value) > 0).map(Number);
+  if (!filtered.length) return null;
+  return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
+}
+
+function movingAverage(rows, key, windowSize) {
+  return rows.map((row, index) => {
+    const subset = rows.slice(Math.max(0, index - windowSize + 1), index + 1)
+      .map(item => Number(item[key] || 0))
+      .filter(value => value > 0);
+    return subset.length
+      ? { date: row.date, value: subset.reduce((sum, value) => sum + value, 0) / subset.length }
+      : { date: row.date, value: null };
+  });
+}
+
+function rangeButtons(group, selected) {
+  return RANGE_OPTIONS.map(option => {
+    const active = option === selected;
+    const label = option === 'all' ? 'Tutto' : `${option}g`;
+    return `<button type="button" class="recovery-range-button ${active ? 'active' : ''}" data-recovery-range="${group}" data-range-value="${option}">${label}</button>`;
+  }).join('');
+}
+
+function chartTicks(min, max, count = 5) {
+  const step = (max - min) / (count - 1);
+  return Array.from({ length: count }, (_, index) => max - (step * index));
+}
+
+function polylinePoints(points, xFromIndex, yFromValue) {
+  return points
+    .map((value, index) => {
+      if (!Number.isFinite(Number(value))) return null;
+      return `${xFromIndex(index)},${yFromValue(Number(value))}`;
+    })
+    .filter(Boolean)
+    .join(' ');
+}
+
+function singlePointMarkers(points, xFromIndex, yFromValue, cssClass) {
+  return points
+    .map((value, index) => Number.isFinite(Number(value))
+      ? `<circle class="${cssClass}" cx="${xFromIndex(index)}" cy="${yFromValue(Number(value))}" r="3.2"></circle>`
+      : '')
+    .join('');
+}
+
+function xTicksMarkup(rows, width, paddingLeft, innerWidth, height) {
+  if (!rows.length) return '';
+  const maxTicks = Math.min(6, rows.length);
+  const indexes = [...new Set(Array.from({ length: maxTicks }, (_, i) => Math.round(i * (rows.length - 1) / Math.max(1, maxTicks - 1))))];
+  return indexes.map(index => {
+    const x = rows.length === 1 ? paddingLeft + (innerWidth / 2) : paddingLeft + ((innerWidth) * index / Math.max(1, rows.length - 1));
+    return `<text x="${x}" y="${height - 4}" text-anchor="middle">${escapeHtml(formatShortDate(rows[index].date))}</text>`;
+  }).join('');
+}
+
+function buildLineChart({ rows, series, yMin = 1, yMax = 5, height = 230, emptyLabel = 'Nessun dato disponibile.' }) {
+  if (!rows.length) {
+    return `<div class="recovery-chart-empty">${escapeHtml(emptyLabel)}</div>`;
+  }
+
+  const width = 760;
+  const padding = { top: 16, right: 16, bottom: 30, left: 32 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const xFromIndex = index => rows.length === 1
+    ? padding.left + (innerWidth / 2)
+    : padding.left + (innerWidth * index / Math.max(1, rows.length - 1));
+  const yFromValue = value => padding.top + ((yMax - value) / (yMax - yMin)) * innerHeight;
+  const ticks = chartTicks(yMin, yMax, 5);
+
+  return `
+    <svg class="recovery-chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Grafico andamento">
+      <g class="recovery-chart-grid">
+        ${ticks.map(value => `
+          <g>
+            <line x1="${padding.left}" y1="${yFromValue(value)}" x2="${width - padding.right}" y2="${yFromValue(value)}"></line>
+            <text x="${padding.left - 10}" y="${yFromValue(value) + 4}" text-anchor="end">${escapeHtml(String(Math.round(value * 10) / 10).replace('.', ','))}</text>
+          </g>
+        `).join('')}
+      </g>
+      <g class="recovery-chart-xaxis">${xTicksMarkup(rows, width, padding.left, innerWidth, height)}</g>
+      <g class="recovery-chart-series">
+        ${series.map(serie => {
+          const values = rows.map(row => Number(row[serie.key]) > 0 ? Number(row[serie.key]) : NaN);
+          return `
+            <polyline class="recovery-chart-line recovery-series-${serie.css}" points="${polylinePoints(values, xFromIndex, yFromValue)}"></polyline>
+            ${singlePointMarkers(values, xFromIndex, yFromValue, `recovery-chart-point recovery-series-${serie.css}`)}
+          `;
+        }).join('')}
+      </g>
+    </svg>
+  `;
+}
+
+function buildBarChart({ rows, key, yMax, height = 150, emptyLabel = 'Nessun dato disponibile.' }) {
+  if (!rows.length) return `<div class="recovery-chart-empty">${escapeHtml(emptyLabel)}</div>`;
+  const width = 760;
+  const padding = { top: 16, right: 16, bottom: 30, left: 32 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const barWidth = Math.max(10, Math.min(36, innerWidth / Math.max(1, rows.length) - 6));
+  const xFromIndex = index => padding.left + (innerWidth * index / Math.max(1, rows.length - 1));
+  const yFromValue = value => padding.top + ((yMax - value) / yMax) * innerHeight;
+  const ticks = [0, Math.round(yMax / 2), yMax];
+
+  return `
+    <svg class="recovery-chart-svg recovery-chart-svg-small" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Grafico ore di sonno">
+      <g class="recovery-chart-grid">
+        ${ticks.map(value => `
+          <g>
+            <line x1="${padding.left}" y1="${yFromValue(value)}" x2="${width - padding.right}" y2="${yFromValue(value)}"></line>
+            <text x="${padding.left - 10}" y="${yFromValue(value) + 4}" text-anchor="end">${escapeHtml(String(value))}</text>
+          </g>
+        `).join('')}
+      </g>
+      <g class="recovery-chart-xaxis">${xTicksMarkup(rows, width, padding.left, innerWidth, height)}</g>
+      <g class="recovery-chart-bars">
+        ${rows.map((row, index) => {
+          const value = Math.max(0, Number(row[key] || 0));
+          const x = xFromIndex(index) - (barWidth / 2);
+          const y = yFromValue(value);
+          const h = padding.top + innerHeight - y;
+          return `<rect class="recovery-chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${h}" rx="4"></rect>`;
+        }).join('')}
+      </g>
+    </svg>
+  `;
+}
+
+function renderCheckinAnalytics(logs, writable) {
+  const chron = sortChronological(logs);
+  const ranged = sliceByRange(chron, checkinRange);
+  const avgSleep = average(ranged.map(item => item.sleepHours));
+  const avgMood = average(ranged.map(item => item.mood));
+  const avgMotivation = average(ranged.map(item => item.motivation));
+  const lastDate = ranged.at(-1)?.date;
+  const maxSleep = Math.max(10, ...ranged.map(item => Number(item.sleepHours || 0)));
+
+  return `
+    <article class="panel wellbeing-history-panel recovery-analytics-panel">
+      <div class="panel-header recovery-analytics-head">
+        <div>
+          <h3>Andamento check-in</h3>
+          <p>Trend dei valori giornalieri con orizzonte temporale variabile.</p>
+        </div>
+        <div class="recovery-range-switch" role="group" aria-label="Intervallo andamento check-in">
+          ${rangeButtons('checkin', checkinRange)}
+        </div>
+      </div>
+      <div class="panel-body recovery-analytics-body">
+        <div class="recovery-analytics-stats">
+          <div class="recovery-stat"><span>Registrazioni</span><strong>${ranged.length}</strong></div>
+          <div class="recovery-stat"><span>Sonno medio</span><strong>${avgSleep ? `${escapeHtml(formatDecimal(avgSleep, 1))} h` : '—'}</strong></div>
+          <div class="recovery-stat"><span>Umore medio</span><strong>${avgMood ? `${escapeHtml(formatDecimal(avgMood, 1))}/5` : '—'}</strong></div>
+          <div class="recovery-stat"><span>Voglia media</span><strong>${avgMotivation ? `${escapeHtml(formatDecimal(avgMotivation, 1))}/5` : '—'}</strong></div>
+          <div class="recovery-stat"><span>Ultimo check-in</span><strong>${lastDate ? escapeHtml(formatShortDate(lastDate)) : '—'}</strong></div>
+        </div>
+
+        <div class="recovery-chart-card">
+          <div class="recovery-chart-head">
+            <strong>Trend percezione giornaliera</strong>
+            <span>Scala 1–5</span>
+          </div>
+          ${buildLineChart({ rows: ranged, series: CHECKIN_SERIES, yMin: 1, yMax: 5, height: 240, emptyLabel: 'Nessun check-in nel periodo selezionato.' })}
+          <div class="recovery-chart-legend">
+            ${CHECKIN_SERIES.map(item => `<span><i class="recovery-legend-dot recovery-series-${item.css}"></i>${escapeHtml(item.label)}</span>`).join('')}
+          </div>
+        </div>
+
+        <div class="recovery-chart-card">
+          <div class="recovery-chart-head">
+            <strong>Ore di sonno</strong>
+            <span>Barre giornaliere</span>
+          </div>
+          ${buildBarChart({ rows: ranged, key: 'sleepHours', yMax: Math.ceil(maxSleep), height: 150, emptyLabel: 'Nessuna informazione sul sonno nel periodo selezionato.' })}
+        </div>
+
+        <div class="recovery-recent-block">
+          <div class="recovery-chart-head">
+            <strong>Ultimi check-in</strong>
+            <span>Vista compatta con eliminazione rapida</span>
+          </div>
+          <div class="recovery-history-list">
+            ${logs.length ? logs.slice(0, 6).map(log => renderHistoryRow(log, writable)).join('') : '<div class="wellbeing-empty">Nessun check-in registrato.</div>'}
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderCheckoutAnalytics(checkouts, writable) {
+  const chron = sortChronological(checkouts);
+  const ranged = sliceByRange(chron, checkoutRange);
+  const trainedRows = ranged.filter(item => item.trained !== false && Number(item.quality || 0) > 0);
+  const avgQuality = average(trainedRows.map(item => item.quality));
+  const maSeries = movingAverage(trainedRows, 'quality', 5).map(item => ({ date: item.date, movingAverage: item.value }));
+  const chartRows = trainedRows.map(item => ({ ...item, movingAverage: maSeries.find(entry => entry.date === item.date)?.movingAverage }));
+  const latestMA = chartRows.at(-1)?.movingAverage;
+  const noTrainingCount = ranged.filter(item => item.trained === false).length;
+
+  return `
+    <article class="panel wellbeing-history-panel recovery-analytics-panel">
+      <div class="panel-header recovery-analytics-head">
+        <div>
+          <h3>Andamento checkout</h3>
+          <p>Qualità percepita dell'allenamento con media mobile a 5 sessioni.</p>
+        </div>
+        <div class="recovery-range-switch" role="group" aria-label="Intervallo andamento checkout">
+          ${rangeButtons('checkout', checkoutRange)}
+        </div>
+      </div>
+      <div class="panel-body recovery-analytics-body">
+        <div class="recovery-analytics-stats">
+          <div class="recovery-stat"><span>Sessioni nel periodo</span><strong>${trainedRows.length}</strong></div>
+          <div class="recovery-stat"><span>Media qualità</span><strong>${avgQuality ? `${escapeHtml(formatDecimal(avgQuality, 1))}/5` : '—'}</strong></div>
+          <div class="recovery-stat"><span>Media mobile</span><strong>${latestMA ? `${escapeHtml(formatDecimal(latestMA, 1))}/5` : '—'}</strong></div>
+          <div class="recovery-stat"><span>Giorni senza training</span><strong>${noTrainingCount}</strong></div>
+        </div>
+
+        <div class="recovery-chart-card">
+          <div class="recovery-chart-head">
+            <strong>Qualità allenamento</strong>
+            <span>Linea piena + media mobile 5 sessioni</span>
+          </div>
+          ${buildLineChart({ rows: chartRows, series: [
+            { key: 'quality', label: 'Qualità', css: 'checkout' },
+            { key: 'movingAverage', label: 'Media mobile', css: 'moving-average' },
+          ], yMin: 1, yMax: 5, height: 240, emptyLabel: 'Non ci sono ancora allenamenti registrati nel periodo selezionato.' })}
+          <div class="recovery-chart-legend">
+            <span><i class="recovery-legend-dot recovery-series-checkout"></i>Qualità</span>
+            <span><i class="recovery-legend-dot recovery-series-moving-average"></i>Media mobile 5</span>
+          </div>
+        </div>
+
+        <div class="recovery-recent-block">
+          <div class="recovery-chart-head">
+            <strong>Ultimi checkout</strong>
+            <span>Con note ed eventuale eliminazione</span>
+          </div>
+          <div class="recovery-checkout-list">
+            ${checkouts.length ? checkouts.slice(0, 8).map(item => renderCheckoutRow(item, writable)).join('') : '<div class="wellbeing-empty">Nessun checkout registrato.</div>'}
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 function renderCombinedRecovery() {
-  if (!isNutritionRoute()) return;
   const content = document.querySelector('#nutrition-section-content');
   if (!content) return;
 
   const writable = canWriteModule('nutrition');
-  const { checkinDefaults } = normalizeNutritionState();
   const logs = mergedLogs();
+  const { checkinDefaults } = normalizeNutritionState();
   const checkouts = sortedCheckouts();
   const today = todayKey();
   const todayLog = mergedLogForDate(today);
@@ -382,7 +700,7 @@ function renderCombinedRecovery() {
   content.innerHTML = `
     <section class="nutrition-subhead recovery-combined-head">
       <div>
-        <div class="eyebrow">Daily Recovery</div>
+        <div class="eyebrow">Daily wellbeing</div>
         <h2>Check-in e Training checkout</h2>
         <p>Il check-in descrive come l'atleta arriva alla giornata; il checkout registra come è andato l'allenamento svolto.</p>
       </div>
@@ -392,20 +710,19 @@ function renderCombinedRecovery() {
       </div>
     </section>
 
-    <div class="recovery-scale-guide" aria-label="Spiegazione scale da 1 a 5">
-      <strong>Scala 1–5</strong>
+    <div class="recovery-scale-guide" role="note">
+      <strong>Legenda rapida</strong>
       <span><b>Sonno, umore, voglia, concentrazione:</b> alto = positivo</span>
-      <span><b>Stanchezza, indolenzimento:</b> basso = positivo</span>
-      <span><b>Qualità allenamento:</b> 1 molto scarso · 3 normale · 5 eccellente</span>
+      <span><b>Stanchezza e indolenzimento:</b> alto = peggiore</span>
     </div>
 
-    <section class="recovery-default-bar">
+    <div class="recovery-default-bar">
       <div>
         <strong>Valori abituali del check-in</strong>
         <span>${escapeHtml(defaultsSummary(checkinDefaults))}</span>
       </div>
-      ${writable ? '<button class="button button-ghost" id="edit-recovery-defaults" type="button">⚙ Valori abituali</button>' : ''}
-    </section>
+      ${writable ? '<button class="button button-ghost" id="edit-recovery-defaults" type="button">Modifica default</button>' : ''}
+    </div>
 
     <section class="wellbeing-grid recovery-combined-grid" id="daily-checkin">
       <article class="panel wellbeing-entry-panel">
@@ -416,7 +733,6 @@ function renderCombinedRecovery() {
           </div>
           ${todayLog ? '<span class="recovery-status-badge done">✓ Oggi completato</span>' : '<span class="recovery-status-badge">Da fare oggi</span>'}
         </div>
-
         <div class="panel-body">
           ${!writable
             ? '<div class="access-info">Nutrition & Recovery è in sola lettura per questo account.</div>'
@@ -437,12 +753,7 @@ function renderCombinedRecovery() {
         </div>
       </article>
 
-      <article class="panel wellbeing-history-panel">
-        <div class="panel-header"><h3>Storico check-in</h3><p>Sonno e sensazioni, giorno per giorno.</p></div>
-        <div class="recovery-history-list">
-          ${logs.length ? logs.slice(0, 21).map(log => renderHistoryRow(log, writable)).join('') : '<div class="wellbeing-empty">Nessun check-in registrato.</div>'}
-        </div>
-      </article>
+      ${renderCheckinAnalytics(logs, writable)}
     </section>
 
     <section class="wellbeing-grid recovery-checkout-grid" id="training-checkout">
@@ -460,7 +771,14 @@ function renderCombinedRecovery() {
             : `
               <form id="training-checkout-form" class="form-grid">
                 <div class="field"><label>Data</label><input type="date" name="date" value="${today}" required /></div>
-                <div class="field"><label>Qualità dell'allenamento · 1–5</label><select name="quality">${checkoutQualityOptions(todayCheckout?.quality || 3)}</select></div>
+                <div class="field full recovery-quality-field">
+                  <label>Qualità dell'allenamento</label>
+                  <div class="recovery-quality-picker" data-quality-picker>
+                    <input type="hidden" name="quality" value="${escapeAttr(todayCheckout?.quality || 3)}" />
+                    <div class="recovery-quality-buttons">${qualityPickerButtons(todayCheckout?.quality || 3)}</div>
+                    <div class="recovery-quality-caption"><span data-checkout-quality-label>${escapeHtml(`${todayCheckout?.quality || 3}/5 · ${checkoutQualityLabel(todayCheckout?.quality || 3)}`)}</span></div>
+                  </div>
+                </div>
                 <div class="field full recovery-no-training"><label><input type="checkbox" name="noTraining" ${todayCheckout?.trained === false ? 'checked' : ''} /> Nessun allenamento nella giornata</label></div>
                 <div class="field full"><label>Note</label><textarea name="notes" placeholder="Cosa è andato bene, cosa no, sensazioni particolari…">${escapeHtml(todayCheckout?.notes || '')}</textarea></div>
                 <div class="field full"><button class="button button-primary recovery-one-click" type="submit">${todayCheckout ? 'Aggiorna checkout' : 'Salva checkout'}</button></div>
@@ -469,12 +787,7 @@ function renderCombinedRecovery() {
         </div>
       </article>
 
-      <article class="panel wellbeing-history-panel">
-        <div class="panel-header"><h3>Storico checkout</h3><p>Percezione sintetica della qualità del lavoro svolto.</p></div>
-        <div class="recovery-checkout-list">
-          ${checkouts.length ? checkouts.slice(0, 21).map(item => renderCheckoutRow(item, writable)).join('') : '<div class="wellbeing-empty">Nessun checkout registrato.</div>'}
-        </div>
-      </article>
+      ${renderCheckoutAnalytics(checkouts, writable)}
     </section>
 
     ${renderDefaultsDialog(checkinDefaults)}
@@ -483,6 +796,16 @@ function renderCombinedRecovery() {
   content.querySelectorAll('[data-scroll-recovery]').forEach(button => {
     button.addEventListener('click', () => {
       content.querySelector(`#${button.dataset.scrollRecovery}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  content.querySelectorAll('[data-recovery-range]').forEach(button => {
+    button.addEventListener('click', () => {
+      const target = button.dataset.recoveryRange;
+      const value = button.dataset.rangeValue === 'all' ? 'all' : Number(button.dataset.rangeValue);
+      if (target === 'checkin') checkinRange = value;
+      if (target === 'checkout') checkoutRange = value;
+      renderCombinedRecovery();
     });
   });
 
@@ -539,12 +862,17 @@ function renderCombinedRecovery() {
   });
 
   const checkoutForm = content.querySelector('#training-checkout-form');
-  const syncCheckoutDisabled = () => {
-    if (!checkoutForm) return;
-    checkoutForm.elements.quality.disabled = checkoutForm.elements.noTraining.checked;
-  };
-  syncCheckoutDisabled();
-  checkoutForm?.elements.noTraining.addEventListener('change', syncCheckoutDisabled);
+  if (checkoutForm) {
+    syncCheckoutDisabled(checkoutForm);
+    updateQualityPicker(checkoutForm, Number(checkoutForm.elements.quality.value || 3));
+    checkoutForm.querySelectorAll('[data-checkout-quality]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (checkoutForm.elements.noTraining.checked) return;
+        updateQualityPicker(checkoutForm, Number(button.dataset.checkoutQuality));
+      });
+    });
+  }
+  checkoutForm?.elements.noTraining.addEventListener('change', () => syncCheckoutDisabled(checkoutForm));
   checkoutForm?.elements.date.addEventListener('change', event => fillCheckoutFormForDate(checkoutForm, event.target.value));
   checkoutForm?.addEventListener('submit', event => {
     event.preventDefault();
@@ -602,6 +930,16 @@ function renderCombinedRecovery() {
       renderCombinedRecovery();
     });
   });
+}
+
+function syncCheckoutDisabled(form) {
+  if (!form) return;
+  const disabled = form.elements.noTraining.checked;
+  form.querySelectorAll('[data-checkout-quality]').forEach(button => {
+    button.disabled = disabled;
+    button.classList.toggle('disabled', disabled);
+  });
+  form.querySelector('[data-quality-picker]')?.classList.toggle('disabled', disabled);
 }
 
 function enhanceTabs() {

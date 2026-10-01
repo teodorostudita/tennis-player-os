@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.1',
+    date: '2026-10-01',
+    title: 'Recovery charts + emoji checkout',
+    details: [
+      'Il pannello storico di Nutrition & Recovery è stato trasformato in una vista analitica con grafici dell’andamento nel tempo.',
+      'Per il check-in sono ora disponibili un grafico multilinea dei punteggi giornalieri e un grafico dedicato alle ore di sonno.',
+      'Per il training checkout è disponibile il grafico della qualità dell’allenamento con media mobile a 5 sessioni.',
+      'Entrambi i grafici permettono di cambiare l’orizzonte temporale con preset rapidi: 7g, 14g, 30g, 90g e Tutto.',
+      'Il selettore della qualità allenamento è stato sostituito da cinque faccine, mantenendo comunque il valore numerico 1–5 per analisi e media mobile.',
+      'La copertura cloud del modulo Nutrition include ora anche trainingCheckouts e checkinDefaults, così da evitare perdite di sincronizzazione.',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-10-01',
     title: 'Prima Home contestuale — Atleta',
