@@ -356,6 +356,54 @@ function dispatchCloudUpdate(moduleKey, source = 'remote') {
   }));
 }
 
+async function saveReconciledModuleState({
+  athleteId,
+  moduleKey,
+  config,
+  localPayload,
+  cloudState = null,
+  maxAttempts = 4,
+}) {
+  let candidate = config.normalize(localPayload);
+  let latestCloudState = cloudState;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (!latestCloudState) {
+      latestCloudState = await loadCloudModuleState({ athleteId, moduleKey });
+    }
+
+    if (latestCloudState && config.merge) {
+      candidate = config.merge(candidate, latestCloudState.payload);
+    }
+
+    try {
+      const savedState = await saveCloudModuleState({
+        athleteId,
+        moduleKey,
+        payload: candidate,
+        schemaVersion: config.schemaVersion,
+        expectedRevision: latestCloudState?.revision || null,
+      });
+
+      return {
+        savedState,
+        payload: config.normalize(savedState?.payload || candidate),
+      };
+    } catch (error) {
+      if (error?.code !== 'TPOS_MODULE_REVISION_CONFLICT' || attempt === maxAttempts - 1) {
+        throw error;
+      }
+
+      // Another device wrote the module after our last read. Reload the
+      // newest row, merge again at record level, and retry instead of
+      // overwriting that device's data with a whole-payload last-write-wins.
+      latestCloudState = await loadCloudModuleState({ athleteId, moduleKey });
+    }
+  }
+
+  throw new Error(`Impossibile riconciliare ${moduleKey} con il cloud.`);
+}
+
 async function loadManagedSlice(moduleKey) {
   const config = MANAGED_SLICES[moduleKey];
   if (!config || !canReadModule(moduleKey)) return null;
@@ -372,26 +420,27 @@ async function loadManagedSlice(moduleKey) {
 
     if (cloudState) {
       const cloudPayload = config.normalize(cloudState.payload);
-      const payload = writable && config.merge
+      let payload = writable && config.merge
         ? config.merge(localPayload, cloudPayload)
         : cloudPayload;
+      let finalCloudState = cloudState;
+      let source = 'cloud';
+
       const cloudFingerprint = fingerprint(config.normalize, cloudPayload);
       const mergedFingerprint = fingerprint(config.normalize, payload);
-      let source = 'cloud';
-      let finalCloudState = cloudState;
 
-      // Recovery used to be partly local-only. Before replacing the local
-      // cache, merge unique local records into the cloud once. This is the
-      // recovery path for historical check-ins already present on a device.
-      if (writable && mergedFingerprint !== cloudFingerprint) {
-        finalCloudState = await saveCloudModuleState({
+      if (writable && config.merge && mergedFingerprint !== cloudFingerprint) {
+        const reconciled = await saveReconciledModuleState({
           athleteId,
           moduleKey,
-          payload,
-          schemaVersion: config.schemaVersion,
+          config,
+          localPayload: payload,
+          cloudState,
         });
+        payload = reconciled.payload;
+        finalCloudState = reconciled.savedState;
         source = 'cloud-merged-local';
-        console.info(`TPOS ${config.label}: local history merged into cloud.`);
+        console.info(`TPOS ${config.label}: cronologia locale riconciliata con il cloud.`);
       }
 
       store.update(state => {
@@ -418,14 +467,15 @@ async function loadManagedSlice(moduleKey) {
     }
 
     if (writable && config.meaningful(localPayload)) {
-      const savedState = await saveCloudModuleState({
+      const reconciled = await saveReconciledModuleState({
         athleteId,
         moduleKey,
-        payload: localPayload,
-        schemaVersion: config.schemaVersion,
+        config,
+        localPayload,
       });
 
       store.update(state => {
+        state[moduleKey] = clone(reconciled.payload);
         state.meta[`${moduleKey}CloudMigratedAt`] = new Date().toISOString();
       });
 
@@ -433,8 +483,8 @@ async function loadManagedSlice(moduleKey) {
 
       return {
         source: 'local-migrated',
-        payload: localPayload,
-        cloudState: savedState,
+        payload: reconciled.payload,
+        cloudState: reconciled.savedState,
         cloudError: null,
       };
     }
@@ -499,31 +549,63 @@ function startManagedSliceSync(moduleKey, initialCloudState = null) {
   const flush = async () => {
     if (!writable || stopped || inFlight || !queuedPayload) return;
 
-    const payload = queuedPayload;
+    const localPayload = queuedPayload;
     queuedPayload = null;
 
-    const nextFingerprint = fingerprint(config.normalize, payload);
-    if (nextFingerprint === lastSavedFingerprint) return;
+    const localFingerprint = fingerprint(config.normalize, localPayload);
+    if (!config.merge && localFingerprint === lastSavedFingerprint) return;
 
     inFlight = true;
     paintStatus(moduleKey, { status: 'syncing', message: '' });
 
     try {
-      const savedState = await saveCloudModuleState({
-        athleteId,
-        moduleKey,
-        payload,
-        schemaVersion: config.schemaVersion,
-      });
+      let savedState;
+      let savedPayload;
 
-      lastSavedFingerprint = fingerprint(config.normalize, savedState?.payload || payload);
+      if (config.merge) {
+        // Nutrition & Recovery is edited from multiple devices. Always read
+        // the latest server row immediately before saving, merge by record,
+        // then update with optimistic concurrency. This prevents the iPhone
+        // and Mac from alternately replacing each other's whole history.
+        const reconciled = await saveReconciledModuleState({
+          athleteId,
+          moduleKey,
+          config,
+          localPayload,
+        });
+        savedState = reconciled.savedState;
+        savedPayload = reconciled.payload;
+      } else {
+        savedState = await saveCloudModuleState({
+          athleteId,
+          moduleKey,
+          payload: localPayload,
+          schemaVersion: config.schemaVersion,
+        });
+        savedPayload = config.normalize(savedState?.payload || localPayload);
+      }
+
+      lastSavedFingerprint = fingerprint(config.normalize, savedPayload);
       lastRemoteRevision = Math.max(lastRemoteRevision, Number(savedState?.revision || 0));
       retryDelayMs = RETRY_MIN_MS;
+
+      const currentPayload = config.normalize(store.getState()[moduleKey]);
+      const currentFingerprint = fingerprint(config.normalize, currentPayload);
+      if (currentFingerprint !== lastSavedFingerprint) {
+        applyingRemote = true;
+        store.update(state => {
+          state[moduleKey] = clone(savedPayload);
+          state.meta[`${moduleKey}CloudReceivedAt`] = new Date().toISOString();
+        });
+        applyingRemote = false;
+        dispatchCloudUpdate(moduleKey, 'save-reconcile');
+      }
+
       paintStatus(moduleKey, { status: 'synced', message: '' });
     } catch (error) {
       console.warn(`${config.label} cloud save failed; local cache retained.`, error);
 
-      queuedPayload = payload;
+      queuedPayload = localPayload;
       paintStatus(moduleKey, {
         status: 'error',
         message: error?.message || 'Salvataggio cloud non riuscito.',
@@ -560,17 +642,21 @@ function startManagedSliceSync(moduleKey, initialCloudState = null) {
     if (stopped || !cloudState) return;
 
     const revision = Number(cloudState.revision || 0);
-    if (revision && lastRemoteRevision && revision <= lastRemoteRevision) return;
-
     const remotePayload = config.normalize(cloudState.payload);
     const currentPayload = config.normalize(store.getState()[moduleKey]);
-    const hasPendingLocal = Boolean(queuedPayload) || inFlight;
-    const nextPayload = hasPendingLocal && writable && config.merge
-      ? config.merge(currentPayload, remotePayload)
-      : remotePayload;
-
     const remoteFingerprint = fingerprint(config.normalize, remotePayload);
     const currentFingerprint = fingerprint(config.normalize, currentPayload);
+
+    if (!config.merge && revision && lastRemoteRevision && revision <= lastRemoteRevision) {
+      return;
+    }
+
+    // For merge-aware modules we must compare content even when the revision
+    // has already been seen: this is what lets a device contribute older
+    // local-only records without discarding a newer record from another device.
+    const nextPayload = config.merge
+      ? config.merge(currentPayload, remotePayload)
+      : remotePayload;
     const nextFingerprint = fingerprint(config.normalize, nextPayload);
 
     lastRemoteRevision = Math.max(lastRemoteRevision, revision);
@@ -587,7 +673,7 @@ function startManagedSliceSync(moduleKey, initialCloudState = null) {
       applyingRemote = false;
     }
 
-    if (hasPendingLocal && writable && nextFingerprint !== remoteFingerprint) {
+    if (writable && config.merge && nextFingerprint !== remoteFingerprint) {
       queuedPayload = clone(nextPayload);
       scheduleFlush(50);
     }

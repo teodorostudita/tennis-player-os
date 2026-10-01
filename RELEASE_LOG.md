@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.1.6 — Conflict-safe Recovery sync
+- Corretto il caso in cui Mac e iPhone mantenevano **cronologie Recovery complementari** invece di convergere sullo stesso storico.
+- Prima di ogni salvataggio Nutrition & Recovery viene riletta l'ultima revisione cloud e vengono fusi i record locali/remoti per data.
+- I salvataggi usano **optimistic concurrency** (`expectedRevision`): in caso di scritture contemporanee il client ricarica, rifonde e riprova anziché sovrascrivere l'intero payload.
+- Il polling ogni 3 secondi riconcilia anche eventuali record ancora presenti solo nella cache di un dispositivo.
+- Nessuna modifica a Body & Health e nessuna migration SQL.
+
 ## v1.1.5 — Stabilità sync multi-device
 - Disattivata lato client la subscription Realtime introdotta in 1.1.4, che poteva innescare un feedback loop di aggiornamenti.
 - **Nutrition & Recovery** e **Body & Health** controllano ora il cloud ogni **3 secondi** e immediatamente quando la PWA torna in primo piano.

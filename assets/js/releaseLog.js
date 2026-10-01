@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.1.6',
+    date: '2026-10-01',
+    title: 'Conflict-safe Recovery sync',
+    details: [
+      'Corretto il caso in cui Mac e iPhone conservavano cronologie Recovery complementari senza convergere sullo stesso storico cloud.',
+      'Prima di ogni salvataggio di Nutrition & Recovery il client rilegge l’ultima revisione cloud e fonde i record locali e remoti per data.',
+      'Il salvataggio usa ora la revisione attesa (optimistic concurrency): se un altro dispositivo scrive nello stesso momento, TPOS ricarica, rifonde e riprova invece di sovrascrivere l’intero payload.',
+      'Il polling ogni 3 secondi riconcilia sempre le cronologie Recovery: eventuali record presenti solo su un dispositivo vengono aggiunti al cloud senza cancellare quelli dell’altro dispositivo.',
+      'Body & Health resta invariato: il problema riguardava il percorso generico di persistenza di Nutrition & Recovery.',
+    ],
+  },
+  {
     version: '1.1.5',
     date: '2026-10-01',
     title: 'Stabilità sync multi-device',

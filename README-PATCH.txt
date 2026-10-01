@@ -1,4 +1,5 @@
-TPOS v1.1.5 — Stabilità sync multi-device
+TPOS v1.1.6 — Conflict-safe Recovery sync
 
-Hotfix della 1.1.4: rimuove il canale Realtime lato client e passa a sincronizzazione revision-aware ogni 3 secondi, più refresh on-focus.
-Nessuna migration SQL. Nessuna Edge Function.
+Corregge la mancata convergenza delle cronologie Nutrition & Recovery tra dispositivi.
+Ogni salvataggio fonde l’ultima revisione cloud con la cache locale e usa optimistic concurrency, evitando overwrite dell’intero storico.
+Nessuna migration SQL. Nessuna Edge Function modificata.
