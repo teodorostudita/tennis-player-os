@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="Tennis Player OS collega calendario, preparazione atletica, sviluppo, drills, match, avversari, materiali, salute, recupero, mental training, percezione e costi intorno a un solo atleta." />
   <title>Tennis Player OS — One Player. A Complete Journey.</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="roles-refresh.css?v=1.2" />
+  <link rel="stylesheet" href="styles.css?v=1.3" />
+  <link rel="stylesheet" href="roles-refresh.css?v=1.3" />
 </head>
 <body>
 <header class="site-header">
@@ -48,36 +48,53 @@
     </div>
 
     <div class="hero-preview">
-      <button class="preview-card" type="button" data-preview-title-key="previewDialogTitle" data-preview-body-key="previewDialogBody" data-preview-image="assets/product-previews/dashboard.png" data-preview-alt="Tennis Player OS dashboard preview" data-preview-caption-key="previewOpen" id="openPreview">
-        <div class="browser-bar"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
-        <div class="real-shot-frame">
-          <img src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
+      <button class="preview-card preview-card-composed" type="button" data-preview-title-key="previewDialogTitle" data-preview-body-key="previewDialogBody" data-preview-image="assets/product-previews/dashboard.png" data-preview-alt="Tennis Player OS dashboard preview" data-preview-caption-key="previewOpen" id="openPreview">
+        <div class="preview-composed-stage">
+          <div class="preview-float-chip top-left">REAL PRODUCT UI</div>
+          <div class="preview-desktop-card">
+            <div class="browser-bar"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
+            <div class="real-shot-frame desktop-shot">
+              <img src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
+            </div>
+          </div>
+          <div class="preview-mobile-card" aria-hidden="true">
+            <div class="phone-shell">
+              <div class="phone-notch"></div>
+              <img src="assets/product-previews/athlete-home-mobile.jpg" alt="Dashboard atleta mobile" />
+            </div>
+          </div>
+          <div class="preview-float-chip bottom-right" data-i18n="previewFloat">Desktop dashboard + mobile home</div>
         </div>
         <div class="preview-bar">
-          <span data-i18n="previewInspired">Schermata reale della dashboard attuale</span>
-          <span class="preview-link" data-i18n="previewOpen">Apri fullscreen</span>
+          <span data-i18n="previewInspired">Anteprima reale del prodotto</span>
+          <span class="preview-link" data-i18n="previewOpen">Apri anteprima</span>
         </div>
       </button>
     </div>
   </section>
 
   <section class="problem section" id="product">
-    <div class="section-head">
-      <span class="kicker" data-i18n="problemKicker">IL PROBLEMA</span>
-      <h2 data-i18n="problemTitle">Il tennista è una persona sola.<br>Perché il suo percorso è sparso ovunque?</h2>
-      <p data-i18n="problemBody">Calendari, note dei coach, tornei, preparazione atletica, recupero, materiali, scouting, documenti sanitari e spese vivono spesso in posti diversi. Tennis Player OS nasce dall'esigenza concreta di gestire un percorso agonistico complesso senza perdere informazioni e collegamenti: un unico record continuo, costruito intorno all'atleta.</p>
+    <div class="section-head product-head left">
+      <span class="kicker" data-i18n="problemKicker">PERCHÉ TPOS</span>
+      <h2 data-i18n="problemTitle">Un solo profilo atleta.<br>Tutto il percorso resta collegato.</h2>
+      <p data-i18n="problemBody">TPOS nasce per tenere insieme ciò che nel tennis agonistico tende a separarsi: programmazione, lavoro in campo, salute, recupero, materiali, competizione, costi e collaborazione del team. Non dodici archivi separati, ma un unico sistema costruito intorno all’atleta.</p>
     </div>
-    <div class="scatter">
-      <span>Calendar</span><span>Athletics</span><span>Development</span><span>Drills</span><span>Match</span><span>Opponents</span>
-      <span>Equipment</span><span>Body &amp; Health</span><span>Nutrition &amp; Recovery</span><span>Mental</span><span>Perception &amp; Neuro</span><span>Economics</span>
-    </div>
-    <div class="one-record">
-      <div class="athlete-icon">◉</div>
-      <div>
-        <small data-i18n="oneAthlete">UN SOLO ATLETA</small>
-        <strong data-i18n="oneRecord">Un solo record connesso.</strong>
-        <p data-i18n="oneRecordBody">L'atleta resta al centro. Tutto il resto si collega.</p>
-      </div>
+    <div class="product-story-grid">
+      <article class="product-story-card">
+        <span class="story-index">01</span>
+        <h3 data-i18n="prodCard1Title">Un solo record atleta</h3>
+        <p data-i18n="prodCard1Body">Tutta la storia del tennista resta nello stesso ambiente: niente copie disperse, niente passaggi persi.</p>
+      </article>
+      <article class="product-story-card">
+        <span class="story-index">02</span>
+        <h3 data-i18n="prodCard2Title">12 moduli, un solo filo logico</h3>
+        <p data-i18n="prodCard2Body">Calendario, atletica, sviluppo, match, salute, recovery, materiali ed economics parlano tra loro.</p>
+      </article>
+      <article class="product-story-card">
+        <span class="story-index">03</span>
+        <h3 data-i18n="prodCard3Title">Un contesto unico per tutto il team</h3>
+        <p data-i18n="prodCard3Body">Genitore, coach e professionisti lavorano sullo stesso percorso con accessi diversi, ma senza perdere il quadro generale.</p>
+      </article>
     </div>
   </section>
 
@@ -345,22 +362,32 @@
 
 <dialog id="previewDialog" aria-labelledby="previewDialogTitle">
   <button type="button" class="dialog-close" id="closePreview" aria-label="Close">×</button>
-  <div class="dialog-inner">
+  <div class="dialog-inner dialog-inner-wide">
     <div class="dialog-copy">
       <span class="kicker" data-i18n="previewKicker">ANTEPRIMA PRODOTTO</span>
-      <h2 id="previewDialogTitle" data-i18n="previewDialogTitle">Una schermata reale della dashboard.</h2>
-      <p id="previewDialogBody" data-i18n="previewDialogBody">Questa hero usa una schermata reale di Tennis Player OS con un profilo demo, così il visitatore può percepire meglio l’interfaccia effettiva del prodotto.</p>
+      <h2 id="previewDialogTitle" data-i18n="previewDialogTitle">Desktop e mobile, sulla stessa storia atleta.</h2>
+      <p id="previewDialogBody" data-i18n="previewDialogBody">La hero unisce una schermata reale della dashboard desktop e la home atleta mobile, per mostrare subito come Tennis Player OS si presenta nei contesti d’uso principali.</p>
     </div>
-    <div class="dialog-stage">
-      <div class="browser-bar large"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
-      <div class="real-shot-frame large">
-        <img id="dialogPreviewImage" src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
+    <div class="dialog-stage dialog-stage-composed">
+      <div class="dialog-preview-grid">
+        <div class="dialog-preview-desktop">
+          <div class="browser-bar large"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
+          <div class="real-shot-frame large">
+            <img id="dialogPreviewImage" src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
+          </div>
+        </div>
+        <div class="dialog-preview-mobile">
+          <div class="phone-shell phone-shell-dialog">
+            <div class="phone-notch"></div>
+            <img id="dialogPreviewMobile" src="assets/product-previews/athlete-home-mobile.jpg" alt="Dashboard atleta mobile" />
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </dialog>
 
-<script src="app.js?v=1.1"></script>
-<script src="roles-refresh.js?v=1.2"></script>
+<script src="app.js?v=1.3"></script>
+<script src="roles-refresh.js?v=1.3"></script>
 </body>
 </html>

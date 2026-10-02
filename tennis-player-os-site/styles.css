@@ -156,3 +156,56 @@ footer{width:var(--container);margin:44px auto 34px;padding-top:20px;border-top:
   .orbit{width:100%;max-width:330px;height:330px}.core{width:142px;height:142px}.p1{left:12px;top:20px}.p2{right:8px;top:26px}.p3{left:-4px;top:136px}.p4{right:-2px;top:136px}.p5{left:56px;bottom:4px}.p6{right:52px;bottom:6px}
   footer{grid-template-columns:1fr}footer>div:last-child{justify-self:start}.dialog-copy h2,.role-detail h3{font-size:1.8rem}
 }
+
+
+/* --- Site refresh v1.3 --- */
+.preview-card-composed{padding:18px 18px 14px}
+.preview-composed-stage{position:relative;padding:18px;border-radius:28px;background:linear-gradient(180deg,#f8fbff,#eef4fb);overflow:hidden}
+.preview-desktop-card{position:relative;z-index:1;border-radius:24px;overflow:hidden;box-shadow:0 26px 50px rgba(12,34,68,.16)}
+.preview-desktop-card .desktop-shot{aspect-ratio:1.28/1;min-height:440px}
+.preview-desktop-card .desktop-shot img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+.preview-mobile-card{position:absolute;right:12px;bottom:22px;z-index:2;width:38%;max-width:230px;min-width:160px}
+.phone-shell{position:relative;border-radius:34px;padding:10px;background:linear-gradient(180deg,#183356,#081e3e);box-shadow:0 24px 50px rgba(8,24,48,.28)}
+.phone-shell img{display:block;width:100%;height:auto;border-radius:26px;object-fit:cover;object-position:top center}
+.phone-notch{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:36%;height:14px;border-radius:0 0 12px 12px;background:#0f2342;z-index:1}
+.preview-float-chip{position:absolute;z-index:3;display:inline-flex;align-items:center;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border:1px solid rgba(20,50,92,.1);font-size:.78rem;font-weight:900;letter-spacing:.12em;color:#163a6c;text-transform:uppercase;box-shadow:0 18px 30px rgba(12,34,68,.08)}
+.preview-float-chip.top-left{left:28px;top:28px}
+.preview-float-chip.bottom-right{right:28px;bottom:28px;max-width:240px;letter-spacing:.04em;text-transform:none;font-size:.88rem;font-weight:800}
+.preview-bar{margin-top:16px}
+
+.product-head{max-width:920px;margin-bottom:20px}
+.product-story-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.product-story-card{padding:26px;border-radius:28px;background:linear-gradient(180deg,#ffffff,#f8fbff);border:1px solid var(--line);box-shadow:0 18px 34px rgba(13,35,69,.06)}
+.product-story-card h3{margin:14px 0 10px;font-size:1.4rem;letter-spacing:-.03em}
+.product-story-card p{margin:0;color:var(--text-soft)}
+.story-index{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,#173b6d,#0d2245);color:#fff;font-weight:900;letter-spacing:.08em;box-shadow:0 16px 28px rgba(13,35,69,.18)}
+
+.person{width:126px;min-width:126px}
+.p3{left:-8px;top:174px}
+.p4{right:-8px;top:174px}
+
+.dialog-inner-wide{grid-template-columns:.42fr .58fr}
+.dialog-stage-composed{padding:18px}
+.dialog-preview-grid{display:grid;grid-template-columns:1fr .44fr;gap:18px;align-items:end}
+.dialog-preview-mobile{display:flex;justify-content:center}
+.phone-shell-dialog{max-width:260px;width:100%}
+.phone-shell-dialog img{max-height:720px}
+
+@media (max-width:1100px){
+  .product-story-grid,.dialog-preview-grid{grid-template-columns:1fr}
+  .preview-desktop-card .desktop-shot{min-height:360px}
+  .preview-mobile-card{position:absolute;right:14px;bottom:18px;width:34%;min-width:150px}
+  .dialog-inner-wide{grid-template-columns:1fr}
+}
+@media (max-width:720px){
+  .preview-card-composed{padding:14px}
+  .preview-composed-stage{padding:14px}
+  .preview-desktop-card .desktop-shot{min-height:240px}
+  .preview-mobile-card{right:8px;bottom:14px;width:40%;min-width:120px}
+  .preview-float-chip.top-left{left:18px;top:18px;font-size:.7rem;padding:8px 10px}
+  .preview-float-chip.bottom-right{right:18px;bottom:18px;max-width:180px;font-size:.76rem}
+  .product-story-grid{grid-template-columns:1fr}
+  .person{width:108px;min-width:108px}
+  .p3{left:-6px;top:136px}
+  .p4{right:-6px;top:136px}
+}
