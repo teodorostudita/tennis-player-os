@@ -1,5 +1,6 @@
-import { supabase } from './supabaseClient.js?v=1.2.4';
-import { loginFromEmail } from './loginIdentity.js?v=1.2.4';
+import { supabase } from './supabaseClient.js?v=1.2.5';
+import { loginFromEmail } from './loginIdentity.js?v=1.2.6';
+import { isAppOwner } from './accountAccess.js?v=1.2.6';
 
 const MODULE_KEYS = [
   'development',
@@ -40,6 +41,8 @@ export async function loadCurrentAccess(athleteId) {
     throw new Error('Account autenticato non disponibile.');
   }
 
+  const platformOwner = isAppOwner();
+
   const { data: membership, error: membershipError } = await supabase
     .from('athlete_members')
     .select('role, status')
@@ -51,7 +54,7 @@ export async function loadCurrentAccess(athleteId) {
     throw new Error(`Impossibile leggere il ruolo sull'atleta: ${membershipError.message}`);
   }
 
-  if (!membership || membership.status !== 'active') {
+  if ((!membership || membership.status !== 'active') && !platformOwner) {
     throw new Error('Questo account non ha un accesso attivo all’atleta selezionato.');
   }
 
@@ -65,8 +68,11 @@ export async function loadCurrentAccess(athleteId) {
     throw new Error(`Impossibile leggere i permessi dei moduli: ${permissionError.message}`);
   }
 
-  const isOwner = membership.role === 'owner';
-  const isAdmin = isOwner || membership.role === 'admin';
+  // L'Owner globale deve restare full-access su ogni atleta del workspace.
+  // Il ruolo account è la sorgente autoritativa per questa eccezione; una
+  // migration parallela ripristina anche l'invariante athlete_members lato DB.
+  const isOwner = platformOwner || membership?.role === 'owner';
+  const isAdmin = isOwner || membership?.role === 'admin';
   const modules = Object.fromEntries(
     MODULE_KEYS.map(key => [key, {
       canRead: isAdmin,
@@ -87,8 +93,8 @@ export async function loadCurrentAccess(athleteId) {
   currentAccess = {
     athleteId,
     userId: user.id,
-    role: membership.role,
-    status: membership.status,
+    role: membership?.role || (platformOwner ? 'owner' : ''),
+    status: membership?.status || (platformOwner ? 'active' : ''),
     isOwner,
     isAdmin,
     modules,

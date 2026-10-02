@@ -1,4 +1,4 @@
-import { getCurrentAccess } from './access.js?v=1.2.4';
+import { getCurrentAccess } from './access.js?v=1.2.6';
 
 const MODULE_KEYS = new Set([
   'development',
@@ -137,7 +137,10 @@ function applyCalendarReadOnly(access) {
     });
   }
 
-  if (!readOnly) return;
+  if (!readOnly) {
+    main.querySelector('#calendar-readonly-banner')?.remove();
+    return;
+  }
 
   for (const selector of ['#event-form', '#tournament-form']) {
     const form = main.querySelector(selector);

@@ -1,15 +1,15 @@
-import '../bootstrap.js?v=1.2.4';
+import '../bootstrap.js?v=1.2.6';
 
-import { store } from '../data/store.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.6';
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../cloud/access.js?v=1.2.4';
+} from '../cloud/access.js?v=1.2.6';
 import {
   showInAppAlert,
   showInAppConfirm,
-} from './inAppMessages.js?v=1.2.4';
+} from './inAppMessages.js?v=1.2.6';
 
 const OUTBOX_PREFIX = 'tpos.calendar.outbox.v1';
 const SAVE_LABEL = 'Calendar cloud ✓';
@@ -708,18 +708,8 @@ function installRecurringSafety() {
     }
   }, true);
 
-  // The legacy direct drag/resize handler changes an entire series from the
-  // dragged occurrence onward. Disable that gesture only for recurring events:
-  // opening the activity still works and now defaults to "Solo questa attività".
-  document.addEventListener('pointerdown', event => {
-    const eventElement = event.target?.closest?.('.planner-timeline-event[data-event-id]');
-    if (!eventElement) return;
-
-    const current = findEventById(eventElement.dataset.eventId);
-    if (!isRecurringEvent(current)) return;
-
-    event.stopPropagation();
-  }, true);
+  // Drag e resize sono ora sicuri anche sulle ricorrenze: il Calendar core
+  // li persiste come override della singola occorrenza.
 }
 
 function installLifecycleSafety() {

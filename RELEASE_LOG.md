@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.2.6 — Calendar Owner + drag sicuro
+- Rafforzato il riconoscimento dell’**Owner globale**: sul proprio workspace mantiene sempre accesso completo ai moduli, incluso Calendar.
+- Nuova migration di riparazione che ristabilisce il ruolo `owner` in `athlete_members` per ogni Owner globale e ogni atleta non eliminato, coerentemente con il modello dati previsto.
+- Il guard dei permessi rimuove eventuali residui visuali di **sola lettura** quando il Calendar è scrivibile.
+- **Drag** e **resize** sono nuovamente disponibili sulle attività ricorrenti: agiscono soltanto sulla singola occorrenza e vengono persistiti come override, senza modificare automaticamente le settimane successive.
+- Il sito marketing `tennis-player-os-site/` non viene modificato da questa patch.
+
 ## v1.2.5 — Pubblicazione selettiva + Calendar Preparatore
 - `Pubblica Tennis Player OS.command` non lancia più il deploy Aruba quando `tennis-player-os-site` non contiene modifiche.
 - Quando il sito marketing cambia, il deploy FTP riceve la lista dei soli file modificati/rimossi e non ricarica più inutilmente l’intero sito.

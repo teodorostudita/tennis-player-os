@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.6',
+    date: '2026-10-02',
+    title: 'Calendar Owner + drag sicuro',
+    details: [
+      'L’Owner globale viene riconosciuto come full-access sul Calendar anche se un record athlete_members risulta incoerente; una migration ripristina inoltre il ruolo Owner lato database per tutti gli atleti del workspace.',
+      'Il Calendar rimuove eventuali residui grafici di sola lettura quando l’account è scrivente, ripristinando + Nuova attività, + giornalieri e maniglie di resize.',
+      'Drag e resize tornano disponibili anche sulle attività ricorrenti: modificano solo l’occorrenza trascinata e vengono salvati come override, senza spostare le settimane successive.',
+      'Nessuna modifica al sito marketing: questa patch riguarda esclusivamente TPOS.',
+    ],
+  },
+  {
     version: '1.2.5',
     date: '2026-10-02',
     title: 'Pubblicazione selettiva + Calendar Preparatore',

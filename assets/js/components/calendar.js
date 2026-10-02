@@ -1,4 +1,4 @@
-import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
+import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.6';
 
 const CATEGORY_LABELS = {
   tennis: 'Tennis',
@@ -2193,8 +2193,17 @@ function applyDirectCalendarChange(store, sourceEvent, patch) {
       : null;
 
     if (linkedSeries) {
-      const base = makeRecurringBaseFromEvent(current, patch);
-      updateRecurringSeriesFromOccurrence(state.planner, current, base, linkedSeries.intervalWeeks || 1);
+      // Drag e resize modificano soltanto questa occorrenza. Il layer di
+      // compattazione Calendar riconosce la divergenza dalla serie e la
+      // persiste come override, senza spostare le settimane successive.
+      state.planner.events[index] = {
+        ...current,
+        ...patch,
+        id: current.id,
+        seriesId: current.seriesId,
+      };
+      syncMakeupRecordFromEvent(state.planner, state.planner.events[index]);
+      state.meta.calendarSingleOccurrenceEditedAt = new Date().toISOString();
       return;
     }
 
