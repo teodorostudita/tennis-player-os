@@ -68,7 +68,7 @@ const PRESETS = Object.freeze({
       'mental',
       'visual',
     ],
-    write: ['training'],
+    write: ['calendar', 'training'],
   },
   physio: {
     read: ['calendar', 'training', 'health', 'nutrition'],

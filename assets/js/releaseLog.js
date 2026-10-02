@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.5',
+    date: '2026-10-02',
+    title: 'Pubblicazione selettiva + Calendar Preparatore',
+    details: [
+      'Pubblica Tennis Player OS non sincronizza più il sito marketing Aruba quando tennis-player-os-site non contiene modifiche.',
+      'Quando il sito marketing cambia, il deploy FTP trasferisce soltanto i file effettivamente modificati o rimossi invece di ricaricare l’intero sito.',
+      'Il preset Preparatore atletico include ora scrittura su Calendar oltre ad Athletics, così può gestire le sessioni che riguardano il proprio lavoro.',
+      'Una migration aggiorna soltanto gli account Preparatore che conservano esattamente il vecchio preset standard; eventuali permessi personalizzati restano invariati.',
+      'Nessuna modifica ai dati Nutrition/Recovery già protetti dalla v1.2.4.',
+    ],
+  },
+  {
     version: '1.2.4',
     date: '2026-10-02',
     title: 'Data rescue + cloud hardening',

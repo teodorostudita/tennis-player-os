@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.2.5 — Pubblicazione selettiva + Calendar Preparatore
+- `Pubblica Tennis Player OS.command` non lancia più il deploy Aruba quando `tennis-player-os-site` non contiene modifiche.
+- Quando il sito marketing cambia, il deploy FTP riceve la lista dei soli file modificati/rimossi e non ricarica più inutilmente l’intero sito.
+- Il preset **Preparatore atletico** include ora scrittura su **Calendar** oltre ad Athletics.
+- Una migration aggiorna automaticamente soltanto gli account Preparatore che conservano esattamente il vecchio preset standard; i permessi personalizzati non vengono sovrascritti.
+- Nessuna modifica ai dati Nutrition/Recovery protetti dalla v1.2.4.
+
 ## v1.2.4 — Data rescue + cloud hardening
 - La Home **Preparatore atletico** limita ora gli **Impegni rilevanti** ai soli **tornei** e alle **sessioni di tennis**; la seduta atletica resta già evidenziata nelle sezioni dedicate della Home.
 - Aggiunto un recupero **non distruttivo** delle cache locali dello stesso atleta: all'avvio TPOS cerca eventuali copie account/legacy più ricche e recupera Development, Opponents e Nutrition/Recovery senza cancellare le cache sorgenti.
