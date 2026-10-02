@@ -18,6 +18,7 @@ function timeToMinutes(value) {
 }
 
 function completedEventMinutes(event, now = new Date()) {
+  if (event?.attendanceStatus === 'missed') return 0;
   const start = timeToMinutes(event?.startTime);
   const end = timeToMinutes(event?.endTime);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;

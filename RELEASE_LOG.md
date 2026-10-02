@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.2.2 — Home tipizzate + lezioni saltate + logistica esplicita
+- Gli account **tipizzati** aprono sempre dalla propria pagina iniziale al nuovo avvio: Home contestuale per Atleta/Genitore, Dashboard per gli altri profili finché non avranno una Home dedicata.
+- Il saluto delle Home usa ora il **nome dell’account** (`display_name`, con fallback al nome utente di login), non il nome dell’atleta: “Buongiorno, Nome”.
+- La Home **Genitore** non mostra più Check-in e Training checkout, che restano responsabilità dell’atleta.
+- Nella timeline odierna del Genitore, le sessioni **Tennis** e **Preparazione fisica** hanno l’azione rapida **Segna saltata**: se non viene premuta, la sessione resta implicitamente svolta; se viene premuta nasce subito un recupero `Da programmare`.
+- Il Calendar distingue ora **Da assegnare** da **Nessun accompagnatore**. Quest’ultima scelta è intenzionale e non genera più alert logistici nella Home Genitore né nel KPI del Calendar.
+- La scelta esplicita `Nessun accompagnatore` è disponibile sia sulle attività sia sui tornei e resta persistita anche nelle serie ricorrenti senza nuova migration.
+- Le sessioni marcate come saltate non consumano più ore nel calcolo di vita utile di corde e scarpe.
+- Nessuna nuova migration SQL e nessuna Edge Function.
+
 ## v1.2.1 — Home contestuale Genitore
 - Il profilo **Genitore** apre ora una Home personale, mantenendo la Dashboard generale come **Overview**.
 - **Oggi** mostra Adesso/Prossimo, accompagnatore, stato di Check-in e Training checkout e timeline giornaliera.

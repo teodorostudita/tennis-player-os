@@ -1,11 +1,14 @@
 import { supabase } from './supabaseClient.js';
 import { normalizeUserType } from '../data/userTypes.js';
+import { loginFromEmail } from './loginIdentity.js';
 
 let currentAccountAccess = {
   role: 'member',
   canCreateAthletes: false,
   athleteCreationLimit: null,
   userType: 'custom',
+  displayName: '',
+  username: '',
 };
 
 export async function loadCurrentAccountAccess() {
@@ -28,7 +31,7 @@ export async function loadCurrentAccountAccess() {
     supabase.rpc('can_create_athletes'),
     supabase
       .from('profiles')
-      .select('user_type')
+      .select('user_type, display_name')
       .eq('id', userData.user.id)
       .maybeSingle(),
   ]);
@@ -52,6 +55,8 @@ export async function loadCurrentAccountAccess() {
       ? null
       : Number(data.athlete_creation_limit),
     userType: normalizeUserType(profileData?.user_type),
+    displayName: String(profileData?.display_name || '').trim(),
+    username: loginFromEmail(userData.user.email || ''),
   };
 
   return { ...currentAccountAccess };
@@ -71,4 +76,8 @@ export function isAppOwner() {
 
 export function getCurrentUserType() {
   return currentAccountAccess.userType;
+}
+
+export function getCurrentUserDisplayName() {
+  return currentAccountAccess.displayName || currentAccountAccess.username || 'Utente';
 }

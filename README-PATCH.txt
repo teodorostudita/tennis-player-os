@@ -1,5 +1,13 @@
-TPOS v1.2.1 — Home contestuale Genitore
+Tennis Player OS — patch v1.2.2
 
-Aggiunge la Home dedicata al profilo Genitore: stato della giornata, recuperi, scadenze, pagamenti, certificato agonistico, vita residua di corde/scarpe e prossimi appuntamenti importanti.
-I collegamenti aprono direttamente le sezioni Calendar Recuperi, Economics Pagamenti ed Equipment pertinenti.
-Nessuna migration SQL e nessuna Edge Function modificata.
+Contenuto:
+- apertura iniziale Home/Dashboard per account tipizzati
+- saluto con nome account
+- Home Genitore senza Check-in/Checkout
+- azione rapida Segna saltata -> recupero da programmare
+- Calendar: distinzione Da assegnare / Nessun accompagnatore
+
+Nessuna migration Supabase.
+Nessuna Edge Function.
+
+Applicazione: Applica Patch.command -> Pubblica Tennis Player OS.command

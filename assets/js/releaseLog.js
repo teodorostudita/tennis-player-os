@@ -1,5 +1,19 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.2',
+    date: '2026-10-02',
+    title: 'Home tipizzate + lezioni saltate + logistica esplicita',
+    details: [
+      'Gli account tipizzati ripartono dalla propria Home/Dashboard al nuovo avvio della app.',
+      'Il saluto usa il nome dell’account (display name, con fallback al nome utente) invece del nome dell’atleta.',
+      'La Home Genitore non mostra più Check-in e Training checkout; nella timeline odierna può invece segnare con un solo comando una lezione Tennis/Preparazione fisica come saltata e da recuperare.',
+      'Se una lezione non viene marcata come saltata, resta implicitamente svolta: non serve alcuna conferma positiva.',
+      'Calendar distingue Da assegnare da Nessun accompagnatore, così custodia al circolo e atleti autonomi non producono falsi alert logistici.',
+      'La scelta Nessun accompagnatore è disponibile anche per i tornei e viene conservata nei dati Calendar senza migration.',
+      'Le sessioni segnate come saltate non vengono conteggiate nelle ore di utilizzo di corde e scarpe.',
+    ],
+  },
+  {
     version: '1.2.1',
     date: '2026-10-01',
     title: 'Home contestuale Genitore',

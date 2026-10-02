@@ -1,4 +1,5 @@
 import { canReadModule, canWriteModule } from '../cloud/access.js';
+import { getCurrentUserDisplayName } from '../cloud/accountAccess.js';
 
 const CATEGORY_LABELS = {
   tennis: 'Tennis',
@@ -446,7 +447,7 @@ export function renderAthleteHome({ main, title, store }) {
   const current = calendarReadable ? currentEvents(events, nowMinutes) : [];
   const next = calendarReadable ? nextEvent(planner, now) : null;
   const tournament = calendarReadable ? activeTournament(planner, today) : null;
-  const firstName = athlete.firstName || 'Atleta';
+  const userName = getCurrentUserDisplayName() || athlete.firstName || 'Atleta';
 
   title.textContent = 'Home';
 
@@ -459,7 +460,7 @@ export function renderAthleteHome({ main, title, store }) {
             day: 'numeric',
             month: 'long',
           }).format(now))}</div>
-          <h2>${escapeHtml(greeting(now.getHours()))}, ${escapeHtml(firstName)}</h2>
+          <h2>${escapeHtml(greeting(now.getHours()))}, ${escapeHtml(userName)}</h2>
           <p>Quello che conta adesso e nelle prossime ore.</p>
         </div>
         ${tournament ? `

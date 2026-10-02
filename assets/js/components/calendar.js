@@ -147,7 +147,7 @@ function renderWeeklyPlanner(planner, nutritionTemplates = []) {
 
   const unassigned = weekEvents.filter(event => {
     if (event.category === 'school' || event.category === 'recovery' || event.category === 'personal' || event.category === 'nutrition' || event.category === 'mental') return false;
-    return !getCompanionId(event);
+    return !getCompanionId(event) && !hasExplicitNoCompanion(event);
   }).length;
   const scheduledMinutes = weekEvents.reduce((sum, event) => sum + durationMinutes(event), 0);
   const openMakeups = planner.makeups.filter(item => ['pending', 'planned'].includes(item.status));
@@ -436,9 +436,12 @@ function renderTimelineEvent(event, people, bounds, lane = 0, laneCount = 1) {
   const left = lane * width;
   const companionId = getCompanionId(event);
   const companion = people.find(person => person.id === companionId);
+  const explicitNoCompanion = hasExplicitNoCompanion(event);
   const companionChip = companion
     ? `<span class="responsibility-chip"><b>Accompagnatore:</b> ${escapeHtml(companion.name)}</span>`
-    : '';
+    : explicitNoCompanion
+      ? '<span class="responsibility-chip"><b>Logistica:</b> Nessun accompagnatore</span>'
+      : '';
   const sizeClass = duration < 25 ? 'tiny' : duration < 55 ? 'compact' : '';
   const logisticsOnly = plannerView === 'logistics';
   const missed = event.attendanceStatus === 'missed';
@@ -458,7 +461,7 @@ function renderTimelineEvent(event, people, bounds, lane = 0, laneCount = 1) {
       ${event.category === 'nutrition' && event.mealDetails ? `<span class="event-meal-details">${escapeHtml(event.mealDetails)}</span>` : ''}
       ${event.location ? `<span class="event-location">${escapeHtml(event.location)}</span>` : ''}
       ${plannerView !== 'athlete' && companionChip ? `<span class="event-responsibilities">${companionChip}</span>` : ''}
-      ${plannerView === 'logistics' && !companionChip ? '<span class="event-unassigned">Nessun accompagnatore</span>' : ''}
+      ${plannerView === 'logistics' && !companionChip ? '<span class="event-unassigned">Da assegnare</span>' : ''}
       <span class="planner-resize-handle" data-resize-event aria-hidden="true"></span>
     </button>
   `;
@@ -510,9 +513,12 @@ function formatMinutesAsTime(minutes) {
 function renderEvent(event, people) {
   const companionId = getCompanionId(event);
   const companion = people.find(person => person.id === companionId);
+  const explicitNoCompanion = hasExplicitNoCompanion(event);
   const companionChip = companion
     ? `<span class="responsibility-chip"><b>Accompagnatore:</b> ${escapeHtml(companion.name)}</span>`
-    : '';
+    : explicitNoCompanion
+      ? '<span class="responsibility-chip"><b>Logistica:</b> Nessun accompagnatore</span>'
+      : '';
 
   const logisticsOnly = plannerView === 'logistics';
   const missed = event.attendanceStatus === 'missed';
@@ -527,20 +533,21 @@ function renderEvent(event, people) {
       ${event.category === 'nutrition' && event.mealDetails ? `<span class="event-meal-details">${escapeHtml(event.mealDetails)}</span>` : ''}
       ${event.location ? `<span class="event-location">${escapeHtml(event.location)}</span>` : ''}
       ${plannerView !== 'athlete' && companionChip ? `<span class="event-responsibilities">${companionChip}</span>` : ''}
-      ${plannerView === 'logistics' && !companionChip ? '<span class="event-unassigned">Nessun accompagnatore</span>' : ''}
+      ${plannerView === 'logistics' && !companionChip ? '<span class="event-unassigned">Da assegnare</span>' : ''}
     </button>
   `;
 }
 
 function renderTournamentWeekEvent(tournament, currentDate, people) {
   const support = people.find(person => person.id === tournament.supportPersonId);
+  const explicitNoSupport = tournament.supportPersonMode === 'none';
   const dayInfo = tournamentDayInfo(tournament, currentDate);
   return `
     <button class="planner-event planner-tournament-event" type="button" data-week-tournament-id="${escapeAttr(tournament.id)}">
       <span class="event-time tournament-mini-meta">🏆 ${escapeHtml(tournament.circuit || 'Torneo')} ${dayInfo ? `· ${dayInfo}` : ''}</span>
       <strong>${escapeHtml(tournament.name || 'Torneo')}</strong>
       ${tournament.location ? `<span class="event-location">${escapeHtml(tournament.location)}</span>` : ''}
-      ${plannerView !== 'athlete' && support ? `<span class="event-responsibilities"><span class="responsibility-chip"><b>Accompagnatore:</b> ${escapeHtml(support.name)}</span></span>` : ''}
+      ${plannerView !== 'athlete' && support ? `<span class="event-responsibilities"><span class="responsibility-chip"><b>Accompagnatore:</b> ${escapeHtml(support.name)}</span></span>` : plannerView !== 'athlete' && explicitNoSupport ? '<span class="event-responsibilities"><span class="responsibility-chip"><b>Logistica:</b> Nessun accompagnatore</span></span>' : ''}
     </button>
   `;
 }
@@ -1080,6 +1087,7 @@ function renderTournamentMonth(monthIndex, tournaments, people) {
 
 function renderTournamentCard(tournament, people) {
   const support = people.find(person => person.id === tournament.supportPersonId);
+  const explicitNoSupport = tournament.supportPersonMode === 'none';
   return `
     <button class="tournament-card priority-${escapeAttr(tournament.priority || 'B')}" type="button" data-tournament-id="${escapeAttr(tournament.id)}">
       <span class="tournament-card-topline">
@@ -1094,13 +1102,13 @@ function renderTournamentCard(tournament, people) {
         ${tournament.surface ? `<span>${escapeHtml(tournament.surface)}</span>` : ''}
       </span>
       <span class="tournament-status status-${escapeAttr(tournament.status || 'candidate')}">${escapeHtml(TOURNAMENT_STATUSES[tournament.status] || TOURNAMENT_STATUSES.candidate)}</span>
-      ${support ? `<span class="tournament-support">Con ${escapeHtml(support.name)}</span>` : ''}
+      ${support ? `<span class="tournament-support">Con ${escapeHtml(support.name)}</span>` : explicitNoSupport ? '<span class="tournament-support">Nessun accompagnatore</span>' : ''}
     </button>
   `;
 }
 
 function renderTournamentDialog(people) {
-  const personOptions = `<option value="">— Da definire —</option>${people.map(person => `<option value="${escapeAttr(person.id)}">${escapeHtml(person.name)}</option>`).join('')}`;
+  const personOptions = `<option value="">— Da definire —</option><option value="__none__">Nessun accompagnatore</option>${people.map(person => `<option value="${escapeAttr(person.id)}">${escapeHtml(person.name)}</option>`).join('')}`;
   return `
     <dialog id="tournament-dialog" class="planner-dialog tournament-dialog">
       <form id="tournament-form" method="dialog">
@@ -1140,7 +1148,7 @@ function renderTournamentDialog(people) {
 }
 
 function renderEventDialog(people, nutritionTemplates = []) {
-  const personOptions = `<option value="">— Nessuno —</option>${people.map(person => `<option value="${escapeAttr(person.id)}">${escapeHtml(person.name)}</option>`).join('')}`;
+  const personOptions = `<option value="">— Da assegnare —</option><option value="__none__">Nessun accompagnatore</option>${people.map(person => `<option value="${escapeAttr(person.id)}">${escapeHtml(person.name)}</option>`).join('')}`;
   const mealTemplateOptions = `<option value="">— Personalizzato —</option>${nutritionTemplates.map(template => `<option value="${escapeAttr(template.id)}">${escapeHtml(template.title)}</option>`).join('')}`;
   const mealTypeOptions = Object.entries(MEAL_TYPE_LABELS).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
   return `
@@ -1329,7 +1337,7 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
     eventForm.elements.startTime.value = event?.startTime || prefill.startTime || '16:00';
     eventForm.elements.endTime.value = event?.endTime || prefill.endTime || '17:30';
     eventForm.elements.location.value = event?.location ?? getLocationDefault(planner, selectedDate);
-    eventForm.elements.companionId.value = getCompanionId(event);
+    eventForm.elements.companionId.value = hasExplicitNoCompanion(event) ? '__none__' : getCompanionId(event);
     eventForm.elements.notes.value = event?.notes || '';
     const eventSeries = event?.seriesId
       ? (planner.recurringSeries || []).find(series => series.id === event.seriesId)
@@ -1531,7 +1539,9 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
       await showInAppAlert('L’orario di fine deve essere successivo a quello di inizio.', { title: 'Orario non valido' });
       return;
     }
-    const companionId = data.companionId || '';
+    const companionChoice = data.companionId || '';
+    const companionId = companionChoice === '__none__' ? '' : companionChoice;
+    const companionMode = companionChoice === '__none__' ? 'none' : companionId ? 'person' : '';
     const base = {
       title: data.title.trim(), date: data.date, category: data.category,
       startTime: data.startTime, endTime: data.endTime, location: data.location.trim(), notes: data.notes.trim(),
@@ -1540,6 +1550,7 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
       mealDetails: data.category === 'nutrition' ? (data.mealDetails || '').trim() : '',
       athleteId: store.getState().athlete.id,
       companionId,
+      companionMode,
       // Manteniamo un singolo campo legacy per compatibilità con eventuali moduli meno recenti.
       responsibilities: { stay: companionId },
     };
@@ -1667,17 +1678,22 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
         state.planner.events.forEach(event => {
           if (getCompanionId(event) === id) {
             event.companionId = '';
+            event.companionMode = '';
             event.responsibilities = { stay: '' };
           }
         });
         (state.planner.recurringSeries || []).forEach(series => {
           if (getCompanionId(series.template) === id) {
             series.template.companionId = '';
+            series.template.companionMode = '';
             series.template.responsibilities = { stay: '' };
           }
         });
         state.planner.tournaments.forEach(tournament => {
-          if (tournament.supportPersonId === id) tournament.supportPersonId = '';
+          if (tournament.supportPersonId === id) {
+            tournament.supportPersonId = '';
+            tournament.supportPersonMode = '';
+          }
         });
       });
       peopleDialog.close();
@@ -1739,6 +1755,9 @@ function bindTournamentDialog({ main, store, planner, triggerSelector }) {
         await showInAppAlert('La data di fine non può precedere la data di inizio.', { title: 'Date non valide' });
         return;
       }
+      const supportChoice = data.supportPersonId || '';
+      const supportPersonId = supportChoice === '__none__' ? '' : supportChoice;
+      const supportPersonMode = supportChoice === '__none__' ? 'none' : supportPersonId ? 'person' : '';
       const record = {
         name: data.name.trim(),
         circuit: data.circuit,
@@ -1750,7 +1769,8 @@ function bindTournamentDialog({ main, store, planner, triggerSelector }) {
         priority: data.priority,
         status: data.status,
         registrationDeadline: data.registrationDeadline || '',
-        supportPersonId: data.supportPersonId || '',
+        supportPersonId,
+        supportPersonMode,
         notes: data.notes.trim(),
         athleteId: store.getState().athlete.id,
       };
@@ -1797,7 +1817,7 @@ function openTournamentDialog({ main, planner, tournament = null, defaultDate = 
   form.elements.priority.value = tournament?.priority || 'B';
   form.elements.status.value = tournament?.status || 'candidate';
   form.elements.registrationDeadline.value = tournament?.registrationDeadline || '';
-  form.elements.supportPersonId.value = tournament?.supportPersonId || '';
+  form.elements.supportPersonId.value = tournament?.supportPersonMode === 'none' ? '__none__' : (tournament?.supportPersonId || '');
   form.elements.notes.value = tournament?.notes || '';
   main.querySelector('#tournament-dialog-title').textContent = tournament ? 'Modifica torneo' : 'Nuovo torneo';
   main.querySelector('#delete-tournament').hidden = !tournament;
@@ -1812,6 +1832,10 @@ function getCompanionId(event) {
     || event.responsibilities?.dropoff
     || event.responsibilities?.pickup
     || '';
+}
+
+function hasExplicitNoCompanion(event = {}) {
+  return event.companionMode === 'none';
 }
 
 function ensurePlannerShape(state) {

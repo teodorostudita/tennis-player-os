@@ -10,3 +10,6 @@ __MACOSX/
 *.bak
 *~
 *.log
+
+# Server-only secrets
+tennis-player-os-site/mail-config.php

@@ -1,4 +1,6 @@
-import { canReadModule } from '../cloud/access.js';
+import { canReadModule, canWriteModule } from '../cloud/access.js';
+import { getCurrentUserDisplayName } from '../cloud/accountAccess.js';
+import { showInAppConfirm } from '../ui/inAppMessages.js';
 
 const CATEGORY_LABELS = {
   tennis: 'Tennis',
@@ -28,6 +30,7 @@ const CATEGORY_ICONS = {
 
 const LOGISTICS_CATEGORIES = new Set(['tennis', 'physical', 'tournament', 'travel', 'medical']);
 const SPORT_CATEGORIES = new Set(['tennis', 'physical', 'tournament']);
+const MISSED_ELIGIBLE_CATEGORIES = new Set(['tennis', 'physical']);
 const SECTION_KEYS = {
   calendar: 'tpos.calendar.section',
   economics: 'tpos.economics.section',
@@ -176,6 +179,14 @@ function companionId(event = {}) {
 function companionName(event, people = []) {
   const id = companionId(event);
   return people.find(person => person.id === id)?.name || '';
+}
+
+function hasExplicitNoCompanion(event = {}) {
+  return event.companionMode === 'none';
+}
+
+function uid(prefix = 'id') {
+  return `${prefix}-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
 }
 
 function checkinForToday(nutrition, today) {
@@ -447,6 +458,7 @@ function unassignedTodayItems(state, today) {
   return todayEvents(state.planner || {}, today)
     .filter(event => LOGISTICS_CATEGORIES.has(event.category)
       && event.attendanceStatus !== 'missed'
+      && !hasExplicitNoCompanion(event)
       && !companionName(event, people))
     .map((event, index) => ({
       type: 'calendar', tone: 'warning', icon: '▣',
@@ -484,7 +496,8 @@ function renderNowCard(current, following, planner, now) {
 
   const live = current.length > 0;
   const name = companionName(event, planner.people || []);
-  const needsCompanion = LOGISTICS_CATEGORIES.has(event.category) && !name;
+  const explicitNoCompanion = hasExplicitNoCompanion(event);
+  const needsCompanion = LOGISTICS_CATEGORIES.has(event.category) && !name && !explicitNoCompanion;
   return `
     <section class="parent-home-now ${live ? 'active' : ''}">
       <div class="parent-home-kicker">${live ? 'Adesso' : 'Prossimo'}</div>
@@ -495,9 +508,11 @@ function renderNowCard(current, following, planner, now) {
           <p>${escapeHtml(formatRange(event))}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</p>
           ${name
             ? `<strong>Accompagnatore: ${escapeHtml(name)}</strong>`
-            : needsCompanion
-              ? '<strong class="needs-attention">Accompagnatore da assegnare</strong>'
-              : ''}
+            : explicitNoCompanion
+              ? '<strong>Nessun accompagnatore previsto</strong>'
+              : needsCompanion
+                ? '<strong class="needs-attention">Accompagnatore da assegnare</strong>'
+                : ''}
         </div>
       </div>
       ${!live && eventDateTime(event, 'start') ? `<div class="parent-home-next-date">${escapeHtml(new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(eventDateTime(event, 'start')))}</div>` : ''}
@@ -558,9 +573,14 @@ function renderAttentionList(items) {
 
 function renderTimeline(events, planner, nowMinutes) {
   if (!events.length) return '<div class="parent-home-empty">Nessuna attività nel planner di oggi.</div>';
+  const writable = canWriteModule('calendar');
   return events.map(event => {
     const state = eventState(event, nowMinutes);
     const companion = companionName(event, planner.people || []);
+    const explicitNoCompanion = hasExplicitNoCompanion(event);
+    const canMarkMissed = writable
+      && MISSED_ELIGIBLE_CATEGORIES.has(event.category)
+      && event.attendanceStatus !== 'missed';
     return `
       <article class="parent-home-timeline-row ${state} ${event.attendanceStatus === 'missed' ? 'missed' : ''}">
         <div class="parent-home-time">${escapeHtml(formatClock(event.startTime))}</div>
@@ -568,9 +588,17 @@ function renderTimeline(events, planner, nowMinutes) {
         <div class="parent-home-event">
           <strong>${escapeHtml(event.title || CATEGORY_LABELS[event.category] || 'Attività')}</strong>
           <span>${escapeHtml(CATEGORY_LABELS[event.category] || 'Attività')}${event.endTime ? ` · fino alle ${escapeHtml(formatClock(event.endTime))}` : ''}${event.location ? ` · ${escapeHtml(event.location)}` : ''}</span>
-          ${companion ? `<small>Accompagnatore: ${escapeHtml(companion)}</small>` : ''}
+          ${companion
+            ? `<small>Accompagnatore: ${escapeHtml(companion)}</small>`
+            : explicitNoCompanion
+              ? '<small>Nessun accompagnatore</small>'
+              : ''}
         </div>
-        ${state === 'current' ? '<span class="parent-home-live">ORA</span>' : ''}
+        <div class="parent-home-timeline-actions">
+          ${state === 'current' ? '<span class="parent-home-live">ORA</span>' : ''}
+          ${canMarkMissed ? `<button class="button button-ghost parent-home-missed-button" type="button" data-parent-mark-missed="${escapeAttr(event.id)}">Segna saltata</button>` : ''}
+          ${event.attendanceStatus === 'missed' ? '<span class="parent-home-missed-chip">↺ Da recuperare</span>' : ''}
+        </div>
       </article>`;
   }).join('');
 }
@@ -660,9 +688,91 @@ function navigate(route, section = '') {
   location.hash = `#/${route}`;
 }
 
-function bindActions(main) {
+function markSessionMissed(store, eventId) {
+  store.update(state => {
+    if (!state.planner || typeof state.planner !== 'object') state.planner = {};
+    if (!Array.isArray(state.planner.events)) state.planner.events = [];
+    if (!Array.isArray(state.planner.makeups)) state.planner.makeups = [];
+
+    const current = state.planner.events.find(item => item.id === eventId);
+    if (!current || !MISSED_ELIGIBLE_CATEGORIES.has(current.category) || current.attendanceStatus === 'missed') return;
+
+    const now = new Date().toISOString();
+    current.attendanceStatus = 'missed';
+    current.missedReason = current.missedReason || '';
+    current.missedAt = now;
+
+    if (current.makeupId) {
+      const item = state.planner.makeups.find(row => row.id === current.makeupId);
+      if (!item) return;
+      item.status = 'pending';
+      item.scheduledEventId = '';
+      item.scheduledDate = '';
+      item.scheduledStartTime = '';
+      item.scheduledEndTime = '';
+      item.recoveredAt = '';
+      item.waivedAt = '';
+      item.updatedAt = now;
+      const attemptNote = 'Tentativo di recupero saltato dalla Home Genitore.';
+      item.notes = item.notes ? `${item.notes}\n${attemptNote}` : attemptNote;
+      return;
+    }
+
+    let item = state.planner.makeups.find(row => row.id === current.makeupRecordId || row.originalEventId === current.id);
+    if (!item) {
+      item = {
+        id: uid('makeup'),
+        originalEventId: current.id,
+        originalSeriesId: current.seriesId || '',
+        originalTitle: current.title || 'Allenamento',
+        originalCategory: current.category || 'tennis',
+        originalDate: current.date || '',
+        originalStartTime: current.startTime || '',
+        originalEndTime: current.endTime || '',
+        originalLocation: current.location || '',
+        originalSurface: current.surface || '',
+        reason: '',
+        notes: '',
+        status: 'pending',
+        scheduledEventId: '',
+        scheduledDate: '',
+        scheduledStartTime: '',
+        scheduledEndTime: '',
+        createdAt: now,
+        updatedAt: now,
+        recoveredAt: '',
+        waivedAt: '',
+      };
+      state.planner.makeups.push(item);
+    } else {
+      item.status = 'pending';
+      item.updatedAt = now;
+      item.waivedAt = '';
+    }
+    current.makeupRecordId = item.id;
+  });
+}
+
+function bindActions(main, store) {
   main.querySelectorAll('[data-parent-route]').forEach(button => {
     button.addEventListener('click', () => navigate(button.dataset.parentRoute, button.dataset.parentSection || ''));
+  });
+
+  main.querySelectorAll('[data-parent-mark-missed]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const eventId = button.dataset.parentMarkMissed;
+      const event = store.getState().planner?.events?.find(item => item.id === eventId);
+      if (!event) return;
+      const confirmed = await showInAppConfirm(
+        `Segnare “${event.title || 'questa sessione'}” come saltata e da recuperare?`,
+        {
+          title: 'Lezione saltata',
+          confirmLabel: 'Segna da recuperare',
+        },
+      );
+      if (!confirmed) return;
+      markSessionMissed(store, eventId);
+    });
   });
 }
 
@@ -692,7 +802,7 @@ export function renderParentHome({ main, title, store }) {
   const tournament = calendarReadable ? activeTournament(planner, today) : null;
   const attention = buildAttentionItems(state, now);
   const upcoming = buildUpcoming(state, today);
-  const athleteName = athlete.firstName || 'atleta';
+  const userName = getCurrentUserDisplayName() || 'Utente';
 
   title.textContent = 'Home';
 
@@ -701,7 +811,7 @@ export function renderParentHome({ main, title, store }) {
       <header class="parent-home-head">
         <div>
           <div class="parent-home-date">${escapeHtml(new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }).format(now))}</div>
-          <h2>${escapeHtml(greeting(now.getHours()))} · ${escapeHtml(athleteName)}</h2>
+          <h2>${escapeHtml(greeting(now.getHours()))}, ${escapeHtml(userName)}</h2>
           <p>Agenda familiare, scadenze e cose che richiedono attenzione.</p>
         </div>
         ${tournament ? `<div class="parent-home-tournament"><span>🏆 Torneo in corso</span><strong>${escapeHtml(tournament.name || 'Torneo')}</strong></div>` : ''}
@@ -710,16 +820,6 @@ export function renderParentHome({ main, title, store }) {
       ${calendarReadable
         ? renderNowCard(current, next, planner, now)
         : '<section class="parent-home-now clear"><div class="parent-home-kicker">Adesso</div><div class="parent-home-now-main"><span class="parent-home-now-icon">▣</span><div><h2>Planner non disponibile</h2><p>Questo account non ha accesso al Calendar.</p></div></div></section>'}
-
-      <section class="parent-home-section">
-        <div class="parent-home-section-head">
-          <div><span>Stato giornata</span><h3>Oggi</h3></div>
-          ${canReadModule('nutrition') ? '<button class="button button-ghost" type="button" data-parent-route="nutrition">Apri Recovery →</button>' : ''}
-        </div>
-        <div class="parent-home-daily-grid">
-          ${renderDailyStatus(state, today, events, nowMinutes)}
-        </div>
-      </section>
 
       <section class="parent-home-section">
         <div class="parent-home-section-head">
@@ -748,6 +848,6 @@ export function renderParentHome({ main, title, store }) {
       </section>
     </section>`;
 
-  bindActions(main);
+  bindActions(main, store);
   scheduleRefresh({ main, title, store });
 }

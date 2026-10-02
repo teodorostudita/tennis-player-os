@@ -308,5 +308,16 @@ store.subscribe(() => {
   }
 });
 
-if (!location.hash) setRoute(defaultRoute());
-else render();
+const startupUserType = getCurrentUserType();
+if (startupUserType !== 'custom') {
+  const route = defaultRoute();
+  const expectedHash = `#/${route}`;
+  if (location.hash !== expectedHash) {
+    window.history.replaceState({}, document.title, `${location.pathname}${location.search}${expectedHash}`);
+  }
+  render();
+} else if (!location.hash) {
+  setRoute(defaultRoute());
+} else {
+  render();
+}
