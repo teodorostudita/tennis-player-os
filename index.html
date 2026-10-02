@@ -1,366 +1,83 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Tennis Player OS collega calendario, preparazione atletica, sviluppo, drills, match, avversari, materiali, salute, recupero, mental training, percezione e costi intorno a un solo atleta." />
-  <title>Tennis Player OS — One Player. A Complete Journey.</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="roles-refresh.css?v=1.2" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1f3a" />
+  <meta name="application-name" content="Tennis Player OS" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="TPOS" />
+  <title>Tennis Player OS</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=1.2.5" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-180.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png" />
+  <link rel="stylesheet" href="./assets/css/styles.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/auth.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/athletes.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/access.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/access-v2.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/contextual-home.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/parent-home.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/trainer-home.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/mobile-calendar.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/calendar-reliability.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/calendar-makeups.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/athletics-test-library.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/athletics-session-transfer.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/athletics-assessment.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/development.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/development-worklist.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/economics-sponsors.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/recovery-consolidated.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/equipment-lifecycle.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/planner-surface.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/health.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/mental-visual.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/opponents.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/match.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/versioning.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/product-polish.css?v=1.2.5" />
+  <link rel="stylesheet" href="./assets/css/pwa-install.css?v=1.2.5" />
 </head>
 <body>
-<header class="site-header">
-  <a class="brand" href="#top" aria-label="Tennis Player OS home">
-    <span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span>
-  </a>
-  <nav aria-label="Navigazione principale">
-    <a href="#product" data-i18n="navProduct">Prodotto</a>
-    <a href="#features" data-i18n="navFeatures">Moduli</a>
-    <a href="#roles" data-i18n="navRoles">Profili</a>
-    <a href="#beta" data-i18n="navBeta">Beta</a>
-  </nav>
-  <div class="header-actions">
-    <div class="language-switch" aria-label="Lingua">
-      <button class="language active" data-lang="it" title="Italiano"><span class="flag">🇮🇹</span><b>IT</b></button>
-      <button class="language" data-lang="en" title="English"><span class="flag">🇬🇧</span><b>EN</b></button>
-    </div>
-    <a class="signin" href="https://tennis.polidorionline.it/" data-i18n="signIn">Accedi</a>
-    <a class="button small" href="#beta" data-i18n="joinBeta">Entra nella Beta</a>
-  </div>
-</header>
-
-<main id="top">
-  <section class="hero section">
-    <div class="hero-copy">
-      <div class="eyebrow" data-i18n="eyebrow">IL SISTEMA OPERATIVO PERSONALE DEL TENNISTA</div>
-      <h1><span data-i18n="hero1">Un solo atleta.</span><br><span class="accent" data-i18n="hero2">Un percorso completo.</span></h1>
-      <p class="lead" data-i18n="heroLead">Allenamento, sviluppo, competizione, salute, recupero, materiali, avversari, costi e tutto il team — connessi intorno a un solo atleta.</p>
-      <div class="cta-row">
-        <a class="button" href="#beta" data-i18n="joinFounding">Entra nella Founding Beta</a>
-        <a class="button ghost" href="#features" data-i18n="explore">Scopri i 12 moduli ↓</a>
-      </div>
-      <p class="micro" data-i18n="betaMicro">Founding Beta · Accesso anticipato limitato · Web app</p>
-      <div class="hero-highlights">
-        <span data-i18n="heroTag1">12 moduli connessi</span>
-        <span data-i18n="heroTag2">Ruoli e dashboard dedicate</span>
-        <span data-i18n="heroTag3">Un solo record atleta</span>
-      </div>
-    </div>
-
-    <div class="hero-preview">
-      <button class="preview-card" type="button" data-preview-title-key="previewDialogTitle" data-preview-body-key="previewDialogBody" data-preview-image="assets/product-previews/dashboard.png" data-preview-alt="Tennis Player OS dashboard preview" data-preview-caption-key="previewOpen" id="openPreview">
-        <div class="browser-bar"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
-        <div class="real-shot-frame">
-          <img src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
-        </div>
-        <div class="preview-bar">
-          <span data-i18n="previewInspired">Schermata reale della dashboard attuale</span>
-          <span class="preview-link" data-i18n="previewOpen">Apri fullscreen</span>
-        </div>
-      </button>
-    </div>
-  </section>
-
-  <section class="problem section" id="product">
-    <div class="section-head">
-      <span class="kicker" data-i18n="problemKicker">IL PROBLEMA</span>
-      <h2 data-i18n="problemTitle">Il tennista è una persona sola.<br>Perché il suo percorso è sparso ovunque?</h2>
-      <p data-i18n="problemBody">Calendari, note dei coach, tornei, preparazione atletica, recupero, materiali, scouting, documenti sanitari e spese vivono spesso in posti diversi. Tennis Player OS nasce dall'esigenza concreta di gestire un percorso agonistico complesso senza perdere informazioni e collegamenti: un unico record continuo, costruito intorno all'atleta.</p>
-    </div>
-    <div class="scatter">
-      <span>Calendar</span><span>Athletics</span><span>Development</span><span>Drills</span><span>Match</span><span>Opponents</span>
-      <span>Equipment</span><span>Body &amp; Health</span><span>Nutrition &amp; Recovery</span><span>Mental</span><span>Perception &amp; Neuro</span><span>Economics</span>
-    </div>
-    <div class="one-record">
-      <div class="athlete-icon">◉</div>
-      <div>
-        <small data-i18n="oneAthlete">UN SOLO ATLETA</small>
-        <strong data-i18n="oneRecord">Un solo record connesso.</strong>
-        <p data-i18n="oneRecordBody">L'atleta resta al centro. Tutto il resto si collega.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="team section" id="team">
-    <div class="team-card">
-      <div class="team-copy">
-        <span class="kicker" data-i18n="teamKicker">UN ATLETA. UN INTERO TEAM.</span>
-        <h2 data-i18n="teamTitle">Le informazioni giuste, alle persone giuste.</h2>
-        <p data-i18n="teamBody">Genitori e professionisti lavorano sullo stesso percorso attraverso accessi e permessi differenziati, senza moltiplicare archivi e versioni dei dati.</p>
-        <div class="permissions permissions-inline">
-          <span data-i18n="perm1">Ognuno vede ciò che gli serve.</span>
-          <span data-i18n="perm2">Ognuno contribuisce dove deve.</span>
-          <span data-i18n="perm3">La storia dell'atleta resta unita.</span>
-        </div>
-      </div>
-      <div class="team-visual-wrap">
-        <div class="orbit">
-          <div class="core"><small>PLAYER PROFILE</small><strong>ATHLETE</strong><span data-i18n="recordOwner">Il record al centro</span></div>
-          <div class="person p1" data-i18n="parent">Genitore</div>
-          <div class="person p2" data-i18n="coach">Coach</div>
-          <div class="person p3" data-i18n="trainer">Preparatore<br>atletico</div>
-          <div class="person p4" data-i18n="physio">Fisioterapista</div>
-          <div class="person p5" data-i18n="nutritionist">Nutrizionista</div>
-          <div class="person p6" data-i18n="mentalCoach">Mental<br>coach</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="modules section" id="features">
-    <div class="section-head">
-      <span class="kicker" data-i18n="systemKicker">I 12 MODULI</span>
-      <h2 data-i18n="systemTitle">Tutto il percorso dell'atleta,<br>in un solo sistema.</h2>
-      <p data-i18n="systemBody">La struttura del sito rispecchia quella dell'app: ciò che scopri qui è ciò che ritrovi nella dashboard.</p>
-    </div>
-    <div class="module-grid">
-      <article class="m gold"><a class="module-card-link" href="modules/calendar.html"><b>01</b><h3><span class="icon-badge cal">📅</span> Calendar</h3><p data-i18n="m1">Programmazione, logistica, tornei, scuola, visite, viaggi e vita quotidiana dell'atleta.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m blue"><a class="module-card-link" href="modules/athletics.html"><b>02</b><h3><span class="icon-badge ath">🏅</span> Athletics</h3><p data-i18n="m2">Preparazione atletica, carico, forza, potenza, velocità, agilità, conditioning e monitoraggio.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m green"><a class="module-card-link" href="modules/development.html"><b>03</b><h3><span class="icon-badge dev">🎯</span> Development</h3><p data-i18n="m3">Tecnica, tattica, obiettivi di sviluppo, valutazioni, progressi, video e test.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m purple"><a class="module-card-link" href="modules/drills.html"><b>04</b><h3><span class="icon-badge dri">🎾</span> Drills</h3><p data-i18n="m4">Libreria esercizi, pattern e sessioni, collegati agli obiettivi di sviluppo.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m coral"><a class="module-card-link" href="modules/match.html"><b>05</b><h3><span class="icon-badge mat">🏆</span> Match</h3><p data-i18n="m5">Risultati, statistiche, debrief, performance e analisi delle partite.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m violet"><a class="module-card-link" href="modules/opponents.html"><b>06</b><h3><span class="icon-badge opp">👥</span> Opponents</h3><p data-i18n="m6">Scouting, storico H2H, pattern, video, note e preparazione pre-match.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m aqua"><a class="module-card-link" href="modules/equipment.html"><b>07</b><h3><span class="icon-badge eqp">🎾</span> Equipment</h3><p data-i18n="m7">Racchette, corde, tensioni, scarpe, setup, ore di utilizzo e storico configurazioni.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m orange"><a class="module-card-link" href="modules/body-health.html"><b>08</b><h3><span class="icon-badge hea">♡</span> Body &amp; Health</h3><p data-i18n="m8">Stato fisico, infortuni, dolore, fisioterapia, screening, monitoraggio e documenti.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m lime"><a class="module-card-link" href="modules/nutrition-recovery.html"><b>09</b><h3><span class="icon-badge rec">☾</span> Nutrition &amp; Recovery</h3><p data-i18n="m9">Alimentazione, idratazione, sonno, fatica, soreness, riposo e readiness.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m rose"><a class="module-card-link" href="modules/mental.html"><b>10</b><h3><span class="icon-badge men">🧠</span> Mental</h3><p data-i18n="m10">Obiettivi mentali, routine, focus, self-talk, gestione emotiva e lavoro psicologico.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m sky"><a class="module-card-link" href="modules/perception-neuro.html"><b>11</b><h3><span class="icon-badge eye">👁</span> Perception &amp; Neuro</h3><p data-i18n="m11">Percezione, visual training, reaction time, neuro-training, protocolli e misurazioni.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-      <article class="m slate"><a class="module-card-link" href="modules/economics.html"><b>12</b><h3><span class="icon-badge eco">🪙</span> Economics</h3><p data-i18n="m12">Costi, pagamenti, budget stagionale, sponsor, costo per torneo e sostenibilità.</p><span class="module-open" data-i18n="moduleOpen">Apri scheda →</span></a></article>
-    </div>
-  </section>
-
-  <section class="roles-section section" id="roles">
-    <div class="role-experience">
-      <div class="role-experience-copy">
-        <span class="kicker" data-i18n="rolesKicker">ACCESSI E DASHBOARD PERSONALIZZATE</span>
-        <h2 data-i18n="rolesTitle">Ogni profilo vede ciò che gli serve.</h2>
-        <p class="role-experience-intro" data-i18n="rolesBody">Tennis Player OS adatta accessi, priorità e schermata iniziale in base al ruolo: atleta, genitore e professionisti lavorano sullo stesso percorso, ma con strumenti diversi.</p>
-
-        <div class="role-tabs role-tabs-premium" id="roleTabs" aria-label="Profili disponibili">
-          <button class="role-tab active" type="button" data-role="athlete"><span>●</span><b data-rp-role="athlete">Atleta</b></button>
-          <button class="role-tab" type="button" data-role="parent"><span>●●</span><b data-rp-role="parent">Genitore</b></button>
-          <button class="role-tab" type="button" data-role="coach"><span>◇</span><b data-rp-role="coach">Coach</b></button>
-          <button class="role-tab" type="button" data-role="athletic"><span>▥</span><b data-rp-role="athletic">Preparatore atletico</b></button>
-          <button class="role-tab" type="button" data-role="physio"><span>✚</span><b data-rp-role="physio">Fisioterapista</b></button>
-          <button class="role-tab" type="button" data-role="nutrition"><span>●</span><b data-rp-role="nutrition">Nutrizionista</b></button>
-          <button class="role-tab" type="button" data-role="mental"><span>◉</span><b data-rp-role="mental">Mental coach</b></button>
-          <button class="role-tab" type="button" data-role="custom"><span>⚙</span><b data-rp-role="custom">Custom</b></button>
-        </div>
-
-        <div class="role-quick-summary" aria-label="Esempi di priorità per ruolo">
-          <div><span class="role-summary-icon athlete">●</span><p><strong data-rp-copy="summaryAthleteTitle">Atleta:</strong> <span data-rp-copy="summaryAthleteBody">check-in, giornata, routine, compiti rapidi</span></p></div>
-          <div><span class="role-summary-icon parent">●●</span><p><strong data-rp-copy="summaryParentTitle">Genitore:</strong> <span data-rp-copy="summaryParentBody">planning, logistica, costi, coordinamento</span></p></div>
-          <div><span class="role-summary-icon coach">◇</span><p><strong data-rp-copy="summaryCoachTitle">Coach:</strong> <span data-rp-copy="summaryCoachBody">sviluppo, drills, match, obiettivi</span></p></div>
-          <div><span class="role-summary-icon staff">▥</span><p><strong data-rp-copy="summaryStaffTitle">Staff:</strong> <span data-rp-copy="summaryStaffBody">salute, recupero, nutrizione, monitoraggio</span></p></div>
-        </div>
-
-        <div class="role-selected-strip">
-          <div>
-            <div class="role-badge" id="roleBadge">Dashboard atleta</div>
-            <h3 id="roleTitle">Atleta</h3>
-            <p id="roleLead">La dashboard atleta mette al centro ciò che conta oggi: check-in, prossimi impegni, routine e azioni rapide.</p>
-          </div>
-          <div class="role-selected-facts">
-            <div><small data-i18n="roleSees">VEDE SUBITO</small><strong id="roleSees">Oggi, check-in, routine, prossimi impegni</strong></div>
-            <div><small data-i18n="roleCanDo">PUÒ FARE</small><strong id="roleCanDo">Compilare check-in e consultare la giornata</strong></div>
-          </div>
-          <ul class="role-list role-list-compat" id="roleList" aria-hidden="true"></ul>
-          <div class="role-note role-note-compat" id="roleNote">Un solo record, ma una schermata iniziale diversa per ogni ruolo.</div>
-        </div>
-      </div>
-
-      <div class="role-phone-stage" aria-label="Esempio di dashboard personalizzata">
-        <div class="role-phone-backplate backplate-one"></div>
-        <div class="role-phone-backplate backplate-two"></div>
-        <div class="role-preview-callout">
-          <span>↙</span>
-          <strong id="rpPreviewLabel">Esempio: dashboard atleta</strong>
-        </div>
-
-        <div class="role-phone" id="rolePhone">
-          <div class="role-phone-header">
-            <button class="role-phone-menu" type="button" tabindex="-1" aria-hidden="true">☰</button>
-            <div class="role-phone-brand">
-              <small>TENNIS<br>PLAYER<br>OS</small>
-              <strong>Home</strong>
-            </div>
-            <div class="role-phone-account">
-              <span id="rpPhoneRole">ATLETA</span>
-              <button type="button" tabindex="-1" aria-hidden="true">Esci</button>
-            </div>
-          </div>
-
-          <div class="role-phone-body">
-            <div class="role-phone-date" id="rpPhoneDate">GIOVEDÌ 1 OTTOBRE</div>
-            <h3 id="rpPhoneGreeting">Buongiorno</h3>
-            <p class="role-phone-subtitle" id="rpPhoneSubtitle">Quello che conta adesso e nelle prossime ore.</p>
-
-            <section class="role-phone-now">
-              <small id="rpPrimaryKicker">ADESSO</small>
-              <div class="role-phone-now-main">
-                <span class="role-phone-now-icon" id="rpPrimaryIcon">♡</span>
-                <div>
-                  <h4 id="rpPrimaryTitle">Fisio</h4>
-                  <p id="rpPrimaryMeta">10:00–11:00 · Studio</p>
-                  <strong id="rpPrimaryStrong">Termina tra 27 min</strong>
-                </div>
-              </div>
-              <div class="role-phone-after" id="rpPrimaryAfter">Subito dopo · Spostamento</div>
-            </section>
-
-            <div class="role-phone-actions-head">
-              <small id="rpActionsKicker">DA FARE OGGI</small>
-              <strong id="rpActionsTitle">Azioni rapide</strong>
-            </div>
-
-            <div class="role-phone-actions">
-              <article>
-                <span id="rpAction1Icon">○</span>
-                <div><strong id="rpAction1Title">Check-in di oggi</strong><p id="rpAction1Body">Sonno, stanchezza, umore, voglia e concentrazione.</p></div>
-                <b id="rpAction1Cta">Apri</b>
-              </article>
-              <article>
-                <span id="rpAction2Icon">↘</span>
-                <div><strong id="rpAction2Title">Training checkout</strong><p id="rpAction2Body">Da compilare dopo l'ultimo allenamento di oggi.</p></div>
-                <b id="rpAction2Cta">Apri</b>
-              </article>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="role-mini-grid" aria-label="Profili Tennis Player OS">
-        <button type="button" class="role-mini-card active" data-role-card="athlete">
-          <div class="role-mini-title"><span>●</span><b data-rp-role="athlete">Atleta</b></div>
-          <div class="mini-ui mini-athlete"><i></i><i></i><i></i><i></i></div>
-        </button>
-        <button type="button" class="role-mini-card" data-role-card="parent">
-          <div class="role-mini-title"><span>●●</span><b data-rp-role="parent">Genitore</b></div>
-          <div class="mini-ui mini-parent"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        </button>
-        <button type="button" class="role-mini-card" data-role-card="coach">
-          <div class="role-mini-title"><span>◇</span><b data-rp-role="coach">Coach</b></div>
-          <div class="mini-ui mini-coach"><i></i><i></i><i></i><i></i></div>
-        </button>
-        <button type="button" class="role-mini-card" data-role-card="athletic">
-          <div class="role-mini-title"><span>▥</span><b data-rp-role="athletic">Preparatore atletico</b></div>
-          <div class="mini-ui mini-athletic"><i></i><i></i><i></i><i></i></div>
-        </button>
-        <button type="button" class="role-mini-card" data-role-card="physio">
-          <div class="role-mini-title"><span>✚</span><b data-rp-role="physio">Fisioterapista</b></div>
-          <div class="mini-ui mini-physio"><i></i><i></i><i></i><i></i></div>
-        </button>
-        <button type="button" class="role-mini-card" data-role-card="nutrition">
-          <div class="role-mini-title"><span>●</span><b data-rp-role="nutrition">Nutrizionista</b></div>
-          <div class="mini-ui mini-nutrition"><i></i><i></i><i></i></div>
-        </button>
-        <button type="button" class="role-mini-card" data-role-card="mental">
-          <div class="role-mini-title"><span>◉</span><b data-rp-role="mental">Mental coach</b></div>
-          <div class="mini-ui mini-mental"><i></i><i></i><i></i></div>
-        </button>
-        <button type="button" class="role-mini-card" data-role-card="custom">
-          <div class="role-mini-title"><span>⚙</span><b data-rp-role="custom">Custom</b></div>
-          <div class="mini-ui mini-custom"><i></i><i></i><i></i><i></i></div>
-        </button>
-      </div>
-
-      <div class="role-experience-footer">
-        <span></span>
-        <strong data-rp-copy="footer">PERMESSI DIFFERENZIATI. UN SOLO RECORD. UN INTERO TEAM.</strong>
-        <span></span>
-      </div>
-    </div>
-  </section>
-
-  <section class="beta section" id="beta">
-    <div class="beta-card beta-card-v2">
-      <div class="beta-copy">
-        <span class="pill">FOUNDING BETA</span>
-        <h2 data-i18n="betaTitle">30 account. Accesso completo gratuito per tutta la Beta.</h2>
-        <p data-i18n="betaBody">Apriamo Tennis Player OS a un primo gruppo di 30 Beta Owner. Ogni account ha accesso completo al proprio ambiente e a tutti i moduli disponibili durante la Beta.</p>
-
-        <div class="beta-capacity" aria-live="polite">
-          <div class="beta-capacity-top">
-            <div>
-              <small data-i18n="betaAvailability">DISPONIBILITÀ FOUNDING BETA</small>
-              <strong><span id="betaRemaining">30</span> <span data-i18n="betaSlotsLeft">posti disponibili</span></strong>
-            </div>
-            <div class="beta-capacity-count"><span id="betaAssigned">0</span> / <span id="betaCapacity">30</span> <span data-i18n="betaAssignedLabel">assegnati</span></div>
-          </div>
-          <div class="beta-progress" role="progressbar" aria-label="Founding Beta account assegnati" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0" id="betaProgress" style="--beta-progress:0%"><span></span></div>
-          <p class="beta-waitlist" id="betaWaitlist" hidden data-i18n="betaWaitlist">I 30 posti sono stati assegnati. Puoi comunque lasciare la tua richiesta per la lista d'attesa.</p>
-        </div>
-
-        <div class="beta-feature-grid">
-          <div><b data-i18n="bfAccess">Accesso</b><span data-i18n="bfAccessBody">Tutti i moduli Beta disponibili</span></div>
-          <div><b data-i18n="bfDuration">Durata</b><span data-i18n="bfDurationBody">Gratuito fino alla fine della Beta</span></div>
-          <div><b data-i18n="bfOwner">Profilo</b><span data-i18n="bfOwnerBody">Beta Owner: pieno controllo del proprio ambiente</span></div>
-          <div><b data-i18n="bfUpdates">Aggiornamenti</b><span data-i18n="bfUpdatesBody">Inclusi automaticamente durante la Beta</span></div>
-          <div><b data-i18n="bfRequests">Feature requests</b><span data-i18n="bfRequestsBody">Puoi proporre funzioni e modifiche alla roadmap</span></div>
-          <div><b data-i18n="bfAfter">Dopo la Beta</b><span data-i18n="bfAfterBody">Nessun rinnovo automatico e nessuna carta richiesta</span></div>
-        </div>
-
-        <div class="feature-request-note">
-          <strong data-i18n="featureRequestTitle">Hai bisogno di qualcosa che Tennis Player OS ancora non fa?</strong>
-          <p data-i18n="featureRequestBody">Durante la Beta puoi proporre nuove funzioni o modifiche. Le richieste vengono valutate in base a utilità generale, fattibilità e priorità di sviluppo.</p>
-        </div>
-      </div>
-
-      <form id="betaForm" action="beta-request.php" method="post" novalidate>
-        <div class="form-head">
-          <small data-i18n="formKicker">RICHIEDI IL TUO ACCOUNT</small>
-          <h3 data-i18n="formTitle">Founding Beta Owner</h3>
-        </div>
-        <label><span data-i18n="name">Nome</span><input required name="name" maxlength="100" autocomplete="name"></label>
-        <label><span>Email</span><input required type="email" name="email" maxlength="190" autocomplete="email"></label>
-        <label><span data-i18n="profileInterest">Mi interessa TPOS come…</span>
-          <select name="profile">
-            <option value="parent" data-i18n="rParent">Genitore / famiglia</option>
-            <option value="player" data-i18n="rPlayer">Atleta</option>
-            <option value="coach" data-i18n="coach">Coach</option>
-            <option value="academy" data-i18n="rAcademy">Academy / Club</option>
-            <option value="other" data-i18n="rOther">Altro</option>
-          </select>
-        </label>
-        <label><span data-i18n="betaMessage">Cosa ti interessa di più? <em>Facoltativo</em></span><textarea name="message" maxlength="1200" rows="4" data-i18n-placeholder="betaMessagePlaceholder" placeholder="Puoi indicarci come pensi di usare TPOS o una funzione che vorresti vedere durante la Beta."></textarea></label>
-        <input type="hidden" name="lang" id="betaLang" value="it">
-        <input type="hidden" name="program_state" id="betaProgramState" value="open">
-        <div class="hp-field" aria-hidden="true"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off"></label></div>
-        <button class="button" id="betaSubmit" type="submit" data-i18n="request">Richiedi il tuo account Beta</button>
-        <small class="form-note" data-i18n="formNote">Nessun pagamento e nessuna carta richiesta. L'accesso viene attivato manualmente fino a esaurimento dei 30 posti.</small>
-        <div class="success" id="formSuccess" data-i18n="success" role="status">Richiesta inviata. Ti contatteremo appena possibile per l'attivazione del tuo account Founding Beta.</div>
-        <div class="form-error" id="formError" data-i18n="formError" role="alert">Non siamo riusciti a inviare la richiesta. Riprova tra poco oppure contattaci direttamente.</div>
-      </form>
-    </div>
-    <p class="beta-honesty"><b data-i18n="betaMeans">Beta significa beta.</b> <span data-i18n="betaHonesty">Le funzioni possono cambiare, alcune integrazioni sono ancora in sviluppo e possono esserci bug. I dati restano sotto il controllo dell'utente.</span></p>
-  </section>
-</main>
-
-<footer>
-  <div class="brand"><span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span></div>
-  <p>One Player. A Complete Journey.</p>
-  <div><a href="#" data-i18n="privacy">Privacy</a><a href="#" data-i18n="terms">Termini</a><a href="#beta">Beta</a></div>
-  <small>© 2026 Tennis Player OS · Beta site v1.2</small>
-</footer>
-
-<dialog id="previewDialog" aria-labelledby="previewDialogTitle">
-  <button type="button" class="dialog-close" id="closePreview" aria-label="Close">×</button>
-  <div class="dialog-inner">
-    <div class="dialog-copy">
-      <span class="kicker" data-i18n="previewKicker">ANTEPRIMA PRODOTTO</span>
-      <h2 id="previewDialogTitle" data-i18n="previewDialogTitle">Una schermata reale della dashboard.</h2>
-      <p id="previewDialogBody" data-i18n="previewDialogBody">Questa hero usa una schermata reale di Tennis Player OS con un profilo demo, così il visitatore può percepire meglio l’interfaccia effettiva del prodotto.</p>
-    </div>
-    <div class="dialog-stage">
-      <div class="browser-bar large"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
-      <div class="real-shot-frame large">
-        <img id="dialogPreviewImage" src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
-      </div>
+  <div id="app" class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main-shell">
+      <header class="topbar">
+        <button id="mobile-menu-button" class="icon-button mobile-only" aria-label="Apri menu">☰</button>
+        <div><div class="eyebrow">Tennis Player OS</div><h1 id="page-title">Dashboard</h1></div>
+        <div class="topbar-actions"><span id="save-indicator" class="save-indicator">Salvato in locale</span></div>
+      </header>
+      <main id="main-content" class="main-content" tabindex="-1"></main>
     </div>
   </div>
-</dialog>
 
-<script src="app.js?v=1.1"></script>
-<script src="roles-refresh.js?v=1.2"></script>
+  <script type="module" src="./assets/js/ui/mobileCalendarSafety.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/calendarReliabilityUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/bootstrap.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/productPolishUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/athleteProfileUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/developmentUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/developmentWorklistUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/developmentDrillsBridgeUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/opponentsUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/opponentsCompanionBridge.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/matchUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/athleticsTestLibraryUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/athleticsSessionTransferUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/athleticsStoreHotfix.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/equipmentStringingUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/equipmentStringUsageUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/plannerSurfaceUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/recoveryConsolidationUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/healthUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/mentalVisualUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/economicsSponsorsUI.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/ui/versionDashboard.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/cloud/cloudCoverageRuntime.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/pwa.js?v=1.2.5"></script>
+  <script type="module" src="./assets/js/pwaInstallAssistant.js?v=1.2.5"></script>
 </body>
 </html>

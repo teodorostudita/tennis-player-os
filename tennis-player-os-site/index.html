@@ -6,6 +6,7 @@
   <meta name="description" content="Tennis Player OS collega calendario, preparazione atletica, sviluppo, drills, match, avversari, materiali, salute, recupero, mental training, percezione e costi intorno a un solo atleta." />
   <title>Tennis Player OS — One Player. A Complete Journey.</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="roles-refresh.css?v=1.2" />
 </head>
 <body>
 <header class="site-header">
@@ -23,7 +24,7 @@
       <button class="language active" data-lang="it" title="Italiano"><span class="flag">🇮🇹</span><b>IT</b></button>
       <button class="language" data-lang="en" title="English"><span class="flag">🇬🇧</span><b>EN</b></button>
     </div>
-    <a class="signin" href="#" data-i18n="signIn">Accedi</a>
+    <a class="signin" href="https://tennis.polidorionline.it/" data-i18n="signIn">Accedi</a>
     <a class="button small" href="#beta" data-i18n="joinBeta">Entra nella Beta</a>
   </div>
 </header>
@@ -129,75 +130,145 @@
   </section>
 
   <section class="roles-section section" id="roles">
-    <div class="section-head roles-head">
-      <span class="kicker" data-i18n="rolesKicker">ACCESSI E DASHBOARD PERSONALIZZATE</span>
-      <h2 data-i18n="rolesTitle">Ogni profilo vede ciò che gli serve.</h2>
-      <p data-i18n="rolesBody">Tennis Player OS adatta accessi, priorità e schermata iniziale in base al ruolo: atleta, genitore e professionisti lavorano sullo stesso percorso, ma con strumenti diversi.</p>
-    </div>
+    <div class="role-experience">
+      <div class="role-experience-copy">
+        <span class="kicker" data-i18n="rolesKicker">ACCESSI E DASHBOARD PERSONALIZZATE</span>
+        <h2 data-i18n="rolesTitle">Ogni profilo vede ciò che gli serve.</h2>
+        <p class="role-experience-intro" data-i18n="rolesBody">Tennis Player OS adatta accessi, priorità e schermata iniziale in base al ruolo: atleta, genitore e professionisti lavorano sullo stesso percorso, ma con strumenti diversi.</p>
 
-    <div class="roles-showcase">
-      <div class="roles-copy-card">
-        <div class="role-tabs" id="roleTabs" aria-label="Profili disponibili">
-          <button class="role-tab active" type="button" data-role="athlete">Atleta</button>
-          <button class="role-tab" type="button" data-role="parent">Genitore</button>
-          <button class="role-tab" type="button" data-role="coach">Coach</button>
-          <button class="role-tab" type="button" data-role="athletic">Preparatore atletico</button>
-          <button class="role-tab" type="button" data-role="physio">Fisioterapista</button>
-          <button class="role-tab" type="button" data-role="nutrition">Nutrizionista</button>
-          <button class="role-tab" type="button" data-role="mental">Mental coach</button>
-          <button class="role-tab" type="button" data-role="custom">Custom</button>
+        <div class="role-tabs role-tabs-premium" id="roleTabs" aria-label="Profili disponibili">
+          <button class="role-tab active" type="button" data-role="athlete"><span>●</span><b data-rp-role="athlete">Atleta</b></button>
+          <button class="role-tab" type="button" data-role="parent"><span>●●</span><b data-rp-role="parent">Genitore</b></button>
+          <button class="role-tab" type="button" data-role="coach"><span>◇</span><b data-rp-role="coach">Coach</b></button>
+          <button class="role-tab" type="button" data-role="athletic"><span>▥</span><b data-rp-role="athletic">Preparatore atletico</b></button>
+          <button class="role-tab" type="button" data-role="physio"><span>✚</span><b data-rp-role="physio">Fisioterapista</b></button>
+          <button class="role-tab" type="button" data-role="nutrition"><span>●</span><b data-rp-role="nutrition">Nutrizionista</b></button>
+          <button class="role-tab" type="button" data-role="mental"><span>◉</span><b data-rp-role="mental">Mental coach</b></button>
+          <button class="role-tab" type="button" data-role="custom"><span>⚙</span><b data-rp-role="custom">Custom</b></button>
         </div>
 
-        <div class="role-detail">
-          <div class="role-badge" id="roleBadge">Dashboard atleta</div>
-          <h3 id="roleTitle">Atleta</h3>
-          <p id="roleLead">La dashboard atleta mette al centro ciò che conta oggi: check-in, prossimi impegni, routine e azioni rapide.</p>
-          <ul class="role-list" id="roleList"></ul>
-          <div class="role-access-panel">
-            <div>
-              <small data-i18n="roleSees">VEDE SUBITO</small>
-              <strong id="roleSees">Oggi, check-in, routine, prossimi impegni</strong>
-            </div>
-            <div>
-              <small data-i18n="roleCanDo">PUÒ FARE</small>
-              <strong id="roleCanDo">Compilare check-in e consultare la giornata</strong>
-            </div>
+        <div class="role-quick-summary" aria-label="Esempi di priorità per ruolo">
+          <div><span class="role-summary-icon athlete">●</span><p><strong data-rp-copy="summaryAthleteTitle">Atleta:</strong> <span data-rp-copy="summaryAthleteBody">check-in, giornata, routine, compiti rapidi</span></p></div>
+          <div><span class="role-summary-icon parent">●●</span><p><strong data-rp-copy="summaryParentTitle">Genitore:</strong> <span data-rp-copy="summaryParentBody">planning, logistica, costi, coordinamento</span></p></div>
+          <div><span class="role-summary-icon coach">◇</span><p><strong data-rp-copy="summaryCoachTitle">Coach:</strong> <span data-rp-copy="summaryCoachBody">sviluppo, drills, match, obiettivi</span></p></div>
+          <div><span class="role-summary-icon staff">▥</span><p><strong data-rp-copy="summaryStaffTitle">Staff:</strong> <span data-rp-copy="summaryStaffBody">salute, recupero, nutrizione, monitoraggio</span></p></div>
+        </div>
+
+        <div class="role-selected-strip">
+          <div>
+            <div class="role-badge" id="roleBadge">Dashboard atleta</div>
+            <h3 id="roleTitle">Atleta</h3>
+            <p id="roleLead">La dashboard atleta mette al centro ciò che conta oggi: check-in, prossimi impegni, routine e azioni rapide.</p>
           </div>
-          <div class="role-note" id="roleNote">Un solo record, ma una schermata iniziale diversa per ogni ruolo.</div>
+          <div class="role-selected-facts">
+            <div><small data-i18n="roleSees">VEDE SUBITO</small><strong id="roleSees">Oggi, check-in, routine, prossimi impegni</strong></div>
+            <div><small data-i18n="roleCanDo">PUÒ FARE</small><strong id="roleCanDo">Compilare check-in e consultare la giornata</strong></div>
+          </div>
+          <ul class="role-list role-list-compat" id="roleList" aria-hidden="true"></ul>
+          <div class="role-note role-note-compat" id="roleNote">Un solo record, ma una schermata iniziale diversa per ogni ruolo.</div>
         </div>
       </div>
 
-      <div class="roles-visual-card">
-        <button class="roles-panel-button" type="button" data-preview-title-key="rolesPreviewTitle" data-preview-body-key="rolesPreviewBody" data-preview-image="assets/marketing/roles-panel.png" data-preview-alt="Accessi e dashboard personalizzate">
-          <img src="assets/marketing/roles-panel.png" alt="Accessi e dashboard personalizzate" />
-          <div class="roles-panel-overlay">
-            <span class="pill-soft" data-i18n="rolesPanelPill">NUOVO BLOCCO HOME</span>
-            <strong data-i18n="rolesPanelLabel">Profili, dashboard e accessi differenziati</strong>
-            <span class="preview-link" data-i18n="previewOpen">Apri fullscreen</span>
+      <div class="role-phone-stage" aria-label="Esempio di dashboard personalizzata">
+        <div class="role-phone-backplate backplate-one"></div>
+        <div class="role-phone-backplate backplate-two"></div>
+        <div class="role-preview-callout">
+          <span>↙</span>
+          <strong id="rpPreviewLabel">Esempio: dashboard atleta</strong>
+        </div>
+
+        <div class="role-phone" id="rolePhone">
+          <div class="role-phone-header">
+            <button class="role-phone-menu" type="button" tabindex="-1" aria-hidden="true">☰</button>
+            <div class="role-phone-brand">
+              <small>TENNIS<br>PLAYER<br>OS</small>
+              <strong>Home</strong>
+            </div>
+            <div class="role-phone-account">
+              <span id="rpPhoneRole">ATLETA</span>
+              <button type="button" tabindex="-1" aria-hidden="true">Esci</button>
+            </div>
           </div>
+
+          <div class="role-phone-body">
+            <div class="role-phone-date" id="rpPhoneDate">GIOVEDÌ 1 OTTOBRE</div>
+            <h3 id="rpPhoneGreeting">Buongiorno</h3>
+            <p class="role-phone-subtitle" id="rpPhoneSubtitle">Quello che conta adesso e nelle prossime ore.</p>
+
+            <section class="role-phone-now">
+              <small id="rpPrimaryKicker">ADESSO</small>
+              <div class="role-phone-now-main">
+                <span class="role-phone-now-icon" id="rpPrimaryIcon">♡</span>
+                <div>
+                  <h4 id="rpPrimaryTitle">Fisio</h4>
+                  <p id="rpPrimaryMeta">10:00–11:00 · Studio</p>
+                  <strong id="rpPrimaryStrong">Termina tra 27 min</strong>
+                </div>
+              </div>
+              <div class="role-phone-after" id="rpPrimaryAfter">Subito dopo · Spostamento</div>
+            </section>
+
+            <div class="role-phone-actions-head">
+              <small id="rpActionsKicker">DA FARE OGGI</small>
+              <strong id="rpActionsTitle">Azioni rapide</strong>
+            </div>
+
+            <div class="role-phone-actions">
+              <article>
+                <span id="rpAction1Icon">○</span>
+                <div><strong id="rpAction1Title">Check-in di oggi</strong><p id="rpAction1Body">Sonno, stanchezza, umore, voglia e concentrazione.</p></div>
+                <b id="rpAction1Cta">Apri</b>
+              </article>
+              <article>
+                <span id="rpAction2Icon">↘</span>
+                <div><strong id="rpAction2Title">Training checkout</strong><p id="rpAction2Body">Da compilare dopo l'ultimo allenamento di oggi.</p></div>
+                <b id="rpAction2Cta">Apri</b>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="role-mini-grid" aria-label="Profili Tennis Player OS">
+        <button type="button" class="role-mini-card active" data-role-card="athlete">
+          <div class="role-mini-title"><span>●</span><b data-rp-role="athlete">Atleta</b></div>
+          <div class="mini-ui mini-athlete"><i></i><i></i><i></i><i></i></div>
+        </button>
+        <button type="button" class="role-mini-card" data-role-card="parent">
+          <div class="role-mini-title"><span>●●</span><b data-rp-role="parent">Genitore</b></div>
+          <div class="mini-ui mini-parent"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </button>
+        <button type="button" class="role-mini-card" data-role-card="coach">
+          <div class="role-mini-title"><span>◇</span><b data-rp-role="coach">Coach</b></div>
+          <div class="mini-ui mini-coach"><i></i><i></i><i></i><i></i></div>
+        </button>
+        <button type="button" class="role-mini-card" data-role-card="athletic">
+          <div class="role-mini-title"><span>▥</span><b data-rp-role="athletic">Preparatore atletico</b></div>
+          <div class="mini-ui mini-athletic"><i></i><i></i><i></i><i></i></div>
+        </button>
+        <button type="button" class="role-mini-card" data-role-card="physio">
+          <div class="role-mini-title"><span>✚</span><b data-rp-role="physio">Fisioterapista</b></div>
+          <div class="mini-ui mini-physio"><i></i><i></i><i></i><i></i></div>
+        </button>
+        <button type="button" class="role-mini-card" data-role-card="nutrition">
+          <div class="role-mini-title"><span>●</span><b data-rp-role="nutrition">Nutrizionista</b></div>
+          <div class="mini-ui mini-nutrition"><i></i><i></i><i></i></div>
+        </button>
+        <button type="button" class="role-mini-card" data-role-card="mental">
+          <div class="role-mini-title"><span>◉</span><b data-rp-role="mental">Mental coach</b></div>
+          <div class="mini-ui mini-mental"><i></i><i></i><i></i></div>
+        </button>
+        <button type="button" class="role-mini-card" data-role-card="custom">
+          <div class="role-mini-title"><span>⚙</span><b data-rp-role="custom">Custom</b></div>
+          <div class="mini-ui mini-custom"><i></i><i></i><i></i><i></i></div>
         </button>
       </div>
-    </div>
 
-    <div class="roles-bottom-strip">
-      <span data-i18n="rolesStrip1">Permessi differenziati</span>
-      <span data-i18n="rolesStrip2">Un solo record atleta</span>
-      <span data-i18n="rolesStrip3">Dashboard iniziali mirate</span>
-      <span data-i18n="rolesStrip4">Un intero team sullo stesso percorso</span>
-    </div>
-  </section>
-
-  <section class="roadmap section">
-    <div>
-      <span class="kicker light" data-i18n="roadKicker">ROADMAP</span>
-      <h2 data-i18n="roadTitle">Prima costruiamo dati solidi.<br><em>Poi li rendiamo più intelligenti.</em></h2>
-      <p data-i18n="roadBody">Analisi assistite dall'AI, correlazioni automatiche e report intelligenti sono una direzione futura di sviluppo, non una funzione promessa nella Beta attuale. L'obiettivo è arrivarci partendo da dati affidabili, strutturati e controllati dall'utente.</p>
-    </div>
-    <div class="road-status">
-      <span data-i18n="today">OGGI</span>
-      <strong data-i18n="todayBody">Record atleta, moduli connessi, ruoli e strumenti operativi.</strong>
-      <span class="future" data-i18n="future">ROADMAP</span>
-      <strong data-i18n="futureBody">AI-assisted insights, correlazioni e report automatici.</strong>
+      <div class="role-experience-footer">
+        <span></span>
+        <strong data-rp-copy="footer">PERMESSI DIFFERENZIATI. UN SOLO RECORD. UN INTERO TEAM.</strong>
+        <span></span>
+      </div>
     </div>
   </section>
 
@@ -269,7 +340,7 @@
   <div class="brand"><span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span></div>
   <p>One Player. A Complete Journey.</p>
   <div><a href="#" data-i18n="privacy">Privacy</a><a href="#" data-i18n="terms">Termini</a><a href="#beta">Beta</a></div>
-  <small>© 2026 Tennis Player OS · Beta site v1.1</small>
+  <small>© 2026 Tennis Player OS · Beta site v1.2</small>
 </footer>
 
 <dialog id="previewDialog" aria-labelledby="previewDialogTitle">
@@ -290,5 +361,6 @@
 </dialog>
 
 <script src="app.js?v=1.1"></script>
+<script src="roles-refresh.js?v=1.2"></script>
 </body>
 </html>
