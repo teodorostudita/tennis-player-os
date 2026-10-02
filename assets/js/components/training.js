@@ -1,4 +1,4 @@
-import { showInAppConfirm } from '../ui/inAppMessages.js';
+import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.3';
 
 const sections = [
   { id: 'overview', label: 'Overview' },
@@ -65,6 +65,14 @@ const ui = {
 };
 
 export function renderTraining({ main, title, store }) {
+  try {
+    const requestedSection = sessionStorage.getItem('tpos.training.section');
+    if (requestedSection && sections.some(section => section.id === requestedSection)) {
+      ui.section = requestedSection;
+      sessionStorage.removeItem('tpos.training.section');
+    }
+  } catch (_) {}
+
   title.textContent = '2. Athletics';
   const state = store.getState();
   const training = state.training;

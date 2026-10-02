@@ -1,9 +1,9 @@
-import { modules } from '../data/schema.js';
-import { APP_VERSION } from '../version.js';
-import { getCurrentUserType } from '../cloud/accountAccess.js';
+import { modules } from '../data/schema.js?v=1.2.3';
+import { APP_VERSION } from '../version.js?v=1.2.3';
+import { getCurrentUserType } from '../cloud/accountAccess.js?v=1.2.3';
 
 export function renderSidebar(activeRoute) {
-  const contextualHome = ['athlete', 'parent'].includes(getCurrentUserType());
+  const contextualHome = ['athlete', 'parent', 'trainer'].includes(getCurrentUserType());
   const items = modules.map(m => `
     <button class="nav-item ${activeRoute === m.id ? 'active' : ''}" data-route="${m.id}">
       <span class="nav-icon">${m.icon}</span>

@@ -1,16 +1,17 @@
-import { modules } from './data/schema.js';
-import { store } from './data/store.js';
-import { renderSidebar } from './components/sidebar.js';
-import { renderCalendar } from './components/calendar.js';
-import { renderEquipment } from './components/equipment.js';
-import { renderTraining } from './components/training.js';
-import { renderDrills } from './components/drills.js';
-import { renderEconomics } from './components/economics.js';
-import { renderNutrition } from './components/nutrition.js';
-import { renderResourceLibrary } from './components/resourceLibrary.js';
-import { renderAthleteHome } from './components/contextualHome.js';
-import { renderParentHome } from './components/parentHome.js';
-import { getCurrentUserType } from './cloud/accountAccess.js';
+import { modules } from './data/schema.js?v=1.2.3';
+import { store } from './data/store.js?v=1.2.3';
+import { renderSidebar } from './components/sidebar.js?v=1.2.3';
+import { renderCalendar } from './components/calendar.js?v=1.2.3';
+import { renderEquipment } from './components/equipment.js?v=1.2.3';
+import { renderTraining } from './components/training.js?v=1.2.3';
+import { renderDrills } from './components/drills.js?v=1.2.3';
+import { renderEconomics } from './components/economics.js?v=1.2.3';
+import { renderNutrition } from './components/nutrition.js?v=1.2.3';
+import { renderResourceLibrary } from './components/resourceLibrary.js?v=1.2.3';
+import { renderAthleteHome } from './components/contextualHome.js?v=1.2.3';
+import { renderParentHome } from './components/parentHome.js?v=1.2.3';
+import { renderTrainerHome } from './components/trainerHome.js?v=1.2.3';
+import { getCurrentUserType } from './cloud/accountAccess.js?v=1.2.3';
 
 const sidebar = document.querySelector('#sidebar');
 const main = document.querySelector('#main-content');
@@ -22,7 +23,7 @@ const LIBRARY_MODULES = new Set(['development', 'training', 'drills', 'equipment
 const moduleWorkspaceView = new Map();
 
 function defaultRoute() {
-  return ['athlete', 'parent'].includes(getCurrentUserType()) ? 'home' : 'dashboard';
+  return ['athlete', 'parent', 'trainer'].includes(getCurrentUserType()) ? 'home' : 'dashboard';
 }
 
 function getRoute() {
@@ -52,7 +53,7 @@ function dashboardModuleIcon(module) {
 function renderDashboard() {
   const { athlete } = store.getState();
   const fullName = [athlete.firstName, athlete.lastName].filter(Boolean).join(' ') || 'Nuovo atleta';
-  title.textContent = ['athlete', 'parent'].includes(getCurrentUserType()) ? 'Overview' : 'Dashboard';
+  title.textContent = ['athlete', 'parent', 'trainer'].includes(getCurrentUserType()) ? 'Overview' : 'Dashboard';
 
   main.innerHTML = `
     <section class="hero">
@@ -235,6 +236,8 @@ function render() {
       renderAthleteHome({ main, title, store });
     } else if (userType === 'parent') {
       renderParentHome({ main, title, store });
+    } else if (userType === 'trainer') {
+      renderTrainerHome({ main, title, store });
     } else {
       setRoute('dashboard');
       return;
@@ -297,6 +300,7 @@ store.subscribe(() => {
     const userType = getCurrentUserType();
     if (userType === 'athlete') renderAthleteHome({ main, title, store });
     else if (userType === 'parent') renderParentHome({ main, title, store });
+    else if (userType === 'trainer') renderTrainerHome({ main, title, store });
   } else if (route === 'dashboard') {
     // renderDashboard() replaces the dashboard DOM. Rebind its route buttons
     // immediately, otherwise a background/cloud store update leaves the new

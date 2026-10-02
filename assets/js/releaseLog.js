@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.3',
+    date: '2026-10-02',
+    title: 'Home contestuale Preparatore atletico',
+    details: [
+      'Il profilo Preparatore atletico apre ora una Home dedicata e mantiene la Dashboard generale come Overview.',
+      'La Home mostra soltanto le informazioni operative: prossima sessione atletica, readiness, indicazioni fisiche, sessione Athletics di oggi, carico settimanale e prossimi impegni rilevanti.',
+      'Readiness è in sola lettura e riassume il check-in dell’atleta, inclusi gli eventuali distretti di indolenzimento localizzato.',
+      'Il carico settimanale deriva dal Calendar e distingue sessioni previste, svolte, saltate e ancora da svolgere.',
+      'Test e Obiettivi restano nel modulo Athletics ma non vengono duplicati nella Home del preparatore.',
+      'Gli accessi rapidi portano ad Athletics, Programma settimanale, Recovery, Body & Health e Calendar.',
+    ],
+  },
+  {
     version: '1.2.2',
     date: '2026-10-02',
     title: 'Home tipizzate + lezioni saltate + logistica esplicita',

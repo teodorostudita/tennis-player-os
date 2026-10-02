@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.2.3 — Home contestuale Preparatore atletico
+- Il profilo **Preparatore atletico** apre ora direttamente una Home dedicata, mantenendo la Dashboard generale come **Overview**.
+- La Home resta volutamente essenziale: **prossima sessione atletica**, **readiness di oggi**, **indicazioni fisiche**, **sessione Athletics di oggi**, **carico settimanale**, **prossimi impegni rilevanti** e accessi rapidi.
+- Readiness legge il check-in dell’atleta senza consentire al preparatore di modificarlo; evidenzia sonno, stanchezza, indolenzimento, motivazione/concentrazione e localizzazioni corporee quando presenti.
+- Body & Health espone soltanto restrizioni e indicazioni attive utili alla seduta; in assenza di alert mostra una riga compatta “Nessuna restrizione attiva”.
+- Il carico settimanale usa il Calendar: sessioni previste, volume, svolte, saltate e ancora da svolgere. Una sessione non marcata come saltata viene considerata regolarmente svolta dopo il suo orario di fine.
+- **Test** e **Obiettivi** restano nel modulo Athletics ma non occupano spazio nella Home del preparatore.
+- I link rapidi aprono Athletics, Programma settimanale, Recovery, Body & Health e Calendar.
+- Nessuna nuova migration SQL e nessuna Edge Function.
+
 ## v1.2.2 — Home tipizzate + lezioni saltate + logistica esplicita
 - Gli account **tipizzati** aprono sempre dalla propria pagina iniziale al nuovo avvio: Home contestuale per Atleta/Genitore, Dashboard per gli altri profili finché non avranno una Home dedicata.
 - Il saluto delle Home usa ora il **nome dell’account** (`display_name`, con fallback al nome utente di login), non il nome dell’atleta: “Buongiorno, Nome”.

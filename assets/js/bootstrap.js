@@ -1,9 +1,9 @@
-import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js';
-import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js';
-import { canCreateAthletes, getCurrentUserType, loadCurrentAccountAccess } from './cloud/accountAccess.js';
-import { enforceInitialPasswordChange } from './cloud/initialPassword.js';
-import { startPermissionGuard } from './cloud/permissionGuard.js';
-import { mountAccessManagementControl } from './components/accessManagement.js';
+import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js?v=1.2.3';
+import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js?v=1.2.3';
+import { canCreateAthletes, getCurrentUserType, loadCurrentAccountAccess } from './cloud/accountAccess.js?v=1.2.3';
+import { enforceInitialPasswordChange } from './cloud/initialPassword.js?v=1.2.3';
+import { startPermissionGuard } from './cloud/permissionGuard.js?v=1.2.3';
+import { mountAccessManagementControl } from './components/accessManagement.js?v=1.2.3';
 import {
   loadAccessibleAthletes,
   mountAthleteControls,
@@ -13,38 +13,38 @@ import {
   syncSelectedAthleteToLocalStore,
   migrateAthleteProfileToCloudIfNeeded,
   startAthleteProfileCloudSync,
-} from './cloud/athlete.js';
+} from './cloud/athlete.js?v=1.2.3';
 import {
   cleanCalendarMigrationUrl,
   isCalendarMigrationRequested,
   migrateLocalCalendarToCloud,
-} from './cloud/calendarMigration.js';
+} from './cloud/calendarMigration.js?v=1.2.3';
 import {
   cleanCalendarVerificationUrl,
   isCalendarVerificationRequested,
   loadCalendarIntoLocalStore,
   startCalendarCloudSync,
   verifyLocalCalendarAgainstCloud,
-} from './cloud/calendarCloud.js';
+} from './cloud/calendarCloud.js?v=1.2.3';
 import {
   loadTrainingIntoLocalStore,
   startTrainingCloudSync,
-} from './cloud/trainingCloud.js';
+} from './cloud/trainingCloud.js?v=1.2.3';
 import {
   loadEquipmentIntoLocalStore,
   startEquipmentCloudSync,
-} from './cloud/equipmentCloud.js';
+} from './cloud/equipmentCloud.js?v=1.2.3';
 import {
   loadRecoveryDailyIntoStore,
   startRecoveryDailySync,
-} from './cloud/recoveryDailyCloud.js';
+} from './cloud/recoveryDailyCloud.js?v=1.2.3';
 import {
   loadCalendarMakeupsIntoStore,
   startCalendarMakeupsCloudSync,
-} from './cloud/calendarMakeupsCloud.js';
-import { loadHealthModule } from './cloud/healthCloud.js';
-import { loadEconomicsIntoLocalStore } from './cloud/economicsCloud.js';
-import { store } from './data/store.js';
+} from './cloud/calendarMakeupsCloud.js?v=1.2.3';
+import { loadHealthModule } from './cloud/healthCloud.js?v=1.2.3';
+import { loadEconomicsIntoLocalStore } from './cloud/economicsCloud.js?v=1.2.3';
+import { store } from './data/store.js?v=1.2.3';
 
 function showStartupError(message) {
   document.body.innerHTML = `
@@ -338,26 +338,24 @@ if (session) {
           });
         }
 
-        // Parent Home aggregates health and economics before the first render,
-        // so certificate/payment alerts are already available on entry. The
-        // dedicated module runtimes remain authoritative for subsequent edits.
-        if (getCurrentUserType() === 'parent') {
-          if (canReadModule('health')) {
-            await loadHealthModule({
-              store,
-              athleteId: cloudAthlete.id,
-            });
-          }
-          if (canReadModule('economics')) {
-            await loadEconomicsIntoLocalStore({
-              store,
-              athleteId: cloudAthlete.id,
-              allowWrite: canWriteModule('economics'),
-            });
-          }
+        // Contextual Homes aggregate the data they need before the first render.
+        // Parent requires Health + Economics; Trainer requires Health.
+        // Dedicated module runtimes remain authoritative for subsequent edits.
+        if (['parent', 'trainer'].includes(getCurrentUserType()) && canReadModule('health')) {
+          await loadHealthModule({
+            store,
+            athleteId: cloudAthlete.id,
+          });
+        }
+        if (getCurrentUserType() === 'parent' && canReadModule('economics')) {
+          await loadEconomicsIntoLocalStore({
+            store,
+            athleteId: cloudAthlete.id,
+            allowWrite: canWriteModule('economics'),
+          });
         }
 
-        await import('./app.js');
+        await import('./app.js?v=1.2.3');
         mountAuthControls(session.user);
         mountAthleteControls({
           currentAthlete: cloudAthlete,
