@@ -1,4 +1,4 @@
-import { FileProvider } from './FileProvider.js';
+import { FileProvider } from './FileProvider.js?v=1.2.4';
 
 /**
  * Current binary-resource backend.

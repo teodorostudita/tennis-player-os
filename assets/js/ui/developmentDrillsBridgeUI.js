@@ -1,7 +1,7 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.2.4';
 
-import { canWriteModule } from '../cloud/access.js';
-import { store } from '../data/store.js';
+import { canWriteModule } from '../cloud/access.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
 
 const DRILL_FOCUS_KEY = 'tpos.bridge.drill-focus.v1';
 const DEVELOPMENT_FOCUS_KEY = 'tpos.bridge.development-focus.v1';

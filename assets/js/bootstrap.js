@@ -1,9 +1,9 @@
-import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js?v=1.2.3';
-import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js?v=1.2.3';
-import { canCreateAthletes, getCurrentUserType, loadCurrentAccountAccess } from './cloud/accountAccess.js?v=1.2.3';
-import { enforceInitialPasswordChange } from './cloud/initialPassword.js?v=1.2.3';
-import { startPermissionGuard } from './cloud/permissionGuard.js?v=1.2.3';
-import { mountAccessManagementControl } from './components/accessManagement.js?v=1.2.3';
+import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js?v=1.2.4';
+import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js?v=1.2.4';
+import { canCreateAthletes, getCurrentUserType, loadCurrentAccountAccess } from './cloud/accountAccess.js?v=1.2.4';
+import { enforceInitialPasswordChange } from './cloud/initialPassword.js?v=1.2.4';
+import { startPermissionGuard } from './cloud/permissionGuard.js?v=1.2.4';
+import { mountAccessManagementControl } from './components/accessManagement.js?v=1.2.4';
 import {
   loadAccessibleAthletes,
   mountAthleteControls,
@@ -13,38 +13,39 @@ import {
   syncSelectedAthleteToLocalStore,
   migrateAthleteProfileToCloudIfNeeded,
   startAthleteProfileCloudSync,
-} from './cloud/athlete.js?v=1.2.3';
+} from './cloud/athlete.js?v=1.2.4';
 import {
   cleanCalendarMigrationUrl,
   isCalendarMigrationRequested,
   migrateLocalCalendarToCloud,
-} from './cloud/calendarMigration.js?v=1.2.3';
+} from './cloud/calendarMigration.js?v=1.2.4';
 import {
   cleanCalendarVerificationUrl,
   isCalendarVerificationRequested,
   loadCalendarIntoLocalStore,
   startCalendarCloudSync,
   verifyLocalCalendarAgainstCloud,
-} from './cloud/calendarCloud.js?v=1.2.3';
+} from './cloud/calendarCloud.js?v=1.2.4';
 import {
   loadTrainingIntoLocalStore,
   startTrainingCloudSync,
-} from './cloud/trainingCloud.js?v=1.2.3';
+} from './cloud/trainingCloud.js?v=1.2.4';
 import {
   loadEquipmentIntoLocalStore,
   startEquipmentCloudSync,
-} from './cloud/equipmentCloud.js?v=1.2.3';
+} from './cloud/equipmentCloud.js?v=1.2.4';
 import {
   loadRecoveryDailyIntoStore,
   startRecoveryDailySync,
-} from './cloud/recoveryDailyCloud.js?v=1.2.3';
+} from './cloud/recoveryDailyCloud.js?v=1.2.4';
 import {
   loadCalendarMakeupsIntoStore,
   startCalendarMakeupsCloudSync,
-} from './cloud/calendarMakeupsCloud.js?v=1.2.3';
-import { loadHealthModule } from './cloud/healthCloud.js?v=1.2.3';
-import { loadEconomicsIntoLocalStore } from './cloud/economicsCloud.js?v=1.2.3';
-import { store } from './data/store.js?v=1.2.3';
+} from './cloud/calendarMakeupsCloud.js?v=1.2.4';
+import { loadHealthModule } from './cloud/healthCloud.js?v=1.2.4';
+import { loadEconomicsIntoLocalStore } from './cloud/economicsCloud.js?v=1.2.4';
+import { store } from './data/store.js?v=1.2.4';
+import { rescueSameAthleteLocalCaches } from './cloud/localCacheRescue.js?v=1.2.4';
 
 function showStartupError(message) {
   document.body.innerHTML = `
@@ -279,6 +280,15 @@ if (session) {
         session.user.id,
       );
 
+      // v1.2.4: before cloud-first modules load, inspect surviving local caches
+      // for the same athlete. Older account-scoped caches can contain richer
+      // Development/Opponents/Nutrition history that was never materialised in
+      // Supabase. The rescue is additive and never deletes donor caches.
+      rescueSameAthleteLocalCaches({
+        store,
+        athleteId: cloudAthlete.id,
+      });
+
       cloudAthlete = await migrateAthleteProfileToCloudIfNeeded({
         store,
         cloudAthlete,
@@ -355,7 +365,7 @@ if (session) {
           });
         }
 
-        await import('./app.js?v=1.2.3');
+        await import('./app.js?v=1.2.4');
         mountAuthControls(session.user);
         mountAthleteControls({
           currentAthlete: cloudAthlete,

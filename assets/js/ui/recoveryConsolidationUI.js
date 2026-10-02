@@ -1,17 +1,17 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.2.4';
 
-import { store } from '../data/store.js';
-import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js';
-import { loadCloudModuleState, saveCloudModuleState } from '../cloud/moduleStateCloud.js';
-import { normalizeHealthPayload } from '../cloud/healthCloud.js';
+import { store } from '../data/store.js?v=1.2.4';
+import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js?v=1.2.4';
+import { loadCloudModuleState, saveCloudModuleState } from '../cloud/moduleStateCloud.js?v=1.2.4';
+import { normalizeHealthPayload } from '../cloud/healthCloud.js?v=1.2.4';
 import {
   saveRecoveryCheckinCloud,
   deleteRecoveryCheckinCloud,
   saveTrainingCheckoutCloud,
   deleteTrainingCheckoutCloud,
-} from '../cloud/recoveryDailyCloud.js';
-import { BODY_HOTSPOTS, MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js';
-import { showInAppAlert, showInAppConfirm } from './inAppMessages.js';
+} from '../cloud/recoveryDailyCloud.js?v=1.2.4';
+import { BODY_HOTSPOTS, MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js?v=1.2.4';
+import { showInAppAlert, showInAppConfirm } from './inAppMessages.js?v=1.2.4';
 
 const SYSTEM_DEFAULTS = Object.freeze({
   sleepHours: 8,

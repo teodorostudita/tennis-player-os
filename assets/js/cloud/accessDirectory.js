@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js';
-import { normalizeUserType } from '../data/userTypes.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { normalizeUserType } from '../data/userTypes.js?v=1.2.4';
 
 function normalizePermission(permission = {}) {
   return {

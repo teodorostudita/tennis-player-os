@@ -1,6 +1,6 @@
-import { canReadModule } from '../cloud/access.js?v=1.2.3';
-import { getCurrentUserDisplayName } from '../cloud/accountAccess.js?v=1.2.3';
-import { MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js?v=1.2.3';
+import { canReadModule } from '../cloud/access.js?v=1.2.4';
+import { getCurrentUserDisplayName } from '../cloud/accountAccess.js?v=1.2.4';
+import { MUSCULOSKELETAL_DISTRICTS } from '../data/healthBodyMapData.js?v=1.2.4';
 
 let refreshTimer = null;
 
@@ -376,13 +376,13 @@ function buildUpcoming(state, now) {
 
   for (const event of (planner.events || [])) {
     if (event.attendanceStatus === 'missed') continue;
-    if (!['physical', 'tournament', 'travel'].includes(event.category)) continue;
+    if (!['tennis', 'tournament'].includes(event.category)) continue;
     if (!event.date || event.date < today || event.date > limit) continue;
     rows.push({
       date: event.date,
       time: event.startTime || '',
-      icon: event.category === 'physical' ? '🏋️' : event.category === 'tournament' ? '🏆' : '↗',
-      title: event.title || (event.category === 'physical' ? 'Preparazione fisica' : event.category === 'tournament' ? 'Torneo / Match' : 'Trasferta'),
+      icon: event.category === 'tennis' ? '🎾' : '🏆',
+      title: event.title || (event.category === 'tennis' ? 'Tennis' : 'Torneo / Match'),
       detail: `${formatClock(event.startTime)}${event.location ? ` · ${event.location}` : ''}`,
     });
   }
@@ -411,7 +411,7 @@ function buildUpcoming(state, now) {
 }
 
 function renderUpcoming(rows) {
-  if (!rows.length) return '<div class="trainer-home-empty">Nessun impegno atletico o competitivo rilevante nei prossimi 14 giorni.</div>';
+  if (!rows.length) return '<div class="trainer-home-empty">Nessun torneo o sessione di tennis nei prossimi 14 giorni.</div>';
   return rows.map(row => `
     <div class="trainer-home-upcoming-row">
       <span class="trainer-home-upcoming-date">${escapeHtml(formatDate(row.date))}</span>

@@ -2,7 +2,7 @@ import {
   deleteCloudModuleState,
   loadCloudModuleState,
   saveCloudModuleState,
-} from '../../cloud/moduleStateCloud.js';
+} from '../../cloud/moduleStateCloud.js?v=1.2.4';
 
 /**
  * Generic local-first bridge for a single evolving module.

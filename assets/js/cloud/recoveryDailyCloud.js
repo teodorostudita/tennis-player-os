@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js';
-import { loadCloudModuleState } from './moduleStateCloud.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { loadCloudModuleState } from './moduleStateCloud.js?v=1.2.4';
 
 const POLL_MS = 3000;
 
@@ -372,13 +372,13 @@ export function startRecoveryDailySync({ store, athleteId, allowWrite = false, o
       let checkins = dedicated.checkins;
       let checkouts = dedicated.checkouts;
 
-      if (allowWrite) {
-        const localNutrition = store.getState().nutrition || {};
-        const localCheckinRows = combinedLocalCheckins(localNutrition).map(item => ({ ...item, _source: 'local' }));
-        const localCheckoutRows = localCheckouts(localNutrition).map(item => ({ ...item, _source: 'local' }));
-        const mergedCheckins = mergeEvents([localCheckinRows, dedicated.checkins]);
-        const mergedCheckouts = mergeEvents([localCheckoutRows, dedicated.checkouts]);
+      const localNutrition = store.getState().nutrition || {};
+      const localCheckinRows = combinedLocalCheckins(localNutrition).map(item => ({ ...item, _source: 'local' }));
+      const localCheckoutRows = localCheckouts(localNutrition).map(item => ({ ...item, _source: 'local' }));
+      const mergedCheckins = mergeEvents([localCheckinRows, dedicated.checkins]);
+      const mergedCheckouts = mergeEvents([localCheckoutRows, dedicated.checkouts]);
 
+      if (allowWrite) {
         const localWinsCheckins = mergedCheckins.filter(item => item._source === 'local' && !item.deletedAt);
         const localWinsCheckouts = mergedCheckouts.filter(item => item._source === 'local' && !item.deletedAt);
         if (localWinsCheckins.length) await upsertCheckins(athleteId, localWinsCheckins);
@@ -388,7 +388,16 @@ export function startRecoveryDailySync({ store, athleteId, allowWrite = false, o
           const canonical = await fetchDedicated(athleteId);
           checkins = canonical.checkins;
           checkouts = canonical.checkouts;
+        } else {
+          checkins = mergedCheckins;
+          checkouts = mergedCheckouts;
         }
+      } else {
+        // Read-only staff accounts must not lose rescued/local history simply
+        // because the dedicated cloud table is incomplete. Keep the visible
+        // union locally; a writer account can materialise it later.
+        checkins = mergedCheckins;
+        checkouts = mergedCheckouts;
       }
 
       applyRowsToStore(store, checkins, checkouts, 'poll');

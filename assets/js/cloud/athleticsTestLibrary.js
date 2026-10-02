@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js';
-import { loadAccessibleAthletes } from './athlete.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { loadAccessibleAthletes } from './athlete.js?v=1.2.4';
 
 function normalizeText(value) {
   return String(value ?? '').trim();

@@ -1,30 +1,30 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.2.4';
 
-import { modules } from '../data/schema.js';
-import { store } from '../data/store.js';
+import { modules } from '../data/schema.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../cloud/access.js';
+} from '../cloud/access.js?v=1.2.4';
 import {
   loadOpponentsIntoLocalStore,
   normalizeOpponentsPayload,
-} from '../cloud/opponentsCloud.js';
+} from '../cloud/opponentsCloud.js?v=1.2.4';
 import {
   loadMatchModule,
   normalizeMatchPayload,
   normalizeMatchRecord,
   startMatchSync,
-} from '../cloud/matchCloud.js';
+} from '../cloud/matchCloud.js?v=1.2.4';
 import {
   TENNISTALKER_COMPANION,
   companionSetupUrl,
-} from '../companionConfig.js';
+} from '../companionConfig.js?v=1.2.4';
 import {
   showInAppAlert,
   showInAppConfirm,
-} from './inAppMessages.js';
+} from './inAppMessages.js?v=1.2.4';
 
 const MAILBOX_ID = 'tpos-companion-mailbox';
 

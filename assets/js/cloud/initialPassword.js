@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
 
 function setMessage(gate, message = '', kind = '') {
   const box = gate.querySelector('#initial-password-message');

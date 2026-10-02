@@ -1,5 +1,5 @@
-import { defaultState, STORAGE_KEY } from './schema.js';
-import { dataProvider } from './providers/provider.js';
+import { defaultState, STORAGE_KEY } from './schema.js?v=1.2.4';
+import { dataProvider } from './providers/provider.js?v=1.2.4';
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));

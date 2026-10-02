@@ -1,4 +1,4 @@
-import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.3';
+import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
 
 const sections = [
   { id: 'overview', label: 'Overview' },

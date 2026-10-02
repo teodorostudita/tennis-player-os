@@ -1,6 +1,6 @@
-import { supabase } from './supabaseClient.js';
-import { normalizeUserType } from '../data/userTypes.js';
-import { loginFromEmail } from './loginIdentity.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { normalizeUserType } from '../data/userTypes.js?v=1.2.4';
+import { loginFromEmail } from './loginIdentity.js?v=1.2.4';
 
 let currentAccountAccess = {
   role: 'member',

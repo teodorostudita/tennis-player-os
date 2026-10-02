@@ -1,6 +1,6 @@
-import { canReadModule, canWriteModule } from '../cloud/access.js';
-import { getCurrentUserDisplayName } from '../cloud/accountAccess.js';
-import { showInAppConfirm } from '../ui/inAppMessages.js';
+import { canReadModule, canWriteModule } from '../cloud/access.js?v=1.2.4';
+import { getCurrentUserDisplayName } from '../cloud/accountAccess.js?v=1.2.4';
+import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
 
 const CATEGORY_LABELS = {
   tennis: 'Tennis',

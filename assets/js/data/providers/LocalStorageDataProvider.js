@@ -1,4 +1,4 @@
-import { DataProvider } from './DataProvider.js';
+import { DataProvider } from './DataProvider.js?v=1.2.4';
 
 /**
  * Local structured-data backend.

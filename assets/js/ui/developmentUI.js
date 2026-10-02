@@ -2,17 +2,17 @@ import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../cloud/access.js';
+} from '../cloud/access.js?v=1.2.4';
 import {
   loadDevelopmentIntoLocalStore,
   normalizeDevelopmentPayload,
   startDevelopmentCloudSync,
-} from '../cloud/developmentCloud.js';
-import { store } from '../data/store.js';
+} from '../cloud/developmentCloud.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
 import {
   showInAppAlert,
   showInAppConfirm,
-} from './inAppMessages.js';
+} from './inAppMessages.js?v=1.2.4';
 
 const STAGES = [
   {

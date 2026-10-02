@@ -1,6 +1,6 @@
-import { normalizeOpponentsPayload } from '../cloud/opponentsCloud.js';
-import { store } from '../data/store.js';
-import { showInAppAlert } from './inAppMessages.js';
+import { normalizeOpponentsPayload } from '../cloud/opponentsCloud.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
+import { showInAppAlert } from './inAppMessages.js?v=1.2.4';
 
 const TENNISTALKER_RANKINGS_URL = 'https://www.tennistalker.it/classifiche';
 const MAX_IMPORT = 50;

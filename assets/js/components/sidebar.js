@@ -1,6 +1,6 @@
-import { modules } from '../data/schema.js?v=1.2.3';
-import { APP_VERSION } from '../version.js?v=1.2.3';
-import { getCurrentUserType } from '../cloud/accountAccess.js?v=1.2.3';
+import { modules } from '../data/schema.js?v=1.2.4';
+import { APP_VERSION } from '../version.js?v=1.2.4';
+import { getCurrentUserType } from '../cloud/accountAccess.js?v=1.2.4';
 
 export function renderSidebar(activeRoute) {
   const contextualHome = ['athlete', 'parent', 'trainer'].includes(getCurrentUserType());

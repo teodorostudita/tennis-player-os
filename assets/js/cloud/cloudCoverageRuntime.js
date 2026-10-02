@@ -1,18 +1,18 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.2.4';
 
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from './access.js';
+} from './access.js?v=1.2.4';
 
 import {
   loadCloudModuleState,
   saveCloudModuleState
-} from './moduleStateCloud.js';
+} from './moduleStateCloud.js?v=1.2.4';
 
-import { store } from '../data/store.js';
-import { fileProvider } from '../data/providers/provider.js';
+import { store } from '../data/store.js?v=1.2.4';
+import { fileProvider } from '../data/providers/provider.js?v=1.2.4';
 
 const SAVE_DELAY_MS = 350;
 const RETRY_MIN_MS = 4000;

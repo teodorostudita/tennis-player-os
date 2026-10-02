@@ -1,12 +1,12 @@
-import { showInAppAlert } from './inAppMessages.js';
-import { store } from '../data/store.js';
-import { getCurrentAccess } from '../cloud/access.js';
+import { showInAppAlert } from './inAppMessages.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
+import { getCurrentAccess } from '../cloud/access.js?v=1.2.4';
 import {
   canEditAthleticsRecord,
   getCachedAthleticsStaffDirectory,
   loadAthleticsStaffDirectory,
   reassignAthleticsRecordOwner,
-} from '../cloud/trainingCloud.js';
+} from '../cloud/trainingCloud.js?v=1.2.4';
 
 let observer = null;
 let staffAthleteId = '';

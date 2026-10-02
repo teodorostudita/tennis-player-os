@@ -1,7 +1,7 @@
 import {
   loadCloudModuleState,
   saveCloudModuleState,
-} from './moduleStateCloud.js';
+} from './moduleStateCloud.js?v=1.2.4';
 
 const MODULE_KEY = 'development';
 const SCHEMA_VERSION = 2;
@@ -82,6 +82,50 @@ function fingerprint(payload) {
   return JSON.stringify(normalizeDevelopmentPayload(payload));
 }
 
+function rowTime(row = {}) {
+  const parsed = Date.parse(String(row.updatedAt || row.createdAt || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mergeRows(localRows = [], cloudRows = [], keyFn) {
+  const merged = new Map();
+  for (const row of cloudRows || []) {
+    const key = String(keyFn(row) || '').trim();
+    if (key) merged.set(key, clone(row));
+  }
+  for (const row of localRows || []) {
+    const key = String(keyFn(row) || '').trim();
+    if (!key) continue;
+    const existing = merged.get(key);
+    if (!existing || rowTime(row) >= rowTime(existing)) merged.set(key, clone(row));
+  }
+  return [...merged.values()];
+}
+
+export function mergeDevelopmentPayload(localPayload = {}, cloudPayload = {}) {
+  const local = normalizeDevelopmentPayload(localPayload);
+  const cloud = normalizeDevelopmentPayload(cloudPayload);
+  return normalizeDevelopmentPayload({
+    ...local,
+    ...cloud,
+    items: mergeRows(
+      local.items,
+      cloud.items,
+      row => row?.id || `${row?.type || ''}|${row?.title || ''}`,
+    ),
+    measurementRecords: mergeRows(
+      local.measurementRecords,
+      cloud.measurementRecords,
+      row => row?.id || `${row?.itemId || ''}|${row?.date || ''}`,
+    ),
+    workItems: mergeRows(
+      local.workItems,
+      cloud.workItems,
+      row => row?.id || `${row?.type || ''}|${row?.title || ''}`,
+    ),
+  });
+}
+
 export async function loadDevelopmentIntoLocalStore({
   store,
   athleteId,
@@ -99,16 +143,38 @@ export async function loadDevelopmentIntoLocalStore({
 
     if (cloudState) {
       const cloudDevelopment = normalizeDevelopmentPayload(cloudState.payload);
+      const mergedDevelopment = mergeDevelopmentPayload(
+        localDevelopment,
+        cloudDevelopment,
+      );
+      let resolvedCloudState = cloudState;
+
+      // Never let an empty/older cloud blob erase richer local Development.
+      // When this account can write, materialise the recovered union back to
+      // Supabase so every account sees the same canonical dataset.
+      if (
+        allowWrite
+        && fingerprint(mergedDevelopment) !== fingerprint(cloudDevelopment)
+      ) {
+        resolvedCloudState = await saveCloudModuleState({
+          athleteId,
+          moduleKey: MODULE_KEY,
+          payload: mergedDevelopment,
+          schemaVersion: SCHEMA_VERSION,
+        });
+      }
 
       store.update(state => {
-        state.development = clone(cloudDevelopment);
+        state.development = clone(mergedDevelopment);
         state.meta.developmentCloudLoadedAt = new Date().toISOString();
       });
 
       return {
-        source: 'cloud',
-        development: cloudDevelopment,
-        cloudState,
+        source: fingerprint(mergedDevelopment) === fingerprint(cloudDevelopment)
+          ? 'cloud'
+          : 'cloud-merged-local',
+        development: mergedDevelopment,
+        cloudState: resolvedCloudState,
         cloudError: null,
       };
     }
@@ -172,6 +238,7 @@ export function startDevelopmentCloudSync({
   let inFlight = false;
   let queuedPayload = null;
   let stopped = false;
+  let applyingMerged = false;
 
   const status = (value, message = '') => {
     onStatus?.({ status: value, message });
@@ -190,14 +257,45 @@ export function startDevelopmentCloudSync({
     status('syncing');
 
     try {
-      await saveCloudModuleState({
+      let latest = await loadCloudModuleState({
         athleteId,
         moduleKey: MODULE_KEY,
-        payload,
-        schemaVersion: SCHEMA_VERSION,
       });
+      let merged = mergeDevelopmentPayload(payload, latest?.payload || {});
+      let saved = null;
 
-      lastSavedFingerprint = nextFingerprint;
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        try {
+          saved = await saveCloudModuleState({
+            athleteId,
+            moduleKey: MODULE_KEY,
+            payload: merged,
+            schemaVersion: SCHEMA_VERSION,
+            expectedRevision: latest?.revision || null,
+          });
+          break;
+        } catch (error) {
+          if (error?.code !== 'TPOS_MODULE_REVISION_CONFLICT' || attempt === 3) throw error;
+          latest = await loadCloudModuleState({
+            athleteId,
+            moduleKey: MODULE_KEY,
+          });
+          merged = mergeDevelopmentPayload(merged, latest?.payload || {});
+        }
+      }
+
+      lastSavedFingerprint = fingerprint(saved?.payload || merged);
+
+      const current = normalizeDevelopmentPayload(store.getState().development);
+      if (fingerprint(current) !== lastSavedFingerprint) {
+        applyingMerged = true;
+        store.update(state => {
+          state.development = clone(saved?.payload || merged);
+          state.meta.developmentCloudReconciledAt = new Date().toISOString();
+        });
+        applyingMerged = false;
+      }
+
       status('synced');
     } catch (error) {
       console.warn(
@@ -226,7 +324,7 @@ export function startDevelopmentCloudSync({
   };
 
   const queue = development => {
-    if (stopped) return;
+    if (stopped || applyingMerged) return;
 
     const normalized = normalizeDevelopmentPayload(development);
     if (fingerprint(normalized) === lastSavedFingerprint) return;

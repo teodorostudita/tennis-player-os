@@ -1,4 +1,4 @@
-import { store } from '../data/store.js';
+import { store } from '../data/store.js?v=1.2.4';
 
 const TENNIS_SURFACES = ['Terra', 'Cemento', 'Indoor', 'Erba', 'Altro'];
 let pendingCommit = null;

@@ -1,5 +1,5 @@
-import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js';
-import { fileProvider } from '../data/providers/provider.js';
+import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
+import { fileProvider } from '../data/providers/provider.js?v=1.2.4';
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 

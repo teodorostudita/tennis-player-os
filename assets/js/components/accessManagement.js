@@ -1,25 +1,25 @@
-import { modules } from '../data/schema.js';
+import { modules } from '../data/schema.js?v=1.2.4';
 import {
   normalizeUserType,
   permissionPresetForUserType,
   userTypeDescription,
   userTypeLabel,
   userTypeOptionsMarkup,
-} from '../data/userTypes.js';
+} from '../data/userTypes.js?v=1.2.4';
 import {
   createOrUpdateAthleteAccess,
   deleteManagedAccount,
   getCurrentAccess,
   removeAthleteUser,
-} from '../cloud/access.js';
+} from '../cloud/access.js?v=1.2.4';
 import {
   loadOwnerAccessWorkspace,
   replaceOwnerUserAccess,
   saveOwnerUserAccountOptions,
-} from '../cloud/accessDirectory.js';
-import { isAppOwner } from '../cloud/accountAccess.js';
-import { emailFromLogin, loginFromEmail, normalizeUsername } from '../cloud/loginIdentity.js';
-import { showInAppConfirm } from '../ui/inAppMessages.js';
+} from '../cloud/accessDirectory.js?v=1.2.4';
+import { isAppOwner } from '../cloud/accountAccess.js?v=1.2.4';
+import { emailFromLogin, loginFromEmail, normalizeUsername } from '../cloud/loginIdentity.js?v=1.2.4';
+import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
 
 function escapeHtml(value = '') {
   return String(value)

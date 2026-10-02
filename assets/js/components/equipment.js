@@ -1,4 +1,4 @@
-import { showInAppConfirm } from '../ui/inAppMessages.js';
+import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
 
 const RACKET_STATUSES = {
   active: 'In uso',

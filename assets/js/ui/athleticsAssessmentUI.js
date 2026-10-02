@@ -1,13 +1,13 @@
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.2.4';
 
-import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js';
+import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js?v=1.2.4';
 import {
   currentAthleticsEvaluatorName,
   deleteAthleticsAssessmentEntry,
   loadAthleticsAssessmentEntries,
   saveAthleticsAssessmentEntry,
-} from '../cloud/athleticsAssessmentCloud.js';
-import { showInAppAlert, showInAppConfirm } from './inAppMessages.js';
+} from '../cloud/athleticsAssessmentCloud.js?v=1.2.4';
+import { showInAppAlert, showInAppConfirm } from './inAppMessages.js?v=1.2.4';
 
 const GROUPS = [
   {

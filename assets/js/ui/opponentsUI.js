@@ -1,16 +1,16 @@
-import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js';
+import { canReadModule, canWriteModule, getCurrentAccess } from '../cloud/access.js?v=1.2.4';
 import {
   loadOpponentsIntoLocalStore,
   normalizeOpponentsPayload,
   startOpponentsCloudSync,
-} from '../cloud/opponentsCloud.js';
-import { store } from '../data/store.js';
-import { showInAppAlert, showInAppConfirm } from './inAppMessages.js';
+} from '../cloud/opponentsCloud.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
+import { showInAppAlert, showInAppConfirm } from './inAppMessages.js?v=1.2.4';
 import {
   TENNISTALKER_COMPANION,
   appAssetUrl,
   companionSetupUrl,
-} from '../companionConfig.js';
+} from '../companionConfig.js?v=1.2.4';
 
 const SECTIONS = [
   ['rankings', 'Rankings'],

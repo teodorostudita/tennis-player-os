@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js';
-import { loadCurrentAccountAccess } from './accountAccess.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { loadCurrentAccountAccess } from './accountAccess.js?v=1.2.4';
 
 const SELECTED_ATHLETE_KEY = 'tennisPlayerOS.selectedAthlete.v1';
 

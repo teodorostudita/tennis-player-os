@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.2.4 — Data rescue + cloud hardening
+- La Home **Preparatore atletico** limita ora gli **Impegni rilevanti** ai soli **tornei** e alle **sessioni di tennis**; la seduta atletica resta già evidenziata nelle sezioni dedicate della Home.
+- Aggiunto un recupero **non distruttivo** delle cache locali dello stesso atleta: all'avvio TPOS cerca eventuali copie account/legacy più ricche e recupera Development, Opponents e Nutrition/Recovery senza cancellare le cache sorgenti.
+- **Development** e **Opponents** non considerano più automaticamente il blob cloud come superiore a una cache locale più ricca: all'avvio fanno unione dei record e, se l'account può scrivere, materializzano l'unione nel cloud.
+- I salvataggi di Development e Opponents usano ora la revisione cloud con riconciliazione e retry in caso di conflitto, evitando sovrascritture complete tra due account/dispositivi.
+- Un account **sola lettura** in Recovery non perde più eventuale storico recuperato localmente durante il polling: mantiene la vista unita local+cloud finché un account con scrittura non la consolida nel cloud.
+- Nessuna migration SQL e nessuna Edge Function.
+
 ## v1.2.3 — Home contestuale Preparatore atletico
 - Il profilo **Preparatore atletico** apre ora direttamente una Home dedicata, mantenendo la Dashboard generale come **Overview**.
 - La Home resta volutamente essenziale: **prossima sessione atletica**, **readiness di oggi**, **indicazioni fisiche**, **sessione Athletics di oggi**, **carico settimanale**, **prossimi impegni rilevanti** e accessi rapidi.

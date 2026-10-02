@@ -1,6 +1,6 @@
-import { supabase } from './supabaseClient.js';
-import { getCurrentAccess } from './access.js';
-import { loadAthleticsStaffDirectory } from './trainingCloud.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { getCurrentAccess } from './access.js?v=1.2.4';
+import { loadAthleticsStaffDirectory } from './trainingCloud.js?v=1.2.4';
 
 function clean(value = '') {
   return String(value ?? '').replace(/\s+/g, ' ').trim();

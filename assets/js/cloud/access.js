@@ -1,5 +1,5 @@
-import { supabase } from './supabaseClient.js';
-import { loginFromEmail } from './loginIdentity.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { loginFromEmail } from './loginIdentity.js?v=1.2.4';
 
 const MODULE_KEYS = [
   'development',

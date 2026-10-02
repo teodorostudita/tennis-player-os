@@ -1,4 +1,4 @@
-import { APP_VERSION } from '../version.js';
+import { APP_VERSION } from '../version.js?v=1.2.4';
 
 export const STORAGE_KEY = 'tennisPlayerOS.state.v1';
 

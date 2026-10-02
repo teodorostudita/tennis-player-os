@@ -1,17 +1,17 @@
 // Wait for the authenticated app bootstrap to finish before attaching
 // Equipment cloud persistence.
-import '../bootstrap.js';
+import '../bootstrap.js?v=1.2.4';
 
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from './access.js';
-import { store } from '../data/store.js';
+} from './access.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
 import {
   loadEquipmentIntoLocalStore,
   startEquipmentCloudSync,
-} from './equipmentCloud.js';
+} from './equipmentCloud.js?v=1.2.4';
 
 let lastStatus = { status: 'synced', message: '' };
 

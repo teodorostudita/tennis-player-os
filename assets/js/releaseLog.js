@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.4',
+    date: '2026-10-02',
+    title: 'Data rescue + cloud hardening',
+    details: [
+      'La Home Preparatore mostra negli Impegni rilevanti soltanto tornei e sessioni di tennis.',
+      'All’avvio TPOS cerca cache locali dello stesso atleta eventualmente più ricche e recupera in modo non distruttivo Development, Opponents e Nutrition/Recovery.',
+      'Development e Opponents uniscono ora cache locale e cloud invece di lasciare che un blob cloud vuoto o incompleto cancelli dati locali più ricchi.',
+      'I salvataggi Development/Opponents usano revisione cloud, merge e retry per evitare sovrascritture complete tra account o dispositivi concorrenti.',
+      'Recovery in sola lettura conserva la vista unita local+cloud durante il polling finché un account con scrittura non consolida lo storico nel cloud.',
+      'Nessuna migration SQL e nessuna Edge Function.',
+    ],
+  },
+  {
     version: '1.2.3',
     date: '2026-10-02',
     title: 'Home contestuale Preparatore atletico',

@@ -1,5 +1,5 @@
-import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js';
-import { canWriteModule } from '../cloud/access.js';
+import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
+import { canWriteModule } from '../cloud/access.js?v=1.2.4';
 
 const sections = [
   { id: 'overview', label: 'Overview' },

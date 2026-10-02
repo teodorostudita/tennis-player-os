@@ -1,10 +1,10 @@
-import { canReadModule, canWriteModule } from '../cloud/access.js';
+import { canReadModule, canWriteModule } from '../cloud/access.js?v=1.2.4';
 import {
   athleticsTestDefinitionSignature,
   loadReusableAthleticsTests,
   syncAthleticsTestTemplates,
-} from '../cloud/athleticsTestLibrary.js';
-import { store } from '../data/store.js';
+} from '../cloud/athleticsTestLibrary.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
 
 const SYNC_DELAY_MS = 350;
 

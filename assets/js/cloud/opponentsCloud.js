@@ -1,7 +1,7 @@
 import {
   loadCloudModuleState,
   saveCloudModuleState,
-} from './moduleStateCloud.js';
+} from './moduleStateCloud.js?v=1.2.4';
 
 const MODULE_KEY = 'opponents';
 const SCHEMA_VERSION = 1;
@@ -44,6 +44,59 @@ function fingerprint(payload) {
   return JSON.stringify(normalizeOpponentsPayload(payload));
 }
 
+function rowTime(row = {}) {
+  const parsed = Date.parse(String(
+    row.updatedAt
+    || row.source?.lastCheckedAt
+    || row.source?.importedAt
+    || row.createdAt
+    || '',
+  ));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mergeRows(localRows = [], cloudRows = [], keyFn) {
+  const merged = new Map();
+  for (const row of cloudRows || []) {
+    const key = String(keyFn(row) || '').trim();
+    if (key) merged.set(key, clone(row));
+  }
+  for (const row of localRows || []) {
+    const key = String(keyFn(row) || '').trim();
+    if (!key) continue;
+    const existing = merged.get(key);
+    if (!existing || rowTime(row) >= rowTime(existing)) merged.set(key, clone(row));
+  }
+  return [...merged.values()];
+}
+
+function profileKey(row = {}) {
+  return row?.id || row?.source?.externalId || String(row?.name || '').trim().toLowerCase();
+}
+
+function snapshotKey(row = {}) {
+  return row?.id || `${row?.date || ''}|${row?.category || ''}|${row?.gender || ''}|${row?.scope || ''}`;
+}
+
+export function mergeOpponentsPayload(localPayload = {}, cloudPayload = {}) {
+  const local = normalizeOpponentsPayload(localPayload);
+  const cloud = normalizeOpponentsPayload(cloudPayload);
+  return normalizeOpponentsPayload({
+    ...local,
+    ...cloud,
+    rankings: {
+      ...local.rankings,
+      ...cloud.rankings,
+      snapshots: mergeRows(
+        local.rankings.snapshots,
+        cloud.rankings.snapshots,
+        snapshotKey,
+      ),
+    },
+    profiles: mergeRows(local.profiles, cloud.profiles, profileKey),
+  });
+}
+
 export async function loadOpponentsIntoLocalStore({
   store,
   athleteId,
@@ -59,16 +112,32 @@ export async function loadOpponentsIntoLocalStore({
 
     if (cloudState) {
       const cloudOpponents = normalizeOpponentsPayload(cloudState.payload);
+      const mergedOpponents = mergeOpponentsPayload(localOpponents, cloudOpponents);
+      let resolvedCloudState = cloudState;
+
+      if (
+        allowWrite
+        && fingerprint(mergedOpponents) !== fingerprint(cloudOpponents)
+      ) {
+        resolvedCloudState = await saveCloudModuleState({
+          athleteId,
+          moduleKey: MODULE_KEY,
+          payload: mergedOpponents,
+          schemaVersion: SCHEMA_VERSION,
+        });
+      }
 
       store.update(state => {
-        state.opponents = clone(cloudOpponents);
+        state.opponents = clone(mergedOpponents);
         state.meta.opponentsCloudLoadedAt = new Date().toISOString();
       });
 
       return {
-        source: 'cloud',
-        opponents: cloudOpponents,
-        cloudState,
+        source: fingerprint(mergedOpponents) === fingerprint(cloudOpponents)
+          ? 'cloud'
+          : 'cloud-merged-local',
+        opponents: mergedOpponents,
+        cloudState: resolvedCloudState,
         cloudError: null,
       };
     }
@@ -129,6 +198,7 @@ export function startOpponentsCloudSync({
   let inFlight = false;
   let queuedPayload = null;
   let stopped = false;
+  let applyingMerged = false;
 
   const status = (value, message = '') => {
     onStatus?.({ status: value, message });
@@ -147,14 +217,45 @@ export function startOpponentsCloudSync({
     status('syncing');
 
     try {
-      await saveCloudModuleState({
+      let latest = await loadCloudModuleState({
         athleteId,
         moduleKey: MODULE_KEY,
-        payload,
-        schemaVersion: SCHEMA_VERSION,
       });
+      let merged = mergeOpponentsPayload(payload, latest?.payload || {});
+      let saved = null;
 
-      lastSavedFingerprint = nextFingerprint;
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        try {
+          saved = await saveCloudModuleState({
+            athleteId,
+            moduleKey: MODULE_KEY,
+            payload: merged,
+            schemaVersion: SCHEMA_VERSION,
+            expectedRevision: latest?.revision || null,
+          });
+          break;
+        } catch (error) {
+          if (error?.code !== 'TPOS_MODULE_REVISION_CONFLICT' || attempt === 3) throw error;
+          latest = await loadCloudModuleState({
+            athleteId,
+            moduleKey: MODULE_KEY,
+          });
+          merged = mergeOpponentsPayload(merged, latest?.payload || {});
+        }
+      }
+
+      lastSavedFingerprint = fingerprint(saved?.payload || merged);
+
+      const current = normalizeOpponentsPayload(store.getState().opponents);
+      if (fingerprint(current) !== lastSavedFingerprint) {
+        applyingMerged = true;
+        store.update(state => {
+          state.opponents = clone(saved?.payload || merged);
+          state.meta.opponentsCloudReconciledAt = new Date().toISOString();
+        });
+        applyingMerged = false;
+      }
+
       status('synced');
     } catch (error) {
       console.warn('Opponents cloud save failed; local cache retained.', error);
@@ -179,7 +280,7 @@ export function startOpponentsCloudSync({
   };
 
   const queue = opponents => {
-    if (stopped) return;
+    if (stopped || applyingMerged) return;
 
     const normalized = normalizeOpponentsPayload(opponents);
     if (fingerprint(normalized) === lastSavedFingerprint) return;

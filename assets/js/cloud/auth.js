@@ -1,9 +1,9 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
 import {
   emailFromLogin,
   isTechnicalLoginEmail,
   loginFromEmail,
-} from './loginIdentity.js';
+} from './loginIdentity.js?v=1.2.4';
 
 let authGate = null;
 

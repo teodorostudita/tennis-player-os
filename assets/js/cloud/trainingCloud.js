@@ -1,6 +1,6 @@
-import { supabase } from './supabaseClient.js';
-import { getCurrentAccess } from './access.js';
-import { loadCloudModuleState } from './moduleStateCloud.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
+import { getCurrentAccess } from './access.js?v=1.2.4';
+import { loadCloudModuleState } from './moduleStateCloud.js?v=1.2.4';
 
 const LEGACY_MODULE_KEY = 'training';
 const SAVE_DELAY_MS = 300;

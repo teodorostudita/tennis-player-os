@@ -1,7 +1,7 @@
 import {
   loadCloudModuleState,
   saveCloudModuleState
-} from './moduleStateCloud.js';
+} from './moduleStateCloud.js?v=1.2.4';
 
 const SAVE_DELAY_MS = 350;
 const REMOTE_REFRESH_MS = 3000;

@@ -1,4 +1,4 @@
-import { getCurrentAccess } from './access.js';
+import { getCurrentAccess } from './access.js?v=1.2.4';
 
 const MODULE_KEYS = new Set([
   'development',

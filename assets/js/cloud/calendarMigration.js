@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
 
 const MIGRATION_PARAM = 'tpos_calendar_migrate';
 

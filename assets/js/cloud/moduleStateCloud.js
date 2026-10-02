@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js?v=1.2.4';
 
 const RESERVED_MODULE_KEYS = new Set(['calendar']);
 

@@ -1,10 +1,10 @@
-import { FileProvider } from './FileProvider.js';
+import { FileProvider } from './FileProvider.js?v=1.2.4';
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../../cloud/access.js';
-import { supabase } from '../../cloud/supabaseClient.js';
+} from '../../cloud/access.js?v=1.2.4';
+import { supabase } from '../../cloud/supabaseClient.js?v=1.2.4';
 
 const DEFAULT_BUCKET = 'tpos-resources';
 

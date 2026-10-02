@@ -1,6 +1,6 @@
-import { supabase } from '../cloud/supabaseClient.js';
-import { getCurrentAccess } from '../cloud/access.js';
-import { store } from '../data/store.js';
+import { supabase } from '../cloud/supabaseClient.js?v=1.2.4';
+import { getCurrentAccess } from '../cloud/access.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.4';
 
 const SAVE_DELAY_MS = 180;
 let saveTimer = null;
