@@ -9,6 +9,7 @@ import { renderEconomics } from './components/economics.js';
 import { renderNutrition } from './components/nutrition.js';
 import { renderResourceLibrary } from './components/resourceLibrary.js';
 import { renderAthleteHome } from './components/contextualHome.js';
+import { renderParentHome } from './components/parentHome.js';
 import { getCurrentUserType } from './cloud/accountAccess.js';
 
 const sidebar = document.querySelector('#sidebar');
@@ -21,7 +22,7 @@ const LIBRARY_MODULES = new Set(['development', 'training', 'drills', 'equipment
 const moduleWorkspaceView = new Map();
 
 function defaultRoute() {
-  return getCurrentUserType() === 'athlete' ? 'home' : 'dashboard';
+  return ['athlete', 'parent'].includes(getCurrentUserType()) ? 'home' : 'dashboard';
 }
 
 function getRoute() {
@@ -51,7 +52,7 @@ function dashboardModuleIcon(module) {
 function renderDashboard() {
   const { athlete } = store.getState();
   const fullName = [athlete.firstName, athlete.lastName].filter(Boolean).join(' ') || 'Nuovo atleta';
-  title.textContent = getCurrentUserType() === 'athlete' ? 'Overview' : 'Dashboard';
+  title.textContent = ['athlete', 'parent'].includes(getCurrentUserType()) ? 'Overview' : 'Dashboard';
 
   main.innerHTML = `
     <section class="hero">
@@ -229,11 +230,15 @@ function render() {
   sidebar.classList.remove('open');
 
   if (route === 'home') {
-    if (getCurrentUserType() !== 'athlete') {
+    const userType = getCurrentUserType();
+    if (userType === 'athlete') {
+      renderAthleteHome({ main, title, store });
+    } else if (userType === 'parent') {
+      renderParentHome({ main, title, store });
+    } else {
       setRoute('dashboard');
       return;
     }
-    renderAthleteHome({ main, title, store });
   }
   else if (route === 'dashboard') renderDashboard();
   else if (route === 'athlete') renderAthleteProfile();
@@ -288,8 +293,10 @@ store.subscribe(() => {
   saveIndicator.textContent = 'Salvato';
   const route = getRoute();
 
-  if (route === 'home' && getCurrentUserType() === 'athlete') {
-    renderAthleteHome({ main, title, store });
+  if (route === 'home') {
+    const userType = getCurrentUserType();
+    if (userType === 'athlete') renderAthleteHome({ main, title, store });
+    else if (userType === 'parent') renderParentHome({ main, title, store });
   } else if (route === 'dashboard') {
     // renderDashboard() replaces the dashboard DOM. Rebind its route buttons
     // immediately, otherwise a background/cloud store update leaves the new

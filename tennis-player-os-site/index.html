@@ -15,7 +15,7 @@
   <nav aria-label="Navigazione principale">
     <a href="#product" data-i18n="navProduct">Prodotto</a>
     <a href="#features" data-i18n="navFeatures">Moduli</a>
-    <a href="#team" data-i18n="navTeam">Team</a>
+    <a href="#roles" data-i18n="navRoles">Profili</a>
     <a href="#beta" data-i18n="navBeta">Beta</a>
   </nav>
   <div class="header-actions">
@@ -39,10 +39,15 @@
         <a class="button ghost" href="#features" data-i18n="explore">Scopri i 12 moduli ↓</a>
       </div>
       <p class="micro" data-i18n="betaMicro">Founding Beta · Accesso anticipato limitato · Web app</p>
+      <div class="hero-highlights">
+        <span data-i18n="heroTag1">12 moduli connessi</span>
+        <span data-i18n="heroTag2">Ruoli e dashboard dedicate</span>
+        <span data-i18n="heroTag3">Un solo record atleta</span>
+      </div>
     </div>
 
     <div class="hero-preview">
-      <button class="preview-card" type="button" id="openPreview" aria-haspopup="dialog" aria-controls="previewDialog">
+      <button class="preview-card" type="button" data-preview-title-key="previewDialogTitle" data-preview-body-key="previewDialogBody" data-preview-image="assets/product-previews/dashboard.png" data-preview-alt="Tennis Player OS dashboard preview" data-preview-caption-key="previewOpen" id="openPreview">
         <div class="browser-bar"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
         <div class="real-shot-frame">
           <img src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
@@ -123,16 +128,62 @@
     </div>
   </section>
 
-  <section class="connections section">
-    <div class="section-head left">
-      <span class="kicker" data-i18n="connectKicker">LA DIFFERENZA</span>
-      <h2 data-i18n="connectTitle">I dati sono utili.<br><span class="accent">I dati connessi sono potenti.</span></h2>
-      <p data-i18n="connectBody">Tennis Player OS non è una raccolta di dodici taccuini digitali. I moduli parlano tra loro, così ciò che accade in una parte del percorso può essere letto nel contesto di tutto il resto.</p>
+  <section class="roles-section section" id="roles">
+    <div class="section-head roles-head">
+      <span class="kicker" data-i18n="rolesKicker">ACCESSI E DASHBOARD PERSONALIZZATE</span>
+      <h2 data-i18n="rolesTitle">Ogni profilo vede ciò che gli serve.</h2>
+      <p data-i18n="rolesBody">Tennis Player OS adatta accessi, priorità e schermata iniziale in base al ruolo: atleta, genitore e professionisti lavorano sullo stesso percorso, ma con strumenti diversi.</p>
     </div>
-    <div class="story-cards">
-      <article><span>↗</span><div><h3 data-i18n="injuryTitle">Un infortunio non è solo un infortunio.</h3><p data-i18n="injuryBody">Collega dolore e limitazioni a carico atletico, match, recupero e storico dei materiali.</p></div></article>
-      <article><span>◎</span><div><h3 data-i18n="goalTitle">Un obiettivo tecnico non è solo una nota.</h3><p data-i18n="goalBody">Collega temi di sviluppo, drills, sessioni, test e ciò che accade davvero in partita.</p></div></article>
-      <article><span>⌁</span><div><h3 data-i18n="racketTitle">Una racchetta non è solo una racchetta.</h3><p data-i18n="racketBody">Segui setup, tensione corde, ore di gioco, comfort e performance nel tempo.</p></div></article>
+
+    <div class="roles-showcase">
+      <div class="roles-copy-card">
+        <div class="role-tabs" id="roleTabs" aria-label="Profili disponibili">
+          <button class="role-tab active" type="button" data-role="athlete">Atleta</button>
+          <button class="role-tab" type="button" data-role="parent">Genitore</button>
+          <button class="role-tab" type="button" data-role="coach">Coach</button>
+          <button class="role-tab" type="button" data-role="athletic">Preparatore atletico</button>
+          <button class="role-tab" type="button" data-role="physio">Fisioterapista</button>
+          <button class="role-tab" type="button" data-role="nutrition">Nutrizionista</button>
+          <button class="role-tab" type="button" data-role="mental">Mental coach</button>
+          <button class="role-tab" type="button" data-role="custom">Custom</button>
+        </div>
+
+        <div class="role-detail">
+          <div class="role-badge" id="roleBadge">Dashboard atleta</div>
+          <h3 id="roleTitle">Atleta</h3>
+          <p id="roleLead">La dashboard atleta mette al centro ciò che conta oggi: check-in, prossimi impegni, routine e azioni rapide.</p>
+          <ul class="role-list" id="roleList"></ul>
+          <div class="role-access-panel">
+            <div>
+              <small data-i18n="roleSees">VEDE SUBITO</small>
+              <strong id="roleSees">Oggi, check-in, routine, prossimi impegni</strong>
+            </div>
+            <div>
+              <small data-i18n="roleCanDo">PUÒ FARE</small>
+              <strong id="roleCanDo">Compilare check-in e consultare la giornata</strong>
+            </div>
+          </div>
+          <div class="role-note" id="roleNote">Un solo record, ma una schermata iniziale diversa per ogni ruolo.</div>
+        </div>
+      </div>
+
+      <div class="roles-visual-card">
+        <button class="roles-panel-button" type="button" data-preview-title-key="rolesPreviewTitle" data-preview-body-key="rolesPreviewBody" data-preview-image="assets/marketing/roles-panel.png" data-preview-alt="Accessi e dashboard personalizzate">
+          <img src="assets/marketing/roles-panel.png" alt="Accessi e dashboard personalizzate" />
+          <div class="roles-panel-overlay">
+            <span class="pill-soft" data-i18n="rolesPanelPill">NUOVO BLOCCO HOME</span>
+            <strong data-i18n="rolesPanelLabel">Profili, dashboard e accessi differenziati</strong>
+            <span class="preview-link" data-i18n="previewOpen">Apri fullscreen</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="roles-bottom-strip">
+      <span data-i18n="rolesStrip1">Permessi differenziati</span>
+      <span data-i18n="rolesStrip2">Un solo record atleta</span>
+      <span data-i18n="rolesStrip3">Dashboard iniziali mirate</span>
+      <span data-i18n="rolesStrip4">Un intero team sullo stesso percorso</span>
     </div>
   </section>
 
@@ -218,7 +269,7 @@
   <div class="brand"><span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span></div>
   <p>One Player. A Complete Journey.</p>
   <div><a href="#" data-i18n="privacy">Privacy</a><a href="#" data-i18n="terms">Termini</a><a href="#beta">Beta</a></div>
-  <small>© 2026 Tennis Player OS · Beta site v0.8</small>
+  <small>© 2026 Tennis Player OS · Beta site v1.1</small>
 </footer>
 
 <dialog id="previewDialog" aria-labelledby="previewDialogTitle">
@@ -227,17 +278,17 @@
     <div class="dialog-copy">
       <span class="kicker" data-i18n="previewKicker">ANTEPRIMA PRODOTTO</span>
       <h2 id="previewDialogTitle" data-i18n="previewDialogTitle">Una schermata reale della dashboard.</h2>
-      <p data-i18n="previewDialogBody">Questa hero usa una schermata reale di Tennis Player OS con un profilo demo, così il visitatore può percepire meglio l’interfaccia effettiva del prodotto.</p>
+      <p id="previewDialogBody" data-i18n="previewDialogBody">Questa hero usa una schermata reale di Tennis Player OS con un profilo demo, così il visitatore può percepire meglio l’interfaccia effettiva del prodotto.</p>
     </div>
     <div class="dialog-stage">
       <div class="browser-bar large"><span></span><span></span><span></span><small>app.tennisplayeros</small></div>
       <div class="real-shot-frame large">
-        <img src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
+        <img id="dialogPreviewImage" src="assets/product-previews/dashboard.png" alt="Tennis Player OS dashboard preview" />
       </div>
     </div>
   </div>
 </dialog>
 
-<script src="app.js?v=1.0.27-beta-live-2"></script>
+<script src="app.js?v=1.1"></script>
 </body>
 </html>

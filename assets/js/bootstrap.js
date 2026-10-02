@@ -1,6 +1,6 @@
 import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js';
 import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js';
-import { canCreateAthletes, loadCurrentAccountAccess } from './cloud/accountAccess.js';
+import { canCreateAthletes, getCurrentUserType, loadCurrentAccountAccess } from './cloud/accountAccess.js';
 import { enforceInitialPasswordChange } from './cloud/initialPassword.js';
 import { startPermissionGuard } from './cloud/permissionGuard.js';
 import { mountAccessManagementControl } from './components/accessManagement.js';
@@ -42,6 +42,8 @@ import {
   loadCalendarMakeupsIntoStore,
   startCalendarMakeupsCloudSync,
 } from './cloud/calendarMakeupsCloud.js';
+import { loadHealthModule } from './cloud/healthCloud.js';
+import { loadEconomicsIntoLocalStore } from './cloud/economicsCloud.js';
 import { store } from './data/store.js';
 
 function showStartupError(message) {
@@ -334,6 +336,25 @@ if (session) {
             athleteId: cloudAthlete.id,
             allowWrite: canWriteModule('nutrition'),
           });
+        }
+
+        // Parent Home aggregates health and economics before the first render,
+        // so certificate/payment alerts are already available on entry. The
+        // dedicated module runtimes remain authoritative for subsequent edits.
+        if (getCurrentUserType() === 'parent') {
+          if (canReadModule('health')) {
+            await loadHealthModule({
+              store,
+              athleteId: cloudAthlete.id,
+            });
+          }
+          if (canReadModule('economics')) {
+            await loadEconomicsIntoLocalStore({
+              store,
+              athleteId: cloudAthlete.id,
+              allowWrite: canWriteModule('economics'),
+            });
+          }
         }
 
         await import('./app.js');

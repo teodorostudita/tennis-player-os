@@ -58,7 +58,17 @@ const ui = {
   seasonStart: currentSeasonStart(),
 };
 
+function consumeRequestedEconomicsSection() {
+  try {
+    const requested = sessionStorage.getItem('tpos.economics.section');
+    if (!sections.some(section => section.id === requested)) return;
+    ui.section = requested;
+    sessionStorage.removeItem('tpos.economics.section');
+  } catch (_) {}
+}
+
 export function renderEconomics({ main, title, store }) {
+  consumeRequestedEconomicsSection();
   title.textContent = '12. Economics';
 
   const state = store.getState();

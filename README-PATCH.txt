@@ -1,6 +1,5 @@
-TPOS v1.2.0 — Recuperi in Calendar
+TPOS v1.2.1 — Home contestuale Genitore
 
-Aggiunge il workflow completo per le sessioni saltate e da recuperare nel Calendar.
-Include nuova tabella cloud calendar_makeups e relativa migration Supabase.
-Include anche il CTA semplificato Certificato agonistico della v1.1.9.
-Nessuna Edge Function modificata.
+Aggiunge la Home dedicata al profilo Genitore: stato della giornata, recuperi, scadenze, pagamenti, certificato agonistico, vita residua di corde/scarpe e prossimi appuntamenti importanti.
+I collegamenti aprono direttamente le sezioni Calendar Recuperi, Economics Pagamenti ed Equipment pertinenti.
+Nessuna migration SQL e nessuna Edge Function modificata.

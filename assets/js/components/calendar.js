@@ -72,7 +72,19 @@ let tournamentStatusFilter = 'all';
 let calendarClipboard = null;
 let suppressTimelineEventClickUntil = 0;
 
+function consumeRequestedCalendarSection() {
+  try {
+    const requested = sessionStorage.getItem('tpos.calendar.section');
+    if (!['planner', 'tournaments', 'makeups'].includes(requested)) return;
+    calendarSection = requested;
+    sessionStorage.removeItem('tpos.calendar.section');
+  } catch (_) {
+    // Deep-linking remains optional if sessionStorage is unavailable.
+  }
+}
+
 export function renderCalendar({ main, title, store }) {
+  consumeRequestedCalendarSection();
   title.textContent = '12. Calendar';
   ensureRecurringCoverage(store, dateKey(addDays(weekAnchor, RECURRENCE_EXTENSION_WEEKS * 7)));
   const state = store.getState();

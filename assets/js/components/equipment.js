@@ -25,7 +25,17 @@ const SHOE_SURFACES = ['Terra', 'Cemento', 'All court', 'Indoor', 'Erba', 'Altro
 
 let equipmentSection = 'setup';
 
+function consumeRequestedEquipmentSection() {
+  try {
+    const requested = sessionStorage.getItem('tpos.equipment.section');
+    if (!['setup', 'rackets', 'strings', 'shoes'].includes(requested)) return;
+    equipmentSection = requested;
+    sessionStorage.removeItem('tpos.equipment.section');
+  } catch (_) {}
+}
+
 export function renderEquipment({ main, title, store }) {
+  consumeRequestedEquipmentSection();
   title.textContent = '6. Equipment';
   const equipment = normalizeEquipment(store.getState().equipment);
 

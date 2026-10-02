@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.1',
+    date: '2026-10-01',
+    title: 'Home contestuale Genitore',
+    details: [
+      'Il profilo Genitore apre ora una Home operativa distinta dalla Overview generale.',
+      'La Home riunisce agenda di oggi, stato Check-in/checkout, recuperi, pagamenti, scadenza certificato, restrizioni e avvisi Equipment.',
+      'Corde e scarpe compaiono soltanto quando resta meno del 25% della vita prevista, con priorità maggiore sotto il 10% o oltre soglia.',
+      'La sezione Prossimamente mostra nei 14 giorni successivi tornei, viaggi, visite/physio, recuperi programmati e deadline di iscrizione.',
+      'I CTA portano direttamente alle sezioni operative di Calendar, Economics ed Equipment senza duplicare i dati.',
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-10-01',
     title: 'Recuperi in Calendar',

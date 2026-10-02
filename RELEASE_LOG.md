@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.2.1 — Home contestuale Genitore
+- Il profilo **Genitore** apre ora una Home personale, mantenendo la Dashboard generale come **Overview**.
+- **Oggi** mostra Adesso/Prossimo, accompagnatore, stato di Check-in e Training checkout e timeline giornaliera.
+- **Da fare** aggrega soltanto le eccezioni operative: recuperi, attività senza accompagnatore, pagamenti aperti, deadline torneo, certificato agonistico entro 60 giorni, restrizioni sanitarie e fine vita di corde/scarpe.
+- Le soglie Equipment evidenziano corde/scarpe sotto il 25% di vita residua e aumentano la priorità sotto il 10% o oltre la soglia prevista.
+- **Prossimamente** raccoglie tornei, viaggi, visite/physio, recuperi programmati e deadline entro 14 giorni.
+- I collegamenti contestuali aprono direttamente **Calendar → Recuperi**, **Economics → Pagamenti** ed **Equipment → Incordature/Scarpe**.
+- Per il profilo Genitore, Health ed Economics vengono caricati prima del primo render della Home così gli alert cloud sono disponibili subito.
+- Nessuna nuova migration SQL e nessuna Edge Function.
+
 ## v1.2.0 — Recuperi in Calendar
 - Le sessioni **Tennis** e **Preparazione fisica** possono essere segnate come **saltate** direttamente dal Calendar, con motivo e indicazione se debbano essere recuperate.
 - Nuova sezione **Recuperi** nel Calendar con stati **Da programmare → Programmato → Recuperato**, più **Non da recuperare**.

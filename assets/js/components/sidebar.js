@@ -3,7 +3,7 @@ import { APP_VERSION } from '../version.js';
 import { getCurrentUserType } from '../cloud/accountAccess.js';
 
 export function renderSidebar(activeRoute) {
-  const athleteHome = getCurrentUserType() === 'athlete';
+  const contextualHome = ['athlete', 'parent'].includes(getCurrentUserType());
   const items = modules.map(m => `
     <button class="nav-item ${activeRoute === m.id ? 'active' : ''}" data-route="${m.id}">
       <span class="nav-icon">${m.icon}</span>
@@ -18,7 +18,7 @@ export function renderSidebar(activeRoute) {
       ${activeRoute === 'dashboard' || activeRoute === 'home' ? `<div class="brand-version">v${APP_VERSION}</div>` : ''}
     </div>
     <nav class="nav">
-      ${athleteHome ? `
+      ${contextualHome ? `
         <button class="nav-item ${activeRoute === 'home' ? 'active' : ''}" data-route="home">
           <span class="nav-icon">⌂</span>
           <span class="nav-label">Home</span>
