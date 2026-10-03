@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.8',
+    date: '2026-10-03',
+    title: 'Nutrition cloud runtime repair',
+    details: [
+      'Ripristinato il merge record-level di Nutrition: il runtime definisce ora mergeRows invece di cadere in ReferenceError e usare soltanto la cache locale.',
+      'Il runtime cloud usa le stesse istanze canoniche di bootstrap, access e store già usate dal core della app, evitando duplicazioni dovute ai vecchi import ?v=1.2.4.',
+      'Il merge conserva i record presenti soltanto in locale e lascia prevalere la copia cloud quando esiste lo stesso identificatore stabile.',
+      'Nessuna migration SQL e nessuna modifica a Calendar o al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.7',
     date: '2026-10-03',
     title: 'Calendar dialog null-safety',

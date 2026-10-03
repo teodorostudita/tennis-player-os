@@ -1,18 +1,18 @@
-import '../bootstrap.js?v=1.2.4';
+import '../bootstrap.js?v=1.2.6';
 
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from './access.js?v=1.2.4';
+} from './access.js?v=1.2.6';
 
 import {
   loadCloudModuleState,
   saveCloudModuleState
-} from './moduleStateCloud.js?v=1.2.4';
+} from './moduleStateCloud.js?v=1.2.6';
 
-import { store } from '../data/store.js?v=1.2.4';
-import { fileProvider } from '../data/providers/provider.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.6';
+import { fileProvider } from '../data/providers/provider.js?v=1.2.6';
 
 const SAVE_DELAY_MS = 350;
 const RETRY_MIN_MS = 4000;
@@ -80,6 +80,33 @@ function normalizeObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value
     : {};
+}
+
+function mergeRows(localRows = [], cloudRows = [], keyForItem = item => item?.id || '') {
+  const merged = [];
+  const indexByKey = new Map();
+
+  const addRows = rows => {
+    for (const item of Array.isArray(rows) ? rows : []) {
+      const key = String(keyForItem(item) ?? '').trim();
+
+      if (!key) {
+        merged.push(item);
+        continue;
+      }
+
+      if (indexByKey.has(key)) {
+        merged[indexByKey.get(key)] = item;
+      } else {
+        indexByKey.set(key, merged.length);
+        merged.push(item);
+      }
+    }
+  };
+
+  addRows(localRows);
+  addRows(cloudRows);
+  return merged;
 }
 
 function normalizeDrills(payload = {}) {

@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.2.8 — Nutrition cloud runtime repair
+- Ripristinato il **merge record-level di Nutrition**: `mergeRows()` è ora definita e il caricamento cloud non ricade più automaticamente sulla sola cache locale.
+- `cloudCoverageRuntime.js` usa le stesse istanze canoniche di **bootstrap**, **access** e **store** del core TPOS, eliminando i vecchi import `?v=1.2.4` che potevano creare moduli/stato duplicati nel browser.
+- Il merge conserva i record solo-locali e, a parità di chiave stabile, mantiene come autoritativa la copia cloud appena riletta prima della riconciliazione.
+- Nessuna migration SQL; nessuna modifica a Calendar o a `tennis-player-os-site/`.
+
 ## v1.2.7 — Calendar dialog null-safety
 - Corretto il crash che impediva l’apertura di **+ Nuova attività**: `openEvent(null)` raggiungeva `hasExplicitNoCompanion()` e tentava di leggere `companionMode` da `null`.
 - La gestione di **Nessun accompagnatore** è ora null-safe sia per una nuova attività sia per dati incompleti/legacy.
