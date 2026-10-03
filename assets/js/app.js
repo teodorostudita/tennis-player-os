@@ -1,7 +1,7 @@
 import { modules } from './data/schema.js?v=1.2.6';
 import { store } from './data/store.js?v=1.2.6';
 import { renderSidebar } from './components/sidebar.js?v=1.2.6';
-import { renderCalendar } from './components/calendar.js?v=1.2.6';
+import { renderCalendar } from './components/calendar.js?v=1.2.7';
 import { renderEquipment } from './components/equipment.js?v=1.2.6';
 import { renderTraining } from './components/training.js?v=1.2.6';
 import { renderDrills } from './components/drills.js?v=1.2.6';

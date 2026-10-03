@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.2.7 — Calendar dialog null-safety
+- Corretto il crash che impediva l’apertura di **+ Nuova attività**: `openEvent(null)` raggiungeva `hasExplicitNoCompanion()` e tentava di leggere `companionMode` da `null`.
+- La gestione di **Nessun accompagnatore** è ora null-safe sia per una nuova attività sia per dati incompleti/legacy.
+- Il click su un’attività esistente ignora in sicurezza un eventuale nodo DOM ormai stale invece di aprire il dialog con un record inesistente.
+- Nessuna migration SQL e nessuna modifica al sito marketing.
+- L’errore separato Nutrition `mergeRows is not defined` resta fuori da questa hotfix Calendar e verrà corretto nel runtime cloud dedicato.
+
 ## v1.2.6 — Calendar Owner + drag sicuro
 - Rafforzato il riconoscimento dell’**Owner globale**: sul proprio workspace mantiene sempre accesso completo ai moduli, incluso Calendar.
 - Nuova migration di riparazione che ristabilisce il ruolo `owner` in `athlete_members` per ogni Owner globale e ogni atleta non eliminato, coerentemente con il modello dati previsto.

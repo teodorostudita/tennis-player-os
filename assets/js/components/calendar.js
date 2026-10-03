@@ -1373,7 +1373,9 @@ function bindWeeklyPlanner({ main, store, planner, nutritionTemplates = [] }) {
   main.querySelectorAll('[data-add-date]').forEach(button => button.addEventListener('click', () => openEvent(null, button.dataset.addDate)));
   main.querySelectorAll('[data-event-id]').forEach(button => button.addEventListener('click', () => {
     if (Date.now() < suppressTimelineEventClickUntil) return;
-    openEvent(planner.events.find(event => event.id === button.dataset.eventId));
+    const selectedEvent = planner.events.find(event => event.id === button.dataset.eventId);
+    if (!selectedEvent) return;
+    openEvent(selectedEvent);
   }));
   main.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => eventDialog.close()));
 
@@ -1834,8 +1836,8 @@ function getCompanionId(event) {
     || '';
 }
 
-function hasExplicitNoCompanion(event = {}) {
-  return event.companionMode === 'none';
+function hasExplicitNoCompanion(event) {
+  return event?.companionMode === 'none';
 }
 
 function ensurePlannerShape(state) {

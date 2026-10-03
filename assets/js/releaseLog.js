@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.7',
+    date: '2026-10-03',
+    title: 'Calendar dialog null-safety',
+    details: [
+      'Corretto il crash che bloccava + Nuova attività quando il dialog veniva aperto senza un evento esistente.',
+      'La scelta Nessun accompagnatore è ora letta in modo null-safe anche su nuove attività e dati legacy.',
+      'Il click su un nodo Calendar stale non tenta più di aprire un record inesistente.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.6',
     date: '2026-10-02',
     title: 'Calendar Owner + drag sicuro',
