@@ -558,19 +558,20 @@ function goalReadOnly(label, value) {
   `;
 }
 
-function renderMentalSkills(container, mental) {
+function renderMentalSkills(container, mental, host) {
   container.innerHTML = `
     <section class="mv-subhead">
       <div>
         <div class="eyebrow">Abilità mentali</div>
         <h2>Sei aree di lavoro</h2>
-        <p>La scala 1–5 è una valutazione interna di lavoro, non un test clinico.</p>
+        <p>La scala 1–5 è una valutazione interna di lavoro. Gli esercizi collegati sono ricavati automaticamente dalla libreria.</p>
       </div>
     </section>
 
     <div class="mv-skill-grid">
       ${MENTAL_SKILLS.map(skill => {
         const value = mental.skills[skill.id] || { level: 3, notes: '' };
+        const linked = exercisesForSkill(mental, skill.id);
 
         return `
           <article class="panel mv-skill-card">
@@ -587,6 +588,22 @@ function renderMentalSkills(container, mental) {
 
               <div class="mv-tags">
                 ${skill.indicators.map(item => `<span>${escapeHtml(item)}</span>`).join('')}
+              </div>
+
+              <div class="mv-linked-exercises">
+                <div class="mv-linked-head">
+                  <strong>Esercizi collegati</strong>
+                  <span>${linked.length}</span>
+                </div>
+                ${linked.length
+                  ? `<div class="mv-linked-list">
+                      ${linked.map(exercise => `
+                        <button class="mv-link-chip" type="button" data-open-mental-exercise="${escapeAttr(exercise.id)}">
+                          ${escapeHtml(exercise.title)}
+                        </button>
+                      `).join('')}
+                    </div>`
+                  : '<span class="mv-linked-empty">Nessun esercizio collegato.</span>'}
               </div>
 
               ${canWriteModule('mental') ? `
@@ -617,6 +634,12 @@ function renderMentalSkills(container, mental) {
     </div>
   `;
 
+  container.querySelectorAll('[data-open-mental-exercise]').forEach(button => {
+    button.addEventListener('click', () => {
+      openMentalExercise(host, button.dataset.openMentalExercise);
+    });
+  });
+
   container.querySelectorAll('[data-mental-skill-form]').forEach(form => {
     form.addEventListener('submit', event => {
       event.preventDefault();
@@ -633,32 +656,56 @@ function renderMentalSkills(container, mental) {
         state.mental = next;
       });
 
-      renderMentalSkills(container, normalizeMentalPayload(store.getState().mental));
+      renderMentalSkills(
+        container,
+        normalizeMentalPayload(store.getState().mental),
+        host,
+      );
     });
   });
 }
 
-function renderMentalTools(container) {
+function renderMentalTools(container, mental, host) {
   container.innerHTML = `
     <section class="mv-subhead">
       <div>
         <div class="eyebrow">Strumenti</div>
         <h2>Cassetta degli attrezzi mentale</h2>
-        <p>Uno strumento può servire contemporaneamente più abilità; non viene duplicato nelle diverse aree.</p>
+        <p>Uno strumento può servire più abilità. Gli esercizi mostrano come lo strumento viene allenato concretamente.</p>
       </div>
     </section>
 
     <div class="mv-tool-grid">
-      ${MENTAL_TOOLS.map(tool => `
-        <article class="panel mv-tool-card">
-          <div class="panel-body">
-            <h3>${escapeHtml(tool.name)}</h3>
-            <div class="mv-tags">
-              ${tool.skills.map(id => `<span>${escapeHtml(skillById(id)?.short || id)}</span>`).join('')}
+      ${MENTAL_TOOLS.map(tool => {
+        const linked = exercisesForTool(mental, tool.id);
+
+        return `
+          <article class="panel mv-tool-card">
+            <div class="panel-body">
+              <h3>${escapeHtml(tool.name)}</h3>
+              <div class="mv-tags">
+                ${tool.skills.map(id => `<span>${escapeHtml(skillById(id)?.short || id)}</span>`).join('')}
+              </div>
+
+              <div class="mv-linked-exercises">
+                <div class="mv-linked-head">
+                  <strong>Esercizi collegati</strong>
+                  <span>${linked.length}</span>
+                </div>
+                ${linked.length
+                  ? `<div class="mv-linked-list">
+                      ${linked.map(exercise => `
+                        <button class="mv-link-chip" type="button" data-open-mental-exercise="${escapeAttr(exercise.id)}">
+                          ${escapeHtml(exercise.title)}
+                        </button>
+                      `).join('')}
+                    </div>`
+                  : '<span class="mv-linked-empty">Nessun esercizio collegato.</span>'}
+              </div>
             </div>
-          </div>
-        </article>
-      `).join('')}
+          </article>
+        `;
+      }).join('')}
     </div>
 
     <section class="panel mv-frustration-panel">
@@ -682,6 +729,12 @@ function renderMentalTools(container) {
       </div>
     </section>
   `;
+
+  container.querySelectorAll('[data-open-mental-exercise]').forEach(button => {
+    button.addEventListener('click', () => {
+      openMentalExercise(host, button.dataset.openMentalExercise);
+    });
+  });
 }
 
 function renderMentalTraining(container, mental, host) {
