@@ -5,14 +5,58 @@ import {
 
 const SAVE_DELAY_MS = 350;
 
-const MENTAL_SKILL_IDS = [
-  'motivazione',
-  'fiducia',
-  'concentrazione',
-  'regolazione',
-  'resilienza',
-  'immaginazione',
+export const DEFAULT_MENTAL_SKILLS = [
+  {
+    id: 'motivazione',
+    name: 'Motivazione e coinvolgimento',
+    short: 'Motivazione',
+    description: 'Motivazione intrinseca ed estrinseca, piacere nel giocare, perseveranza e orientamento verso obiettivi controllabili.',
+    indicators: ['piacere', 'impegno', 'sacrificio', 'intensità', 'voglia di competere'],
+    color: '#2d9d78',
+  },
+  {
+    id: 'fiducia',
+    name: 'Fiducia',
+    short: 'Fiducia',
+    description: 'Costruire fiducia attraverso risultati reali, memoria selettiva, richiamo dei successi e dialogo interno positivo.',
+    indicators: ['sicurezza', 'linguaggio del corpo', 'memoria dei successi'],
+    color: '#3b82f6',
+  },
+  {
+    id: 'concentrazione',
+    name: 'Concentrazione e controllo attentivo',
+    short: 'Concentrazione',
+    description: 'Creare, mantenere e ritrovare il focus, restare nel presente e usare ancoraggi sensoriali o parole chiave.',
+    indicators: ['presente', 'bolla attentiva', 'parola chiave', 'recupero del focus'],
+    color: '#7657c8',
+  },
+  {
+    id: 'regolazione',
+    name: 'Regolazione emotiva e dell’attivazione',
+    short: 'Regolazione',
+    description: 'Riconoscere e regolare ansia, intensità e attivazione con respirazione, linguaggio del corpo e consapevolezza.',
+    indicators: ['ansia', 'intensità', 'respirazione', 'linguaggio del corpo'],
+    color: '#e09f3e',
+  },
+  {
+    id: 'resilienza',
+    name: 'Mental resilience e Mental toughness',
+    short: 'Mental resilience',
+    description: 'Prevenire, gestire e recuperare dalla frustrazione, mantenere efficacia sotto pressione e sviluppare mental toughness.',
+    indicators: ['reset', 'frustrazione', 'tenuta mentale', 'mental toughness'],
+    color: '#d65c5c',
+  },
+  {
+    id: 'immaginazione',
+    name: 'Mental Imagery',
+    short: 'Mental Imagery',
+    description: 'Rappresentazione multisensoriale ed emotiva del gesto, della prestazione e delle situazioni competitive.',
+    indicators: ['gesto perfetto', 'successo', 'sensi', 'emozioni'],
+    color: '#2d8f9f',
+  },
 ];
+
+const DEFAULT_MENTAL_SKILL_IDS = DEFAULT_MENTAL_SKILLS.map(skill => skill.id);
 
 export const DEFAULT_MENTAL_TOOLS = [
   { id: 'visualizzazione', name: 'Visualizzazione', skillIds: ['immaginazione', 'fiducia', 'concentrazione'], description: '' },
@@ -143,6 +187,34 @@ function defaultMentalSkill() {
   return { scorePct: 60, level: 3, notes: '' };
 }
 
+function normalizeMentalSkillDefinition(definition, index = 0) {
+  const source = definition && typeof definition === 'object' && !Array.isArray(definition)
+    ? definition
+    : {};
+
+  const name = String(source.name || '').trim();
+  const short = String(source.short || name).trim() || name;
+  const indicators = Array.isArray(source.indicators)
+    ? source.indicators.map(value => String(value || '').trim()).filter(Boolean)
+    : String(source.indicators || '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean);
+
+  return {
+    id: String(source.id || `mental-skill-${Date.now()}-${index}`),
+    name,
+    short,
+    description: String(source.description || '').trim(),
+    indicators: [...new Set(indicators)],
+    color: /^#[0-9a-f]{6}$/i.test(String(source.color || ''))
+      ? String(source.color)
+      : '#637aa0',
+    createdAt: String(source.createdAt || ''),
+    updatedAt: String(source.updatedAt || ''),
+  };
+}
+
 function normalizeMentalTool(tool, index = 0) {
   const source = tool && typeof tool === 'object' && !Array.isArray(tool)
     ? tool
@@ -158,8 +230,7 @@ function normalizeMentalTool(tool, index = 0) {
   return {
     id: String(source.id || `mental-tool-${Date.now()}-${index}`),
     name,
-    skillIds: [...new Set(skillIds.map(String))]
-      .filter(id => MENTAL_SKILL_IDS.includes(id)),
+    skillIds: [...new Set(skillIds.map(String).filter(Boolean))],
     description: String(source.description || '').trim(),
     createdAt: String(source.createdAt || ''),
     updatedAt: String(source.updatedAt || ''),
@@ -178,8 +249,7 @@ function normalizeMentalExercise(exercise, validToolIds = [], index = 0) {
     title,
     objective: String(source.objective || '').trim(),
     skillIds: Array.isArray(source.skillIds)
-      ? [...new Set(source.skillIds.map(String))]
-          .filter(id => MENTAL_SKILL_IDS.includes(id))
+      ? [...new Set(source.skillIds.map(String).filter(Boolean))]
       : [],
     toolIds: Array.isArray(source.toolIds)
       ? [...new Set(source.toolIds.map(String))]
@@ -208,8 +278,20 @@ export function normalizeMentalPayload(payload = {}) {
     ? source.skills
     : {};
 
+  const skillDefinitions = (Array.isArray(source.skillDefinitions)
+    ? source.skillDefinitions
+    : DEFAULT_MENTAL_SKILLS)
+      .map(normalizeMentalSkillDefinition)
+      .filter(definition => definition.name);
+
+  const skillIdsToPreserve = new Set([
+    ...Object.keys(sourceSkills),
+    ...skillDefinitions.map(definition => definition.id),
+    ...DEFAULT_MENTAL_SKILL_IDS,
+  ]);
+
   const skills = {};
-  for (const id of MENTAL_SKILL_IDS) {
+  for (const id of skillIdsToPreserve) {
     const skill = sourceSkills[id] && typeof sourceSkills[id] === 'object'
       ? sourceSkills[id]
       : defaultMentalSkill();
@@ -236,6 +318,7 @@ export function normalizeMentalPayload(payload = {}) {
 
   return {
     skills,
+    skillDefinitions,
     tools,
     goals: {
       bronze: String(source.goals?.bronze || ''),
@@ -501,7 +584,7 @@ export function startStructuredPerformanceSync({
         schemaVersion: moduleKey === 'visual'
           ? 2
           : moduleKey === 'mental'
-            ? 3
+            ? 4
             : 1,
       });
 
