@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.2.10 — Mental profile + toolbox + library links
+- La valutazione delle sei **abilità mentali** passa da scala 1–5 a **0–100%**, con barre orizzontali colorate e slider percentuale. I dati legacy 1–5 vengono convertiti automaticamente in 20/40/60/80/100.
+- **Mental Imagery** sostituisce “Immaginazione mentale e prova mentale”.
+- **Mental resilience e Mental toughness** sostituisce “Resilienza e gestione delle avversità”.
+- La **Cassetta degli attrezzi** diventa personalizzabile: si possono aggiungere, modificare ed eliminare strumenti e collegarli alle abilità pertinenti.
+- Gli **Esercizi** possono collegare una o più risorse presenti nella **Libreria Mental**; dalla card dell’esercizio si apre direttamente la risorsa collegata.
+- Il modello Mental passa allo **schema JSON v3**; nessuna migration SQL e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.9 — Mental exercise library
 - Nuova tab **Esercizi** nel modulo Mental con CRUD completo, preferiti, contesto, durata, protocollo, progressione e note.
 - Ogni esercizio può collegare più **Abilità** e più **Strumenti**; i collegamenti inversi vengono calcolati automaticamente e sono navigabili.

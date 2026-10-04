@@ -5,6 +5,21 @@ const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 let activeObjectUrl = '';
 
+const RESOURCE_FOCUS_KEY = 'tpos.resource-library.focus.v1';
+
+function consumeFocusedResource(moduleId) {
+  try {
+    const raw = sessionStorage.getItem(RESOURCE_FOCUS_KEY);
+    if (!raw) return '';
+    const parsed = JSON.parse(raw);
+    if (String(parsed?.moduleId || '') !== String(moduleId || '')) return '';
+    sessionStorage.removeItem(RESOURCE_FOCUS_KEY);
+    return String(parsed?.resourceId || '');
+  } catch {
+    return '';
+  }
+}
+
 export async function renderResourceLibrary({ main, title, moduleId, moduleName, athleteId = '' }) {
   title.textContent = `${moduleName} · Libreria`;
   main.innerHTML = `
@@ -54,6 +69,16 @@ export async function renderResourceLibrary({ main, title, moduleId, moduleName,
     try {
       resources = (await fileProvider.listResources(moduleId)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       paint();
+
+      const focusedResourceId = consumeFocusedResource(moduleId);
+      if (focusedResourceId) {
+        const focusedResource = resources.find(item => item.id === focusedResourceId);
+        if (focusedResource) {
+          requestAnimationFrame(() => {
+            void openResourcePreview({ main, resource: focusedResource });
+          });
+        }
+      }
     } catch (error) {
       console.error(error);
       grid.innerHTML = `<div class="panel resource-empty-panel"><strong>Impossibile aprire la Libreria.</strong><p>Il provider dei file non è disponibile in questo momento.</p></div>`;

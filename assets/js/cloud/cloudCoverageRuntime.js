@@ -53,7 +53,7 @@ const BACKFILL_ONLY = {
     meaningful: hasMeaningfulHealth,
   },
   mental: {
-    schemaVersion: 2,
+    schemaVersion: 3,
     meaningful: hasMeaningfulMental,
   },
   visual: {
@@ -271,7 +271,10 @@ function hasMeaningfulMental(payload = {}) {
 
   const nonDefaultSkill = Object.values(skills).some(skill => {
     const normalized = normalizeObject(skill);
-    return Number(normalized.level || 3) !== 3
+    const score = Number.isFinite(Number(normalized.scorePct))
+      ? Number(normalized.scorePct)
+      : Number(normalized.level || 3) * 20;
+    return score !== 60
       || String(normalized.notes || '').trim();
   });
 
