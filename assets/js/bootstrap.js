@@ -365,7 +365,7 @@ if (session) {
           });
         }
 
-        await import('./app.js?v=1.2.7');
+        await import('./app.js?v=1.2.10');
         mountAuthControls(session.user);
         mountAthleteControls({
           currentAthlete: cloudAthlete,
