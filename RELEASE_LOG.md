@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.2.18 — Footwork library refresh fix
+- Corretto il collegamento tra **Athletics → Footwork Patterns** e la **Libreria Athletics**.
+- Il problema era una cache interna: Footwork poteva continuare a vedere una libreria vuota anche dopo l’aggiunta di nuovi link.
+- Aprendo **Nuovo pattern** o **Modifica pattern** la libreria viene ora ricaricata forzatamente.
+- Aprendo la Libreria da Footwork la cache viene invalidata, così al ritorno i nuovi link risultano immediatamente disponibili.
+- Nessuna migration Supabase e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.17 — Perception & Neuro color polish
 - Restyling cosmetico del modulo **Perception & Neuro**, senza modifiche al modello dati.
 - I quattro domini hanno ora una codifica cromatica coerente e un simbolo dedicato:
