@@ -4,7 +4,7 @@ import {
 } from './moduleStateCloud.js?v=1.2.4';
 
 const MODULE_KEY = 'development';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const SAVE_DELAY_MS = 300;
 
 function clone(value) {
@@ -19,7 +19,10 @@ function normalizeItem(item = {}) {
   return {
     ...source,
     linkedDrillIds: Array.isArray(source.linkedDrillIds)
-      ? source.linkedDrillIds.filter(Boolean)
+      ? [...new Set(source.linkedDrillIds.map(String).filter(Boolean))]
+      : [],
+    resourceIds: Array.isArray(source.resourceIds)
+      ? [...new Set(source.resourceIds.map(String).filter(Boolean))]
       : [],
     metrics: Array.isArray(source.metrics) ? source.metrics : [],
     assessments: Array.isArray(source.assessments) ? source.assessments : [],
