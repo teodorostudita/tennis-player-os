@@ -1,12 +1,12 @@
-import '../bootstrap.js?v=1.2.4';
+import '../bootstrap.js?v=1.2.6';
 
-import { modules } from '../data/schema.js?v=1.2.4';
-import { store } from '../data/store.js?v=1.2.4';
+import { modules } from '../data/schema.js?v=1.2.6';
+import { store } from '../data/store.js?v=1.2.6';
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../cloud/access.js?v=1.2.4';
+} from '../cloud/access.js?v=1.2.6';
 import {
   REFLEXION_PRESET,
   VISUAL_STARTER_PROTOCOLS,
@@ -14,11 +14,11 @@ import {
   normalizeMentalPayload,
   normalizeVisualPayload,
   startStructuredPerformanceSync,
-} from '../cloud/mentalVisualCloud.js?v=1.2.4';
+} from '../cloud/mentalVisualCloud.js?v=1.2.6';
 import {
   showInAppAlert,
   showInAppConfirm,
-} from './inAppMessages.js?v=1.2.4';
+} from './inAppMessages.js?v=1.2.6';
 
 const MENTAL_SKILLS = [
   {
@@ -78,6 +78,17 @@ const MENTAL_TOOLS = [
   { id: 'meditazione', name: 'Meditazione pre-partita', skills: ['concentrazione', 'regolazione'] },
   { id: 'routine-reset', name: 'Routine di reset', skills: ['resilienza', 'concentrazione', 'regolazione'] },
   { id: 'ancoraggio-sensoriale', name: 'Ancoraggio sensoriale', skills: ['concentrazione', 'regolazione'] },
+];
+
+const MENTAL_CONTEXTS = [
+  { id: '', label: 'Non specificato' },
+  { id: 'off-court', label: 'Fuori campo' },
+  { id: 'court', label: 'Campo' },
+  { id: 'pre-match', label: 'Pre-match' },
+  { id: 'between-points', label: 'Tra i punti' },
+  { id: 'changeover', label: 'Cambio campo' },
+  { id: 'post-match', label: 'Post-match' },
+  { id: 'match-simulation', label: 'Match simulation' },
 ];
 
 const PEAK_STATES = [
@@ -171,6 +182,45 @@ function skillById(id) {
 
 function toolById(id) {
   return MENTAL_TOOLS.find(item => item.id === id);
+}
+
+function mentalContextLabel(id) {
+  return MENTAL_CONTEXTS.find(item => item.id === id)?.label || '';
+}
+
+function mentalExercises(mental = normalizeMentalPayload(store.getState().mental)) {
+  return Array.isArray(mental.exercises) ? mental.exercises : [];
+}
+
+function exercisesForSkill(mental, skillId) {
+  return mentalExercises(mental).filter(exercise =>
+    Array.isArray(exercise.skillIds) && exercise.skillIds.includes(skillId)
+  );
+}
+
+function exercisesForTool(mental, toolId) {
+  return mentalExercises(mental).filter(exercise =>
+    Array.isArray(exercise.toolIds) && exercise.toolIds.includes(toolId)
+  );
+}
+
+function exerciseById(id, mental = normalizeMentalPayload(store.getState().mental)) {
+  return mentalExercises(mental).find(exercise => exercise.id === id);
+}
+
+function openMentalExercise(host, exerciseId) {
+  mentalSection = 'esercizi';
+  renderMental(host);
+
+  requestAnimationFrame(() => {
+    const card = [...host.querySelectorAll('[data-mental-exercise-card]')]
+      .find(node => node.dataset.mentalExerciseCard === exerciseId);
+
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('mv-exercise-highlight');
+    window.setTimeout(() => card.classList.remove('mv-exercise-highlight'), 1400);
+  });
 }
 
 function protocolById(id, visual = normalizeVisualPayload(store.getState().visual)) {
@@ -352,6 +402,7 @@ function renderMental(host) {
       { id: 'panoramica', label: 'Panoramica' },
       { id: 'abilita', label: 'Abilità' },
       { id: 'strumenti', label: 'Strumenti' },
+      { id: 'esercizi', label: 'Esercizi' },
       { id: 'allenamento', label: 'Allenamento' },
       { id: 'review', label: 'Review partita' },
     ], 'data-mental-section')}
@@ -369,9 +420,11 @@ function renderMental(host) {
   const sectionHost = host.querySelector('#mental-section-host');
 
   if (mentalSection === 'abilita') {
-    renderMentalSkills(sectionHost, mental);
+    renderMentalSkills(sectionHost, mental, host);
   } else if (mentalSection === 'strumenti') {
-    renderMentalTools(sectionHost);
+    renderMentalTools(sectionHost, mental, host);
+  } else if (mentalSection === 'esercizi') {
+    renderMentalExercises(sectionHost, mental, host);
   } else if (mentalSection === 'allenamento') {
     renderMentalTraining(sectionHost, mental, host);
   } else if (mentalSection === 'review') {
