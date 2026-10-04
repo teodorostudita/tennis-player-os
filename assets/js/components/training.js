@@ -555,6 +555,506 @@ function openResultDialog(container, store, test) {
   dialog.showModal();
 }
 
+
+function footworkPatterns(training = {}) {
+  return Array.isArray(training.footworkPatterns) ? training.footworkPatterns : [];
+}
+
+function footworkLearningLabel(value) {
+  const score = Math.max(0, Math.min(100, Number(value || 0)));
+  if (score <= 0) return 'Non iniziato';
+  if (score <= 20) return 'Introdotto';
+  if (score <= 40) return 'Shadow';
+  if (score <= 60) return 'Fed ball';
+  if (score <= 80) return 'Live ball';
+  if (score < 100) return 'Sotto pressione';
+  return 'Match-ready';
+}
+
+function footworkResourceLabel(resource = {}) {
+  if (resource.linkType === 'youtube') return 'YouTube';
+  if (resource.kind === 'file') return resource.fileName || 'File';
+  if (resource.kind === 'link') return 'Link';
+  return 'Risorsa';
+}
+
+function athleticsResourceById(id) {
+  return athleticsResourceCache.find(resource => resource.id === id) || null;
+}
+
+async function ensureAthleticsResources(athleteId = '') {
+  const normalizedAthleteId = String(athleteId || '');
+
+  if (
+    athleticsResourceLoaded
+    && athleticsResourceAthleteId === normalizedAthleteId
+  ) {
+    return athleticsResourceCache;
+  }
+
+  if (
+    athleticsResourceLoadPromise
+    && athleticsResourceAthleteId === normalizedAthleteId
+  ) {
+    return athleticsResourceLoadPromise;
+  }
+
+  athleticsResourceAthleteId = normalizedAthleteId;
+  athleticsResourceLoaded = false;
+
+  athleticsResourceLoadPromise = fileProvider.listResources('training')
+    .then(resources => {
+      athleticsResourceCache = Array.isArray(resources) ? resources : [];
+      athleticsResourceLoaded = true;
+      return athleticsResourceCache;
+    })
+    .catch(error => {
+      console.warn('Athletics resource library unavailable.', error);
+      athleticsResourceCache = [];
+      athleticsResourceLoaded = true;
+      return athleticsResourceCache;
+    })
+    .finally(() => {
+      athleticsResourceLoadPromise = null;
+    });
+
+  return athleticsResourceLoadPromise;
+}
+
+function openAthleticsLibrary(resourceId = '') {
+  if (resourceId) {
+    try {
+      sessionStorage.setItem(
+        'tpos.resource-library.focus.v1',
+        JSON.stringify({ moduleId: 'training', resourceId }),
+      );
+    } catch (_) {}
+  }
+
+  document
+    .querySelector('.module-workspace-button[data-module-workspace="library"]')
+    ?.click();
+}
+
+function renderFootworkPatterns(container, training, store, athleteId = '') {
+  if (!athleticsResourceLoaded || athleticsResourceAthleteId !== String(athleteId || '')) {
+    void ensureAthleticsResources(athleteId).then(() => {
+      if (ui.section !== 'footwork' || !container.isConnected) return;
+      renderFootworkPatterns(container, store.getState().training, store, athleteId);
+    });
+  }
+
+  const patterns = [...footworkPatterns(training)].sort((a, b) => {
+    const focusDiff = Number(Boolean(b.currentFocus)) - Number(Boolean(a.currentFocus));
+    if (focusDiff) return focusDiff;
+    const categoryDiff = String(a.category || '').localeCompare(String(b.category || ''), 'en');
+    if (categoryDiff) return categoryDiff;
+    return String(a.title || '').localeCompare(String(b.title || ''), 'en', { sensitivity: 'base' });
+  });
+
+  const currentFocus = patterns.find(pattern => pattern.currentFocus) || null;
+  const averageLearning = patterns.length
+    ? Math.round(patterns.reduce((sum, pattern) => sum + Number(pattern.learningPct || 0), 0) / patterns.length)
+    : 0;
+  const matchReady = patterns.filter(pattern => Number(pattern.learningPct || 0) >= 100).length;
+
+  container.innerHTML = `
+    <section class="training-subhead athletics-footwork-subhead">
+      <div>
+        <div class="eyebrow">Footwork Patterns · Bailey reference</div>
+        <h2>Movement patterns</h2>
+        <p>Un pattern alla volta: video di riferimento, cue tecnici e grado di apprendimento. Il framework segue le 5 R e le grandi famiglie Attacking, Rallying e Defensive.</p>
+      </div>
+      <div class="training-subhead-actions">
+        <button class="button button-ghost" id="open-footwork-library" type="button">Libreria video</button>
+        <button class="button button-primary" id="add-footwork-pattern" type="button">+ Nuovo pattern</button>
+      </div>
+    </section>
+
+    <section class="athletics-footwork-reference">
+      <div class="athletics-footwork-reference-copy">
+        <span>Bailey Method</span>
+        <strong>Ready → Read → React → Respond → Recover</strong>
+        <small>Le 5 R organizzano la sequenza completa del movimento attorno al colpo.</small>
+      </div>
+      <div class="athletics-footwork-reference-categories">
+        <span class="attacking">Attacking</span>
+        <span class="rallying">Rallying</span>
+        <span class="defensive">Defensive</span>
+      </div>
+      <a href="https://baileytennisfootwork.com/" target="_blank" rel="noopener noreferrer">Bailey Tennis Footwork ↗</a>
+    </section>
+
+    <section class="training-kpis compact athletics-footwork-kpis">
+      <article class="training-kpi"><span>Pattern</span><strong>${patterns.length}</strong></article>
+      <article class="training-kpi"><span>Focus attuale</span><strong class="athletics-footwork-kpi-focus">${escapeHtml(currentFocus?.title || '—')}</strong></article>
+      <article class="training-kpi"><span>Apprendimento medio</span><strong>${averageLearning}%</strong></article>
+      <article class="training-kpi"><span>Match-ready</span><strong>${matchReady}</strong></article>
+    </section>
+
+    ${patterns.length ? `
+      <section class="athletics-footwork-grid">
+        ${patterns.map(pattern => {
+          const learningPct = Math.max(0, Math.min(100, Number(pattern.learningPct || 0)));
+          const resources = (pattern.resourceIds || [])
+            .map(athleticsResourceById)
+            .filter(Boolean);
+          const category = footworkCategoryLabels[pattern.category] || pattern.category || 'Other';
+          const stroke = footworkStrokeLabels[pattern.stroke] || pattern.stroke || '—';
+
+          return `
+            <article
+              class="panel athletics-footwork-card ${pattern.currentFocus ? 'is-focus' : ''}"
+              data-footwork-pattern-card="${escapeAttr(pattern.id)}"
+              style="--footwork-progress:${learningPct}%"
+            >
+              <div class="athletics-footwork-accent"></div>
+              <div class="panel-body">
+                <div class="athletics-footwork-card-head" data-footwork-pattern-head="${escapeAttr(pattern.id)}">
+                  <div>
+                    <div class="athletics-footwork-badges">
+                      <span class="athletics-footwork-category category-${escapeAttr(pattern.category || 'other')}">${escapeHtml(category)}</span>
+                      ${pattern.currentFocus ? '<span class="athletics-footwork-focus-badge">Focus attuale</span>' : ''}
+                    </div>
+                    <h3>${escapeHtml(pattern.title)}</h3>
+                    <p>${escapeHtml(stroke)}</p>
+                  </div>
+                  <div class="athletics-footwork-card-actions">
+                    ${pattern.currentFocus
+                      ? '<span class="athletics-footwork-focus-mark" title="Pattern in focus">◎</span>'
+                      : `<button class="button button-ghost athletics-footwork-small-button" type="button" data-focus-footwork-pattern="${escapeAttr(pattern.id)}">Imposta focus</button>`}
+                    <button class="button button-ghost athletics-footwork-small-button" type="button" data-edit-footwork-pattern="${escapeAttr(pattern.id)}">Modifica</button>
+                    <button class="resource-delete" type="button" data-delete-footwork-pattern="${escapeAttr(pattern.id)}">Elimina</button>
+                  </div>
+                </div>
+
+                <div class="athletics-footwork-learning">
+                  <div class="athletics-footwork-learning-head">
+                    <span>Apprendimento</span>
+                    <strong>${learningPct}% · ${escapeHtml(footworkLearningLabel(learningPct))}</strong>
+                  </div>
+                  <div class="athletics-footwork-progress">
+                    <div style="width:${learningPct}%"></div>
+                  </div>
+                </div>
+
+                ${pattern.cue ? `
+                  <div class="athletics-footwork-cue">
+                    <span>Cue</span>
+                    <strong>${escapeHtml(pattern.cue)}</strong>
+                  </div>
+                ` : ''}
+
+                <div class="athletics-footwork-resources">
+                  <div class="athletics-footwork-resources-head">
+                    <strong>Video / risorse</strong>
+                    <span>${(pattern.resourceIds || []).length}</span>
+                  </div>
+                  ${resources.length
+                    ? `<div class="athletics-footwork-resource-list">
+                        ${resources.map(resource => `
+                          <button
+                            class="athletics-footwork-resource-chip ${resource.linkType === 'youtube' ? 'youtube' : ''}"
+                            type="button"
+                            data-open-footwork-resource="${escapeAttr(resource.id)}"
+                          >
+                            ${resource.linkType === 'youtube' ? '▶' : '↗'} ${escapeHtml(resource.title || resource.fileName || 'Risorsa')}
+                          </button>
+                        `).join('')}
+                      </div>`
+                    : (pattern.resourceIds || []).length
+                      ? '<span class="athletics-footwork-muted">Caricamento risorse…</span>'
+                      : '<span class="athletics-footwork-muted">Nessuna risorsa collegata.</span>'}
+                </div>
+
+                ${pattern.notes ? `
+                  <div class="athletics-footwork-notes">${escapeHtml(pattern.notes)}</div>
+                ` : ''}
+              </div>
+            </article>
+          `;
+        }).join('')}
+      </section>
+    ` : `
+      <section class="panel athletics-footwork-empty">
+        <div class="panel-body">
+          <div class="athletics-footwork-empty-icon">↗</div>
+          <h3>Costruiamo la libreria un pattern alla volta</h3>
+          <p>Inserisci il primo Footwork Pattern, collegalo a un video YouTube presente nella Libreria Athletics e assegna il livello di apprendimento corrente.</p>
+          <button class="button button-primary" id="empty-add-footwork-pattern" type="button">+ Primo pattern</button>
+        </div>
+      </section>
+    `}
+  `;
+
+  container.querySelector('#open-footwork-library')?.addEventListener('click', () => {
+    openAthleticsLibrary();
+  });
+
+  const openNew = () => {
+    void openFootworkPatternDialog(container, store, null, athleteId);
+  };
+  container.querySelector('#add-footwork-pattern')?.addEventListener('click', openNew);
+  container.querySelector('#empty-add-footwork-pattern')?.addEventListener('click', openNew);
+
+  container.querySelectorAll('[data-edit-footwork-pattern]').forEach(button => {
+    button.addEventListener('click', () => {
+      const pattern = footworkPatterns(store.getState().training)
+        .find(item => item.id === button.dataset.editFootworkPattern);
+      if (pattern) void openFootworkPatternDialog(container, store, pattern, athleteId);
+    });
+  });
+
+  container.querySelectorAll('[data-focus-footwork-pattern]').forEach(button => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.focusFootworkPattern;
+      store.update(state => {
+        state.training.footworkPatterns = footworkPatterns(state.training).map(pattern => ({
+          ...pattern,
+          currentFocus: pattern.id === id,
+          updatedAt: pattern.id === id ? new Date().toISOString() : pattern.updatedAt,
+        }));
+      });
+      renderFootworkPatterns(container, store.getState().training, store, athleteId);
+    });
+  });
+
+  container.querySelectorAll('[data-delete-footwork-pattern]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const id = button.dataset.deleteFootworkPattern;
+      const pattern = footworkPatterns(store.getState().training).find(item => item.id === id);
+      if (!pattern) return;
+
+      const confirmed = await showInAppConfirm(
+        `Eliminare il Footwork Pattern “${pattern.title}”?`,
+        { title: 'Elimina Footwork Pattern', confirmLabel: 'Elimina', danger: true },
+      );
+      if (!confirmed) return;
+
+      store.update(state => {
+        state.training.footworkPatterns = footworkPatterns(state.training)
+          .filter(item => item.id !== id);
+      });
+
+      renderFootworkPatterns(container, store.getState().training, store, athleteId);
+    });
+  });
+
+  container.querySelectorAll('[data-open-footwork-resource]').forEach(button => {
+    button.addEventListener('click', () => {
+      openAthleticsLibrary(button.dataset.openFootworkResource);
+    });
+  });
+}
+
+async function openFootworkPatternDialog(container, store, pattern = null, athleteId = '') {
+  await ensureAthleticsResources(athleteId);
+
+  const resources = [...athleticsResourceCache].sort((a, b) => {
+    const youtubeDiff = Number(b.linkType === 'youtube') - Number(a.linkType === 'youtube');
+    if (youtubeDiff) return youtubeDiff;
+    return String(a.title || a.fileName || '').localeCompare(
+      String(b.title || b.fileName || ''),
+      'it',
+      { sensitivity: 'base' },
+    );
+  });
+
+  const current = pattern || {
+    title: '',
+    category: 'attacking',
+    stroke: 'both',
+    learningPct: 0,
+    currentFocus: false,
+    cue: '',
+    notes: '',
+    resourceIds: [],
+  };
+
+  const dialog = document.createElement('dialog');
+  dialog.className = 'planner-dialog athletics-footwork-dialog';
+
+  dialog.innerHTML = `
+    <form method="dialog" id="footwork-pattern-form">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Athletics · Footwork Patterns</div>
+          <h3>${pattern ? 'Modifica pattern' : 'Nuovo pattern'}</h3>
+          <p>Bailey come riferimento metodologico; TPOS conserva la tua progressione individuale.</p>
+        </div>
+        <button class="dialog-close" type="button" data-dialog-close aria-label="Chiudi">×</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Nome del pattern</label>
+            <input name="title" value="${escapeAttr(current.title)}" placeholder="es. Step-down forehand" required />
+          </div>
+
+          <div class="field">
+            <label>Famiglia</label>
+            <select name="category">
+              ${Object.entries(footworkCategoryLabels).map(([value, label]) => `
+                <option value="${value}" ${current.category === value ? 'selected' : ''}>${escapeHtml(label)}</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Colpo / lato</label>
+            <select name="stroke">
+              ${Object.entries(footworkStrokeLabels).map(([value, label]) => `
+                <option value="${value}" ${current.stroke === value ? 'selected' : ''}>${escapeHtml(label)}</option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div class="field full athletics-footwork-learning-field">
+            <label>Grado di apprendimento</label>
+            <div class="athletics-footwork-learning-control">
+              <input
+                type="range"
+                name="learningPct"
+                min="0"
+                max="100"
+                step="5"
+                value="${Math.max(0, Math.min(100, Number(current.learningPct || 0)))}"
+                data-footwork-learning-input
+              />
+              <output data-footwork-learning-output>
+                ${Math.max(0, Math.min(100, Number(current.learningPct || 0)))}% · ${escapeHtml(footworkLearningLabel(current.learningPct))}
+              </output>
+            </div>
+            <div class="athletics-footwork-learning-scale">
+              <span>0 · Non iniziato</span>
+              <span>40 · Shadow</span>
+              <span>60 · Fed ball</span>
+              <span>80 · Live ball</span>
+              <span>100 · Match-ready</span>
+            </div>
+          </div>
+
+          <label class="athletics-footwork-focus-check full">
+            <input type="checkbox" name="currentFocus" ${current.currentFocus ? 'checked' : ''} />
+            <span>
+              <strong>Focus attuale</strong>
+              <small>Se attivo, questo diventa l’unico pattern in focus.</small>
+            </span>
+          </label>
+
+          <div class="field full">
+            <label>Cue tecnico</label>
+            <input name="cue" value="${escapeAttr(current.cue || '')}" placeholder="Parola chiave o indicazione breve" />
+          </div>
+
+          <fieldset class="athletics-footwork-resource-fieldset full">
+            <legend>Video / risorse dalla Libreria Athletics</legend>
+            ${resources.length ? `
+              <div class="athletics-footwork-resource-picker">
+                ${resources.map(resource => `
+                  <label class="${resource.linkType === 'youtube' ? 'is-youtube' : ''}">
+                    <input
+                      type="checkbox"
+                      name="resourceIds"
+                      value="${escapeAttr(resource.id)}"
+                      ${(current.resourceIds || []).includes(resource.id) ? 'checked' : ''}
+                    />
+                    <span>
+                      <strong>${resource.linkType === 'youtube' ? '▶ ' : ''}${escapeHtml(resource.title || resource.fileName || 'Risorsa')}</strong>
+                      <small>${escapeHtml(footworkResourceLabel(resource))}</small>
+                    </span>
+                  </label>
+                `).join('')}
+              </div>
+            ` : `
+              <div class="athletics-footwork-no-resources">
+                <strong>Nessuna risorsa Athletics disponibile.</strong>
+                <span>Aggiungi prima il link YouTube dalla Libreria Athletics; poi riapri il pattern.</span>
+              </div>
+            `}
+          </fieldset>
+
+          <div class="field full">
+            <label>Note / punti chiave</label>
+            <textarea name="notes" placeholder="Appoggi, equilibrio, timing, errori ricorrenti, progressione…">${escapeHtml(current.notes || '')}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <div>
+          <button class="button button-ghost" type="button" data-open-footwork-library-from-dialog>Libreria video</button>
+        </div>
+        <div class="dialog-save-actions">
+          <button class="button button-ghost" type="button" data-dialog-close>Annulla</button>
+          <button class="button button-primary" type="submit">${pattern ? 'Salva modifiche' : 'Crea pattern'}</button>
+        </div>
+      </div>
+    </form>
+  `;
+
+  document.body.appendChild(dialog);
+  bindDialogClose(dialog);
+
+  dialog.querySelector('[data-open-footwork-library-from-dialog]')?.addEventListener('click', () => {
+    dialog.close();
+    openAthleticsLibrary();
+  });
+
+  const range = dialog.querySelector('[data-footwork-learning-input]');
+  const output = dialog.querySelector('[data-footwork-learning-output]');
+  range?.addEventListener('input', () => {
+    const value = Math.max(0, Math.min(100, Number(range.value || 0)));
+    if (output) output.textContent = `${value}% · ${footworkLearningLabel(value)}`;
+  });
+
+  dialog.querySelector('#footwork-pattern-form')?.addEventListener('submit', event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+
+    const formData = new FormData(form);
+    const now = new Date().toISOString();
+    const id = pattern?.id || makeId('footwork-pattern');
+    const setFocus = formData.get('currentFocus') === 'on';
+
+    const record = {
+      id,
+      title: String(formData.get('title') || '').trim(),
+      category: String(formData.get('category') || 'other'),
+      stroke: String(formData.get('stroke') || 'both'),
+      learningPct: Math.max(0, Math.min(100, Number(formData.get('learningPct') || 0))),
+      currentFocus: setFocus,
+      cue: String(formData.get('cue') || '').trim(),
+      notes: String(formData.get('notes') || '').trim(),
+      resourceIds: [...new Set(formData.getAll('resourceIds').map(String))],
+      createdAt: pattern?.createdAt || now,
+      updatedAt: now,
+      ...(pattern?.__ownership ? { __ownership: pattern.__ownership } : {}),
+    };
+
+    store.update(state => {
+      const items = footworkPatterns(state.training).map(item => ({
+        ...item,
+        currentFocus: setFocus ? false : item.currentFocus,
+      }));
+      const index = items.findIndex(item => item.id === id);
+
+      if (index >= 0) items[index] = record;
+      else items.push(record);
+
+      state.training.footworkPatterns = items;
+    });
+
+    dialog.close();
+    renderFootworkPatterns(container, store.getState().training, store, athleteId);
+  });
+
+  dialog.addEventListener('close', () => dialog.remove());
+  dialog.showModal();
+}
+
 function renderWeeklyProgram(container, training, store) {
   const program = training.weeklyProgram;
   const sessions = [...program.sessions].sort(sessionSort);
