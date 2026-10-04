@@ -1,0 +1,55 @@
+name: Build Mental 1.2.10 Patch ZIP
+
+on:
+  push:
+    branches: [ chatgpt/mental-custom-v1.2.10 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build patch zip
+        run: |
+          rm -rf patch TPOS_patch_v1.2.10_Mental_Custom.zip
+          mkdir -p patch/assets/css
+          mkdir -p patch/assets/js/cloud
+          mkdir -p patch/assets/js/components
+          mkdir -p patch/assets/js/ui
+          mkdir -p patch/assets/js
+
+          cp README-PATCH.txt patch/README-PATCH.txt
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+          cp assets/css/mental-visual.css patch/assets/css/mental-visual.css
+          cp assets/js/app.js patch/assets/js/app.js
+          cp assets/js/bootstrap.js patch/assets/js/bootstrap.js
+          cp assets/js/cloud/cloudCoverageRuntime.js patch/assets/js/cloud/cloudCoverageRuntime.js
+          cp assets/js/cloud/mentalVisualCloud.js patch/assets/js/cloud/mentalVisualCloud.js
+          cp assets/js/components/resourceLibrary.js patch/assets/js/components/resourceLibrary.js
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/mentalVisualUI.js patch/assets/js/ui/mentalVisualUI.js
+          cp assets/js/version.js patch/assets/js/version.js
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+
+          cd patch
+          zip -r ../TPOS_patch_v1.2.10_Mental_Custom.zip .
+      - name: Check JavaScript syntax
+        run: |
+          node --check patch/assets/js/app.js
+          node --check patch/assets/js/bootstrap.js
+          node --check patch/assets/js/cloud/cloudCoverageRuntime.js
+          node --check patch/assets/js/cloud/mentalVisualCloud.js
+          node --check patch/assets/js/components/resourceLibrary.js
+          node --check patch/assets/js/releaseLog.js
+          node --check patch/assets/js/ui/mentalVisualUI.js
+          node --check patch/assets/js/version.js
+          node --check patch/sw.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.10_Mental_Custom
+          path: TPOS_patch_v1.2.10_Mental_Custom.zip
+          if-no-files-found: error
