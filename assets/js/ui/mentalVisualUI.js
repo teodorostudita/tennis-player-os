@@ -193,6 +193,106 @@ function exerciseById(id, mental = normalizeMentalPayload(store.getState().menta
   return mentalExercises(mental).find(exercise => exercise.id === id);
 }
 
+
+function localDateFromKey(value) {
+  const [year, month, day] = String(value || '').split('-').map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatMentalDuration(minutes) {
+  const total = Math.max(0, Math.round(Number(minutes || 0)));
+  if (!total) return '0 min';
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  if (!hours) return `${total} min`;
+  if (!rest) return `${hours} h`;
+  return `${hours} h ${rest} min`;
+}
+
+function mentalSessionTopic(session, mental) {
+  const linkedExercises = (session.exerciseIds || [])
+    .map(id => exerciseById(id, mental))
+    .filter(Boolean);
+
+  if (linkedExercises.length) {
+    return linkedExercises.map(exercise => exercise.title).join(' · ');
+  }
+
+  return skillById(session.skillId, mental)?.short
+    || session.skillNameSnapshot
+    || 'Sessione libera';
+}
+
+function summarizeMentalSessions(mental, days = 30) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - Math.max(0, days - 1));
+
+  const sessions = [...mental.trainingSessions]
+    .filter(session => {
+      const date = localDateFromKey(session.date);
+      return date && date >= cutoff && date <= today;
+    })
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+  const totalMinutes = sessions.reduce(
+    (sum, session) => sum + Math.max(0, Number(session.durationMin || 0)),
+    0,
+  );
+
+  const focusMinutes = new Map();
+
+  const addFocusMinutes = (skillId, minutes) => {
+    if (!skillById(skillId, mental) || minutes <= 0) return;
+    focusMinutes.set(skillId, (focusMinutes.get(skillId) || 0) + minutes);
+  };
+
+  sessions.forEach(session => {
+    const duration = Math.max(0, Number(session.durationMin || 0));
+    if (!duration) return;
+
+    const linkedExercises = (session.exerciseIds || [])
+      .map(id => exerciseById(id, mental))
+      .filter(Boolean);
+
+    if (linkedExercises.length) {
+      const perExercise = duration / linkedExercises.length;
+
+      linkedExercises.forEach(exercise => {
+        const activeSkillIds = [...new Set(exercise.skillIds || [])]
+          .filter(id => skillById(id, mental));
+
+        if (!activeSkillIds.length) return;
+        const perSkill = perExercise / activeSkillIds.length;
+        activeSkillIds.forEach(id => addFocusMinutes(id, perSkill));
+      });
+
+      return;
+    }
+
+    if (session.skillId) addFocusMinutes(session.skillId, duration);
+  });
+
+  const focus = [...focusMinutes.entries()]
+    .map(([skillId, minutes]) => ({
+      skill: skillById(skillId, mental),
+      minutes,
+    }))
+    .filter(item => item.skill)
+    .sort((a, b) => b.minutes - a.minutes);
+
+  return {
+    days,
+    sessions,
+    totalMinutes,
+    lastSession: sessions[0] || null,
+    focus,
+  };
+}
+
 function openMentalExercise(host, exerciseId) {
   mentalSection = 'esercizi';
   renderMental(host);
