@@ -1,11 +1,33 @@
 import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
+import { fileProvider } from '../data/providers/provider.js?v=1.2.6';
 
 const sections = [
   { id: 'overview', label: 'Overview' },
   { id: 'tests', label: 'Tests & Assessments' },
+  { id: 'footwork', label: 'Footwork Patterns' },
   { id: 'weekly', label: 'Programma settimanale' },
   { id: 'goals', label: 'Obiettivi' },
 ];
+
+const footworkCategoryLabels = {
+  attacking: 'Attacking',
+  rallying: 'Rallying',
+  defensive: 'Defensive',
+  'serve-return': 'Serve & Return',
+  net: 'Net / Overhead',
+  other: 'Other',
+};
+
+const footworkStrokeLabels = {
+  forehand: 'Forehand',
+  backhand: 'Backhand',
+  both: 'Forehand & Backhand',
+  serve: 'Serve',
+  return: 'Return',
+  volley: 'Volley',
+  overhead: 'Overhead',
+  other: 'Other',
+};
 
 const areaLabels = {
   general: 'Generale',
@@ -64,6 +86,11 @@ const ui = {
   selectedTestId: '',
 };
 
+let athleticsResourceCache = [];
+let athleticsResourceAthleteId = '';
+let athleticsResourceLoaded = false;
+let athleticsResourceLoadPromise = null;
+
 export function renderTraining({ main, title, store }) {
   try {
     const requestedSection = sessionStorage.getItem('tpos.training.section');
@@ -99,6 +126,7 @@ export function renderTraining({ main, title, store }) {
 
   const content = main.querySelector('#training-section-content');
   if (ui.section === 'tests') renderTests(content, training, store);
+  else if (ui.section === 'footwork') renderFootworkPatterns(content, training, store, state.athlete?.id || '');
   else if (ui.section === 'weekly') renderWeeklyProgram(content, training, store);
   else if (ui.section === 'goals') renderGoals(content, training, store);
   else renderOverview(content, training);
