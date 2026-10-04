@@ -53,7 +53,7 @@ const BACKFILL_ONLY = {
     meaningful: hasMeaningfulHealth,
   },
   mental: {
-    schemaVersion: 1,
+    schemaVersion: 2,
     meaningful: hasMeaningfulMental,
   },
   visual: {
