@@ -1,5 +1,16 @@
 # Tennis Player OS — Release Log
 
+## v1.2.13 — Athletics Footwork Patterns
+- Nuova linguetta **Footwork Patterns** dentro Athletics.
+- Riferimento metodologico Bailey: **5 R** e famiglie **Attacking / Rallying / Defensive**, senza precaricare un catalogo fisso di pattern.
+- Ogni pattern contiene: nome, famiglia, colpo/lato, **grado di apprendimento 0–100%**, cue tecnico, note e risorse collegate.
+- Il livello viene letto come: **Non iniziato → Introdotto → Shadow → Fed ball → Live ball → Sotto pressione → Match-ready**.
+- È possibile impostare un solo **Focus attuale** alla volta.
+- Collegamento con la **Libreria Athletics**, inclusi link YouTube, con apertura diretta della risorsa dalla card del pattern.
+- I pattern sono salvati e sincronizzati come record Athletics individuali `footwork_pattern`.
+- Inclusa migration Supabase non distruttiva che estende il check di `athletics_records.record_type`.
+- Nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.12 — Mental cosmetic polish
 - **Overview** resa più visuale con KPI card colorate e una nuova **visualizzazione circolare** della valutazione media.
 - Migliorata la gerarchia grafica dei pannelli **Obiettivi mentali** e **Allenamento mentale · ultimi 30 giorni**.
