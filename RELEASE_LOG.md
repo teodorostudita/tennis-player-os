@@ -1,5 +1,26 @@
 # Tennis Player OS — Release Log
 
+## v1.2.16 — Nutrition Overview + planning gaps
+- Nuova linguetta **Overview** come apertura predefinita di Nutrition & Recovery.
+- La dashboard usa soprattutto i dati già presenti in **Recovery**: qualità e ore di sonno, stanchezza, indolenzimento, umore, voglia di allenarsi, concentrazione e training checkout.
+- Nuovo **Recovery balance 0–100%**, esplicitamente indicato come indice interno TPOS e non clinico.
+- Snapshot dell’ultimo check-in, trend recente, confronto **7 / 30 giorni**, sonno medio e copertura dei check-in.
+- Nuovo pannello **Nutrition planning** sui prossimi 7 giorni, alimentato dal Calendar.
+- Nuovo **Planning gaps**: evidenzia i giorni con tennis/atletica/torneo che non hanno ancora una voce Nutrition o una voce pre/during/post.
+- Quick access a Recovery, Vista settimanale, Pasti salvati e Indicazioni.
+- Interfaccia più visuale e colorata con gauge, card, progress e micro-trend.
+- Nessuna nuova migration Nutrition. La patch è cumulativa rispetto alla v1.2.15 e include quindi anche la migration dell’Upload Guard se non era stata ancora applicata.
+- Nessuna modifica a `tennis-player-os-site/`.
+
+## v1.2.15 — Owner-only heavy library uploads
+- **Link e YouTube** restano disponibili agli utenti che hanno scrittura sul modulo.
+- Gli utenti diversi dal **global Owner** possono caricare file soltanto fino a **5 MB**.
+- Se tentano di scegliere o salvare un file più grande, TPOS mostra **Privilegi insufficienti** e suggerisce di usare un link/YouTube o chiedere all’Owner.
+- Il global Owner mantiene il limite precedente di **200 MB**.
+- La protezione è applicata in **UI**, nel **file provider** prima della cache locale e lato **Supabase RLS/Storage**, quindi non è soltanto cosmetica.
+- I file e i link già presenti in Libreria non vengono alterati.
+- Inclusa una migration Supabase non distruttiva; nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.14 — Development library resources
 - I temi **Tecnica** e **Tattica** possono ora collegare una o più **risorse di libreria**, oltre ai drills.
 - Il picker unifica due sorgenti mantenendole distinte: **Libreria Development** e **Libreria Drills**.

@@ -1415,6 +1415,16 @@ window.addEventListener('tpos:route-rendered', event => {
 
 window.addEventListener('tpos:module-cloud-updated', event => {
   if (event?.detail?.moduleKey !== 'nutrition' || !isNutritionRoute()) return;
+
+  const overviewButton = document.querySelector(
+    '[data-nutrition-section="overview"].active',
+  );
+
+  if (overviewButton) {
+    overviewButton.click();
+    return;
+  }
+
   queueEnhancement();
 });
 

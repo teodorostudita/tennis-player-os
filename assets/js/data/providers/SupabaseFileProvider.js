@@ -3,8 +3,9 @@ import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../../cloud/access.js?v=1.2.4';
+} from '../../cloud/access.js?v=1.2.6';
 import { supabase } from '../../cloud/supabaseClient.js?v=1.2.4';
+import { assertResourceFileUploadAllowed } from '../resourceUploadPolicy.js?v=1.2.15';
 
 const DEFAULT_BUCKET = 'tpos-resources';
 
@@ -140,6 +141,10 @@ export class SupabaseFileProvider extends FileProvider {
       );
     }
 
+    assertResourceFileUploadAllowed(
+      resource.size || resource.fileBlob?.size || 0,
+    );
+
     const storagePath = this.storagePath(
       resource,
       athleteId,
@@ -177,6 +182,9 @@ export class SupabaseFileProvider extends FileProvider {
     let storagePath = clean(resource.storagePath);
 
     if (resource.kind === 'file') {
+      assertResourceFileUploadAllowed(
+        resource.size || resource.fileBlob?.size || 0,
+      );
       storagePath = await this.uploadFile(
         resource,
         athleteId,
@@ -427,6 +435,12 @@ export class SupabaseFileProvider extends FileProvider {
     if (!moduleId) throw new Error('Modulo della risorsa non specificato.');
 
     this.assertWrite(moduleId);
+
+    if (resource?.kind === 'file') {
+      assertResourceFileUploadAllowed(
+        resource.size || resource.fileBlob?.size || 0,
+      );
+    }
 
     let localSaved = false;
 

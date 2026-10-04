@@ -1,7 +1,7 @@
 import { STORAGE_KEY } from '../schema.js?v=1.2.4';
 import { LocalStorageDataProvider } from './LocalStorageDataProvider.js?v=1.2.4';
 import { IndexedDBFileProvider } from './IndexedDBFileProvider.js?v=1.2.4';
-import { SupabaseFileProvider } from './SupabaseFileProvider.js?v=1.2.4';
+import { SupabaseFileProvider } from './SupabaseFileProvider.js?v=1.2.15';
 
 /**
  * Structured state keeps a local cache. Module-specific cloud synchronizers

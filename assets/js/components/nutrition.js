@@ -15,7 +15,7 @@ const MEAL_TYPES = {
 const PERFORMANCE_TYPES = new Set(['pre', 'during', 'post']);
 const RELEVANT_ACTIVITY_CATEGORIES = new Set(['tennis', 'physical', 'tournament']);
 
-let nutritionSection = 'templates';
+let nutritionSection = 'overview';
 let weekAnchor = startOfWeek(new Date());
 
 export function renderNutrition({ main, title, store }) {
@@ -33,6 +33,7 @@ export function renderNutrition({ main, title, store }) {
     </section>
 
     <div class="nutrition-section-switch" role="tablist" aria-label="Sezioni Nutrition">
+      ${sectionButton('overview', 'Overview')}
       ${sectionButton('templates', 'Pasti salvati')}
       ${sectionButton('planner', 'Vista settimanale')}
       ${sectionButton('guidance', 'Indicazioni')}
@@ -51,7 +52,8 @@ export function renderNutrition({ main, title, store }) {
   });
 
   const content = main.querySelector('#nutrition-section-content');
-  if (nutritionSection === 'planner') renderSharedFoodPlanner({ content, store, state, nutrition });
+  if (nutritionSection === 'overview') renderNutritionOverview({ content, main, title, store, state, nutrition });
+  else if (nutritionSection === 'planner') renderSharedFoodPlanner({ content, store, state, nutrition });
   else if (nutritionSection === 'guidance') renderGuidance({ content, main, title, store, nutrition });
   else if (nutritionSection === 'sleep') renderSleep({ content, main, title, store, nutrition });
   else if (nutritionSection === 'recovery') renderRecovery({ content, main, title, store, nutrition });
@@ -70,11 +72,411 @@ function normalizeNutrition(nutrition = {}) {
     },
     sleepLogs: Array.isArray(nutrition.sleepLogs) ? nutrition.sleepLogs : [],
     recoveryLogs: Array.isArray(nutrition.recoveryLogs) ? nutrition.recoveryLogs : [],
+    trainingCheckouts: Array.isArray(nutrition.trainingCheckouts) ? nutrition.trainingCheckouts : [],
+    checkinDefaults: nutrition.checkinDefaults && typeof nutrition.checkinDefaults === 'object'
+      ? nutrition.checkinDefaults
+      : {},
   };
 }
 
 function sectionButton(id, label) {
   return `<button class="nutrition-section-button ${nutritionSection === id ? 'active' : ''}" data-nutrition-section="${id}" type="button">${label}</button>`;
+}
+
+function decimalHoursFromTimes(bedtime, wakeTime) {
+  if (!bedtime || !wakeTime) return 0;
+  const [bh, bm] = String(bedtime).split(':').map(Number);
+  const [wh, wm] = String(wakeTime).split(':').map(Number);
+  if (![bh, bm, wh, wm].every(Number.isFinite)) return 0;
+
+  let minutes = (wh * 60 + wm) - (bh * 60 + bm);
+  if (minutes <= 0) minutes += 24 * 60;
+  return Math.round((minutes / 60) * 100) / 100;
+}
+
+function mergedRecoveryRows(nutrition) {
+  const dates = new Set([
+    ...nutrition.sleepLogs.map(item => item?.date).filter(Boolean),
+    ...nutrition.recoveryLogs.map(item => item?.date).filter(Boolean),
+  ]);
+
+  return [...dates]
+    .map(date => {
+      const sleep = nutrition.sleepLogs.find(item => item?.date === date) || {};
+      const recovery = nutrition.recoveryLogs.find(item => item?.date === date) || {};
+
+      return {
+        date,
+        sleepHours: Number(
+          recovery.sleepHours
+          ?? sleep.sleepHours
+          ?? decimalHoursFromTimes(sleep.bedtime, sleep.wakeTime)
+          ?? 0
+        ),
+        sleepQuality: Number(recovery.sleepQuality ?? sleep.quality ?? 0),
+        fatigue: Number(recovery.fatigue || 0),
+        soreness: Number(recovery.soreness || 0),
+        mood: Number(recovery.mood || 0),
+        motivation: Number(recovery.motivation || 0),
+        concentration: Number(recovery.concentration || 0),
+      };
+    })
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
+function rowsInLastDays(rows, days) {
+  const today = new Date();
+  const endKey = dateKey(today);
+  const startKey = dateKey(addDays(today, -(Math.max(1, Number(days || 1)) - 1)));
+  return rows.filter(row => row.date >= startKey && row.date <= endKey);
+}
+
+function numericAverage(values) {
+  const clean = values.map(Number).filter(value => Number.isFinite(value) && value > 0);
+  if (!clean.length) return 0;
+  return clean.reduce((sum, value) => sum + value, 0) / clean.length;
+}
+
+function recoveryBalanceScore(row = {}) {
+  const components = [
+    row.sleepQuality,
+    row.motivation,
+    row.concentration,
+    row.mood,
+    row.fatigue ? 6 - row.fatigue : 0,
+    row.soreness ? 6 - row.soreness : 0,
+  ].map(Number).filter(value => Number.isFinite(value) && value > 0);
+
+  if (!components.length) return 0;
+  return Math.round((components.reduce((sum, value) => sum + value, 0) / components.length) * 20);
+}
+
+function averageRecoveryBalance(rows = []) {
+  const scores = rows.map(recoveryBalanceScore).filter(Boolean);
+  return scores.length
+    ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length)
+    : 0;
+}
+
+function recoveryBalanceLabel(score) {
+  if (!score) return 'Dati insufficienti';
+  if (score >= 80) return 'Equilibrio alto';
+  if (score >= 65) return 'Equilibrio buono';
+  if (score >= 50) return 'Da monitorare';
+  return 'Recupero ridotto';
+}
+
+function recoveryMetricTone(key, value) {
+  const score = Number(value || 0);
+  if (!score) return 'neutral';
+  if (['fatigue', 'soreness'].includes(key)) {
+    if (score <= 2) return 'good';
+    if (score === 3) return 'watch';
+    return 'low';
+  }
+  if (score >= 4) return 'good';
+  if (score === 3) return 'watch';
+  return 'low';
+}
+
+function formatDecimal(value, digits = 1) {
+  const number = Number(value || 0);
+  if (!number) return '—';
+  return number.toLocaleString('it-IT', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+function plannerNutritionWindow(state, days = 7) {
+  const planner = state.planner || {};
+  const events = Array.isArray(planner.events) ? planner.events : [];
+  const tournaments = Array.isArray(planner.tournaments) ? planner.tournaments : [];
+  const today = new Date();
+
+  const dayRows = Array.from({ length: days }, (_, index) => {
+    const date = addDays(today, index);
+    const key = dateKey(date);
+
+    const activities = events
+      .filter(event => event.date === key && RELEVANT_ACTIVITY_CATEGORIES.has(event.category))
+      .map(event => ({
+        title: event.title || 'Attività',
+        category: event.category,
+        time: event.startTime || '',
+      }));
+
+    const tournamentRows = tournaments
+      .filter(tournament => dateWithinRange(key, tournament.startDate, tournament.endDate || tournament.startDate))
+      .map(tournament => ({
+        title: tournament.name || 'Torneo',
+        category: 'tournament',
+        time: '',
+      }));
+
+    const food = events
+      .filter(event => event.category === 'nutrition' && event.date === key)
+      .sort(comparePlannerEvents);
+
+    return {
+      key,
+      date,
+      activities: [...tournamentRows, ...activities],
+      food,
+      performanceEntries: food.filter(event => PERFORMANCE_TYPES.has(event.mealType)),
+      hydrationEntries: food.filter(event => event.mealType === 'hydration'),
+    };
+  });
+
+  const activeDays = dayRows.filter(day => day.activities.length);
+  const coveredActiveDays = activeDays.filter(day => day.food.length);
+  const performanceCoveredDays = activeDays.filter(day => day.performanceEntries.length);
+
+  return {
+    days: dayRows,
+    activeDays,
+    coveredActiveDays,
+    performanceCoveredDays,
+    hydrationEntries: dayRows.flatMap(day => day.hydrationEntries),
+    gaps: activeDays.filter(day => !day.food.length || !day.performanceEntries.length),
+  };
+}
+
+function overviewTrendMarkup(rows) {
+  const recent = rows.slice(-10);
+  if (!recent.length) {
+    return '<div class="nutrition-overview-empty">Nessun check-in disponibile.</div>';
+  }
+
+  return `
+    <div class="nutrition-recovery-trend" aria-label="Andamento recovery recente">
+      ${recent.map(row => {
+        const score = recoveryBalanceScore(row);
+        return `
+          <div class="nutrition-trend-day" title="${escapeAttr(`${formatSimpleDate(row.date)} · ${score || '—'}%`)}">
+            <div class="nutrition-trend-bar">
+              <span style="height:${Math.max(8, score || 0)}%"></span>
+            </div>
+            <small>${escapeHtml(String(new Date(`${row.date}T12:00:00`).getDate()))}</small>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function recoverySnapshotMetric(label, key, value) {
+  const tone = recoveryMetricTone(key, value);
+  return `
+    <div class="nutrition-recovery-metric tone-${tone}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${value ? `${escapeHtml(value)}/5` : '—'}</strong>
+    </div>
+  `;
+}
+
+function renderNutritionOverview({ content, main, title, store, state, nutrition }) {
+  const recoveryRows = mergedRecoveryRows(nutrition);
+  const last7 = rowsInLastDays(recoveryRows, 7);
+  const last30 = rowsInLastDays(recoveryRows, 30);
+  const latest = recoveryRows.at(-1) || null;
+  const balance7 = averageRecoveryBalance(last7);
+  const balance30 = averageRecoveryBalance(last30);
+  const avgSleep7 = numericAverage(last7.map(row => row.sleepHours));
+  const avgSleepQuality7 = numericAverage(last7.map(row => row.sleepQuality));
+
+  const recentCheckouts = nutrition.trainingCheckouts
+    .filter(item => item?.date && item.trained !== false)
+    .filter(item => rowsInLastDays([{ date: item.date }], 30).length)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+  const avgCheckout30 = numericAverage(recentCheckouts.map(item => item.quality));
+  const planning = plannerNutritionWindow(state, 7);
+  const activeCoverage = planning.activeDays.length
+    ? Math.round((planning.coveredActiveDays.length / planning.activeDays.length) * 100)
+    : 0;
+
+  content.innerHTML = `
+    <section class="nutrition-overview-hero">
+      <div>
+        <div class="eyebrow">Nutrition & Recovery · Overview</div>
+        <h2>Fuel the work. Read the recovery.</h2>
+        <p>Una lettura unica di recupero quotidiano e pianificazione alimentare, usando i dati già presenti in Recovery e Calendar.</p>
+      </div>
+      <div class="nutrition-overview-actions">
+        <button class="button button-ghost" type="button" data-nutrition-jump="recovery">Apri Recovery</button>
+        <button class="button button-primary" type="button" data-nutrition-jump="planner">Vista settimanale</button>
+      </div>
+    </section>
+
+    <section class="nutrition-overview-kpis">
+      <article class="nutrition-overview-kpi kpi-balance">
+        <div class="nutrition-kpi-gauge" style="--nutrition-gauge:${Math.max(0, Math.min(100, balance7)) * 3.6}deg">
+          <div><strong>${balance7 || '—'}${balance7 ? '%' : ''}</strong><span>7 giorni</span></div>
+        </div>
+        <div>
+          <span>Recovery balance</span>
+          <strong>${escapeHtml(recoveryBalanceLabel(balance7))}</strong>
+          <small>Indice interno TPOS, non clinico</small>
+        </div>
+      </article>
+
+      <article class="nutrition-overview-kpi kpi-sleep">
+        <span class="nutrition-kpi-symbol">☾</span>
+        <div>
+          <span>Sonno medio · 7 giorni</span>
+          <strong>${avgSleep7 ? `${formatDecimal(avgSleep7, 1)} h` : '—'}</strong>
+          <small>${avgSleepQuality7 ? `qualità ${formatDecimal(avgSleepQuality7, 1)}/5` : 'nessun dato qualità'}</small>
+        </div>
+      </article>
+
+      <article class="nutrition-overview-kpi kpi-checkin">
+        <span class="nutrition-kpi-symbol">✓</span>
+        <div>
+          <span>Check-in · 7 giorni</span>
+          <strong>${last7.length}/7</strong>
+          <small>${last7.length >= 5 ? 'copertura buona' : 'serie ancora incompleta'}</small>
+        </div>
+      </article>
+
+      <article class="nutrition-overview-kpi kpi-training">
+        <span class="nutrition-kpi-symbol">↗</span>
+        <div>
+          <span>Training checkout · 30 giorni</span>
+          <strong>${avgCheckout30 ? `${formatDecimal(avgCheckout30, 1)}/5` : '—'}</strong>
+          <small>${recentCheckouts.length} session${recentCheckouts.length === 1 ? 'e' : 'i'} valutate</small>
+        </div>
+      </article>
+    </section>
+
+    <section class="nutrition-overview-grid">
+      <article class="panel nutrition-recovery-panel">
+        <div class="panel-header nutrition-overview-panel-head">
+          <div>
+            <div class="eyebrow">Recovery snapshot</div>
+            <h3>${latest ? `Ultimo check-in · ${escapeHtml(formatSimpleDate(latest.date))}` : 'Ultimo check-in'}</h3>
+            <p>I valori provengono direttamente dalla sezione Recovery.</p>
+          </div>
+          ${latest ? `<span class="nutrition-balance-pill">${recoveryBalanceScore(latest)}%</span>` : ''}
+        </div>
+        <div class="panel-body">
+          ${latest ? `
+            <div class="nutrition-recovery-metrics">
+              ${recoverySnapshotMetric('Sonno', 'sleepQuality', latest.sleepQuality)}
+              ${recoverySnapshotMetric('Voglia', 'motivation', latest.motivation)}
+              ${recoverySnapshotMetric('Concentrazione', 'concentration', latest.concentration)}
+              ${recoverySnapshotMetric('Umore', 'mood', latest.mood)}
+              ${recoverySnapshotMetric('Stanchezza', 'fatigue', latest.fatigue)}
+              ${recoverySnapshotMetric('Indolenzimento', 'soreness', latest.soreness)}
+            </div>
+            <div class="nutrition-sleep-strip">
+              <span>Ore di sonno</span>
+              <strong>${latest.sleepHours ? `${formatDecimal(latest.sleepHours, 1)} h` : '—'}</strong>
+            </div>
+          ` : '<div class="nutrition-overview-empty">Nessun check-in Recovery disponibile.</div>'}
+        </div>
+      </article>
+
+      <article class="panel nutrition-trend-panel">
+        <div class="panel-header nutrition-overview-panel-head">
+          <div>
+            <div class="eyebrow">Trend</div>
+            <h3>Recovery balance recente</h3>
+            <p>Ultimi check-in disponibili, trasformati nello stesso indice sintetico.</p>
+          </div>
+          <div class="nutrition-trend-comparison">
+            <span>7 gg <b>${balance7 || '—'}${balance7 ? '%' : ''}</b></span>
+            <span>30 gg <b>${balance30 || '—'}${balance30 ? '%' : ''}</b></span>
+          </div>
+        </div>
+        <div class="panel-body">
+          ${overviewTrendMarkup(recoveryRows)}
+        </div>
+      </article>
+    </section>
+
+    <section class="nutrition-overview-grid">
+      <article class="panel nutrition-planning-panel">
+        <div class="panel-header nutrition-overview-panel-head">
+          <div>
+            <div class="eyebrow">Next 7 days</div>
+            <h3>Nutrition planning</h3>
+            <p>Copertura alimentare rispetto a tennis, atletica e tornei presenti nel Calendar.</p>
+          </div>
+          <span class="nutrition-coverage-pill">${planning.activeDays.length ? `${activeCoverage}%` : '—'}</span>
+        </div>
+        <div class="panel-body">
+          <div class="nutrition-planning-stats">
+            <div><span>Giorni attivi</span><strong>${planning.activeDays.length}</strong></div>
+            <div><span>Con alimentazione</span><strong>${planning.coveredActiveDays.length}</strong></div>
+            <div><span>Con pre/during/post</span><strong>${planning.performanceCoveredDays.length}</strong></div>
+            <div><span>Voci idratazione</span><strong>${planning.hydrationEntries.length}</strong></div>
+          </div>
+          <div class="nutrition-planning-progress"><div style="width:${activeCoverage}%"></div></div>
+          <div class="nutrition-planning-caption">
+            ${planning.activeDays.length
+              ? `${planning.coveredActiveDays.length} dei ${planning.activeDays.length} giorni con attività hanno almeno una voce Nutrition.`
+              : 'Nessuna attività tennis/atletica/torneo nei prossimi 7 giorni.'}
+          </div>
+        </div>
+      </article>
+
+      <article class="panel nutrition-gaps-panel">
+        <div class="panel-header nutrition-overview-panel-head">
+          <div>
+            <div class="eyebrow">Planning gaps</div>
+            <h3>Giorni da completare</h3>
+            <p>TPOS segnala soltanto la copertura del planning; non prescrive cosa mangiare.</p>
+          </div>
+          <span class="nutrition-gap-count">${planning.gaps.length}</span>
+        </div>
+        <div class="panel-body nutrition-gap-list">
+          ${planning.gaps.length ? planning.gaps.slice(0, 6).map(day => {
+            const noFood = !day.food.length;
+            return `
+              <button class="nutrition-gap-row" type="button" data-nutrition-jump="planner">
+                <span class="nutrition-gap-date">
+                  <b>${escapeHtml(new Intl.DateTimeFormat('it-IT', { weekday: 'short' }).format(day.date))}</b>
+                  <strong>${day.date.getDate()}</strong>
+                </span>
+                <span class="nutrition-gap-copy">
+                  <strong>${escapeHtml(day.activities.map(item => item.title).join(' · '))}</strong>
+                  <small>${noFood ? 'Nessuna voce Nutrition pianificata' : 'Nessuna strategia pre / during / post registrata'}</small>
+                </span>
+                <span>→</span>
+              </button>
+            `;
+          }).join('') : `
+            <div class="nutrition-overview-empty good">
+              ✓ Nessun gap evidente nei prossimi 7 giorni attivi.
+            </div>
+          `}
+        </div>
+      </article>
+    </section>
+
+    <section class="panel nutrition-overview-shortcuts">
+      <div>
+        <div class="eyebrow">Quick access</div>
+        <h3>Gestione quotidiana</h3>
+        <p>L’Overview legge i dati; le modifiche restano nelle sezioni dedicate.</p>
+      </div>
+      <div class="nutrition-shortcut-grid">
+        <button type="button" data-nutrition-jump="recovery"><span>☾</span><strong>Recovery</strong><small>check-in e checkout</small></button>
+        <button type="button" data-nutrition-jump="planner"><span>▦</span><strong>Settimana</strong><small>pasti nel Calendar</small></button>
+        <button type="button" data-nutrition-jump="templates"><span>◫</span><strong>Pasti salvati</strong><small>strategie ricorrenti</small></button>
+        <button type="button" data-nutrition-jump="guidance"><span>◎</span><strong>Indicazioni</strong><small>note del nutrizionista/staff</small></button>
+      </div>
+    </section>
+  `;
+
+  content.querySelectorAll('[data-nutrition-jump]').forEach(button => {
+    button.addEventListener('click', () => {
+      const target = button.dataset.nutritionJump;
+      const tab = main.querySelector(`[data-nutrition-section="${target}"]`);
+      if (tab) tab.click();
+    });
+  });
 }
 
 function renderSharedFoodPlanner({ content, state, nutrition }) {
@@ -513,6 +915,7 @@ function ensureNutritionState(state) {
   if (!Array.isArray(state.nutrition.planner.entries)) state.nutrition.planner.entries = [];
   if (!Array.isArray(state.nutrition.sleepLogs)) state.nutrition.sleepLogs = [];
   if (!Array.isArray(state.nutrition.recoveryLogs)) state.nutrition.recoveryLogs = [];
+  if (!Array.isArray(state.nutrition.trainingCheckouts)) state.nutrition.trainingCheckouts = [];
 }
 
 function freshNutritionState() {
@@ -522,6 +925,7 @@ function freshNutritionState() {
     guidance: { general: '', trainingDay: '', matchDay: '', recoveryDay: '', hydration: '' },
     sleepLogs: [],
     recoveryLogs: [],
+    trainingCheckouts: [],
   };
 }
 

@@ -1,5 +1,31 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.16',
+    date: '2026-10-04',
+    title: 'Nutrition Overview + planning gaps',
+    details: [
+      'Nutrition & Recovery apre ora su una nuova Overview che combina dati di Recovery e Calendar senza duplicare registrazioni.',
+      'Aggiunto un Recovery balance 0–100% come indice interno TPOS non clinico, ricavato da qualità del sonno, umore, motivazione, concentrazione, stanchezza e indolenzimento.',
+      'L’Overview mostra sonno medio, copertura check-in, training checkout, snapshot dell’ultimo check-in e trend 7/30 giorni.',
+      'Nuovo pannello Nutrition planning per i prossimi 7 giorni, con copertura dei giorni attivi, voci pre/during/post e idratazione pianificata.',
+      'Nuovo Planning gaps: segnala i giorni con tennis, atletica o torneo privi di voci Nutrition o di una strategia performance registrata, senza formulare prescrizioni alimentari.',
+      'Interfaccia resa più visuale e colorata con gauge, KPI, trend e quick access alle sezioni operative.',
+      'Nessuna nuova migration Nutrition; la patch è cumulativa e conserva la migration v1.2.15 dell’Upload Guard se non ancora applicata.',
+    ],
+  },
+  {
+    version: '1.2.15',
+    date: '2026-10-04',
+    title: 'Owner-only heavy library uploads',
+    details: [
+      'I link e i video YouTube restano caricabili dagli utenti con permesso di scrittura sulla Libreria.',
+      'I file binari per gli account non-Owner sono limitati a 5 MB; oltre la soglia compare un messaggio Privilegi insufficienti e il file non viene accodato né caricato.',
+      'Il global Owner mantiene il limite precedente di 200 MB.',
+      'La restrizione è applicata su tre livelli: interfaccia, provider file e policy Supabase/Storage, così non dipende soltanto dal controllo UI.',
+      'I file già presenti non vengono modificati o rimossi.',
+    ],
+  },
+  {
     version: '1.2.14',
     date: '2026-10-04',
     title: 'Development library resources',
