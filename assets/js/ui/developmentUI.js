@@ -209,9 +209,11 @@ function linkedResource(moduleId, resourceId) {
     .find(resource => resource.id === resourceId) || null;
 }
 
-async function ensureLinkedResourceCache() {
-  if (linkedResourceCacheReady) return linkedResourceCache;
+async function ensureLinkedResourceCache({ force = false } = {}) {
   if (linkedResourceLoadPromise) return linkedResourceLoadPromise;
+  if (linkedResourceCacheReady && !force) return linkedResourceCache;
+
+  linkedResourceCacheReady = false;
 
   linkedResourceLoadPromise = Promise.all(
     LINKED_RESOURCE_MODULES.map(async module => {
@@ -1195,7 +1197,7 @@ function drillChecklist(selectedIds = []) {
 async function openItemDialog(item = null, type = ui.type) {
   if (!canWrite()) return;
 
-  await ensureLinkedResourceCache();
+  await ensureLinkedResourceCache({ force: true });
 
   const value = item ? clone(item) : defaultItem(type);
   const copy = TYPE_COPY[value.type] || TYPE_COPY.technique;
