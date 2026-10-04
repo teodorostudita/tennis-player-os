@@ -22,6 +22,25 @@ const mobileMenuButton = document.querySelector('#mobile-menu-button');
 const LIBRARY_MODULES = new Set(['development', 'training', 'drills', 'equipment', 'health', 'nutrition', 'mental', 'visual']);
 const moduleWorkspaceView = new Map();
 
+const MODULE_WORKSPACE_REQUEST_KEY = 'tpos.module-workspace.request.v1';
+
+function consumeModuleWorkspaceRequest(moduleId) {
+  try {
+    const raw = sessionStorage.getItem(MODULE_WORKSPACE_REQUEST_KEY);
+    if (!raw) return '';
+
+    const request = JSON.parse(raw);
+    if (String(request?.moduleId || '') !== String(moduleId || '')) return '';
+
+    sessionStorage.removeItem(MODULE_WORKSPACE_REQUEST_KEY);
+    return ['content', 'library'].includes(request?.view)
+      ? request.view
+      : '';
+  } catch (_) {
+    return '';
+  }
+}
+
 function defaultRoute() {
   return ['athlete', 'parent', 'trainer'].includes(getCurrentUserType()) ? 'home' : 'dashboard';
 }
@@ -190,7 +209,9 @@ function renderModule(module, target = main) {
 }
 
 function renderModuleWorkspace(module, contentRenderer) {
-  const view = moduleWorkspaceView.get(module.id) || 'content';
+  const requestedView = consumeModuleWorkspaceRequest(module.id);
+  if (requestedView) moduleWorkspaceView.set(module.id, requestedView);
+  const view = requestedView || moduleWorkspaceView.get(module.id) || 'content';
   title.textContent = `${module.number}. ${module.name}`;
   main.innerHTML = `
     <div class="module-workspace-switch" role="tablist" aria-label="${escapeAttr(module.name)}">
