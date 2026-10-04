@@ -120,6 +120,34 @@ function mentalTools(mental = normalizeMentalPayload(store.getState().mental)) {
   return Array.isArray(mental.tools) ? mental.tools : [];
 }
 
+
+const MENTAL_TOOL_PALETTE = [
+  '#5b7cfa',
+  '#8b5cf6',
+  '#0ea5a8',
+  '#d97706',
+  '#e0527d',
+  '#3b82a0',
+  '#4f9b62',
+  '#9a6b42',
+];
+
+function mentalToolColor(index = 0) {
+  return MENTAL_TOOL_PALETTE[Math.abs(Number(index || 0)) % MENTAL_TOOL_PALETTE.length];
+}
+
+function mentalToolInitials(name = '') {
+  const words = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) return 'M';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+
+  return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase();
+}
+
 function toolById(id, mental = normalizeMentalPayload(store.getState().mental)) {
   return mentalTools(mental).find(item => item.id === id);
 }
@@ -526,18 +554,63 @@ function renderMentalOverview(container, mental, host) {
   );
 
   container.innerHTML = `
-    <section class="mv-kpis">
-      <article class="mv-kpi"><span>Aree di lavoro</span><strong>${skills.length}</strong></article>
-      <article class="mv-kpi"><span>Valutazione media</span><strong>${Math.round(levelAverage)}%</strong></article>
-      <article class="mv-kpi"><span>Sessioni registrate</span><strong>${mental.trainingSessions.length}</strong></article>
-      <article class="mv-kpi"><span>Review partita</span><strong>${mental.matchReviews.length}</strong></article>
+    <section class="mv-kpis mv-overview-kpis">
+      <article class="mv-kpi mv-kpi-card mv-kpi-areas">
+        <div class="mv-kpi-icon" aria-hidden="true">◆</div>
+        <div class="mv-kpi-copy">
+          <span>Aree di lavoro</span>
+          <strong>${skills.length}</strong>
+          <small>profilo attivo</small>
+        </div>
+      </article>
+
+      <article class="mv-kpi mv-kpi-card mv-kpi-average">
+        <div
+          class="mv-average-gauge"
+          style="--mv-gauge-angle:${Math.max(0, Math.min(100, Math.round(levelAverage))) * 3.6}deg"
+          aria-label="Valutazione media ${Math.round(levelAverage)}%"
+        >
+          <div class="mv-average-gauge-inner">
+            <strong>${Math.round(levelAverage)}%</strong>
+            <span>media</span>
+          </div>
+        </div>
+        <div class="mv-kpi-copy">
+          <span>Valutazione media</span>
+          <strong class="mv-kpi-average-label">Profilo complessivo</strong>
+          <small>media delle aree attive</small>
+        </div>
+      </article>
+
+      <article class="mv-kpi mv-kpi-card mv-kpi-sessions">
+        <div class="mv-kpi-icon" aria-hidden="true">◷</div>
+        <div class="mv-kpi-copy">
+          <span>Sessioni registrate</span>
+          <strong>${mental.trainingSessions.length}</strong>
+          <small>${activity.sessions.length} negli ultimi 30 giorni</small>
+        </div>
+      </article>
+
+      <article class="mv-kpi mv-kpi-card mv-kpi-reviews">
+        <div class="mv-kpi-icon" aria-hidden="true">✓</div>
+        <div class="mv-kpi-copy">
+          <span>Review partita</span>
+          <strong>${mental.matchReviews.length}</strong>
+          <small>feedback competitivo</small>
+        </div>
+      </article>
     </section>
 
     <section class="mv-grid-2">
-      <article class="panel">
+      <article class="panel mv-overview-goals-panel">
         <div class="panel-header">
-          <h3>Obiettivi mentali</h3>
-          <p>Tre livelli progressivi: Bronzo, Argento e Oro.</p>
+          <div class="mv-panel-title-with-icon">
+            <span class="mv-panel-icon" aria-hidden="true">◎</span>
+            <div>
+              <h3>Obiettivi mentali</h3>
+              <p>Tre livelli progressivi: Bronzo, Argento e Oro.</p>
+            </div>
+          </div>
         </div>
         <div class="panel-body">
           ${canWriteModule('mental') ? `
@@ -559,8 +632,13 @@ function renderMentalOverview(container, mental, host) {
 
       <article class="panel mv-mental-window-panel">
         <div class="panel-header">
-          <h3>Allenamento mentale · ultimi 30 giorni</h3>
-          <p>Quanto, quando e su quali aree è stato distribuito il lavoro.</p>
+          <div class="mv-panel-title-with-icon">
+            <span class="mv-panel-icon mv-panel-icon-activity" aria-hidden="true">↗</span>
+            <div>
+              <h3>Allenamento mentale · ultimi 30 giorni</h3>
+              <p>Quanto, quando e su quali aree è stato distribuito il lavoro.</p>
+            </div>
+          </div>
         </div>
         <div class="panel-body">
           <div class="mv-window-kpis">
@@ -662,7 +740,7 @@ function renderMentalOverview(container, mental, host) {
 
 function goalField(label, name, value) {
   return `
-    <label>
+    <label class="mv-goal-field mv-goal-${name}">
       <span>${label}</span>
       <textarea name="${name}" placeholder="Obiettivo ${label.toLowerCase()}">${escapeHtml(value)}</textarea>
     </label>
@@ -670,8 +748,14 @@ function goalField(label, name, value) {
 }
 
 function goalReadOnly(label, value) {
+  const key = label.toLowerCase() === 'bronzo'
+    ? 'bronze'
+    : label.toLowerCase() === 'argento'
+      ? 'silver'
+      : 'gold';
+
   return `
-    <div>
+    <div class="mv-goal-readonly mv-goal-${key}">
       <span>${label}</span>
       <strong>${escapeHtml(value || '—')}</strong>
     </div>
@@ -1108,19 +1192,25 @@ function renderMentalTools(container, mental, host) {
 
     ${tools.length
       ? `<div class="mv-tool-grid">
-          ${tools.map(tool => {
+          ${tools.map((tool, toolIndex) => {
             const linked = exercisesForTool(mental, tool.id);
             const linkedSkills = (tool.skillIds || [])
               .map(id => skillById(id, mental))
               .filter(Boolean);
 
+            const toolColor = mentalToolColor(toolIndex);
+            const initials = mentalToolInitials(tool.name);
+
             return `
-              <article class="panel mv-tool-card">
+              <article class="panel mv-tool-card mv-tool-card-polished" style="--mv-tool-color:${toolColor}">
                 <div class="panel-body">
                   <div class="mv-tool-card-head">
-                    <div>
-                      <h3>${escapeHtml(tool.name)}</h3>
-                      ${tool.description ? `<p>${escapeHtml(tool.description)}</p>` : ''}
+                    <div class="mv-tool-identity">
+                      <span class="mv-tool-monogram" aria-hidden="true">${escapeHtml(initials)}</span>
+                      <div>
+                        <h3>${escapeHtml(tool.name)}</h3>
+                        ${tool.description ? `<p>${escapeHtml(tool.description)}</p>` : ''}
+                      </div>
                     </div>
                     ${canWriteModule('mental') ? `
                       <div class="mv-exercise-actions">
@@ -1130,13 +1220,23 @@ function renderMentalTools(container, mental, host) {
                     ` : ''}
                   </div>
 
-                  <div class="mv-tags">
-                    ${linkedSkills.length
-                      ? linkedSkills.map(skill => `<span>${escapeHtml(skill.short || skill.name)}</span>`).join('')
-                      : '<span>Nessuna abilità collegata</span>'}
+                  <div class="mv-tool-meta-row">
+                    <div class="mv-tags mv-tool-skill-tags">
+                      ${linkedSkills.length
+                        ? linkedSkills.map(skill => `
+                            <span class="mv-tool-skill-chip" style="--mv-tool-skill-color:${skill.color || toolColor}">
+                              ${escapeHtml(skill.short || skill.name)}
+                            </span>
+                          `).join('')
+                        : '<span>Nessuna abilità collegata</span>'}
+                    </div>
+                    <div class="mv-tool-count" title="Esercizi collegati">
+                      <strong>${linked.length}</strong>
+                      <span>esercizi</span>
+                    </div>
                   </div>
 
-                  <div class="mv-linked-exercises">
+                  <div class="mv-linked-exercises mv-tool-linked-exercises">
                     <div class="mv-linked-head">
                       <strong>Esercizi collegati</strong>
                       <span>${linked.length}</span>

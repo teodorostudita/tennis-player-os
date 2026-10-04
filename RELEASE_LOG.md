@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.2.12 — Mental cosmetic polish
+- **Overview** resa più visuale con KPI card colorate e una nuova **visualizzazione circolare** della valutazione media.
+- Migliorata la gerarchia grafica dei pannelli **Obiettivi mentali** e **Allenamento mentale · ultimi 30 giorni**.
+- La sezione **Strumenti** usa card più riconoscibili con monogramma, colore deterministico, badge cromatici delle aree collegate e contatore degli esercizi.
+- Migliorati hover, profondità, spaziature e resa responsive senza introdurre nuovi dati persistenti.
+- Nessuna modifica al modello dati Mental, nessuna migration SQL e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.11 — Mental Overview + custom work areas
 - **Panoramica** diventa **Overview**.
 - Il pannello **Stati di prestazione** viene sostituito da una sintesi quantitativa degli **ultimi 30 giorni**: tempo totale, numero di sessioni, ultima sessione, distribuzione del focus per tempo stimato e ultime sessioni.
