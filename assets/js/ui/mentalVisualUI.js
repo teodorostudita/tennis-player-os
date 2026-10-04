@@ -2,6 +2,7 @@ import '../bootstrap.js?v=1.2.6';
 
 import { modules } from '../data/schema.js?v=1.2.6';
 import { store } from '../data/store.js?v=1.2.6';
+import { fileProvider } from '../data/providers/provider.js?v=1.2.6';
 import {
   canReadModule,
   canWriteModule,
@@ -27,6 +28,7 @@ const MENTAL_SKILLS = [
     short: 'Motivazione',
     description: 'Motivazione intrinseca ed estrinseca, piacere nel giocare, perseveranza e orientamento verso obiettivi controllabili.',
     indicators: ['piacere', 'impegno', 'sacrificio', 'intensità', 'voglia di competere'],
+    color: '#2d9d78',
   },
   {
     id: 'fiducia',
@@ -34,6 +36,7 @@ const MENTAL_SKILLS = [
     short: 'Fiducia',
     description: 'Costruire fiducia attraverso risultati reali, memoria selettiva, richiamo dei successi e dialogo interno positivo.',
     indicators: ['sicurezza', 'linguaggio del corpo', 'memoria dei successi'],
+    color: '#3b82f6',
   },
   {
     id: 'concentrazione',
@@ -41,6 +44,7 @@ const MENTAL_SKILLS = [
     short: 'Concentrazione',
     description: 'Creare, mantenere e ritrovare il focus, restare nel presente e usare ancoraggi sensoriali o parole chiave.',
     indicators: ['presente', 'bolla attentiva', 'parola chiave', 'recupero del focus'],
+    color: '#7657c8',
   },
   {
     id: 'regolazione',
@@ -48,36 +52,24 @@ const MENTAL_SKILLS = [
     short: 'Regolazione',
     description: 'Riconoscere e regolare ansia, intensità e attivazione con respirazione, linguaggio del corpo e consapevolezza.',
     indicators: ['ansia', 'intensità', 'respirazione', 'linguaggio del corpo'],
+    color: '#e09f3e',
   },
   {
     id: 'resilienza',
-    name: 'Resilienza e gestione delle avversità',
-    short: 'Resilienza',
-    description: 'Prevenire, gestire e recuperare dalla frustrazione, elevare la soglia di tolleranza e sviluppare antifragilità.',
-    indicators: ['reset', 'frustrazione', 'tenuta mentale', 'antifragilità'],
+    name: 'Mental resilience e Mental toughness',
+    short: 'Mental resilience',
+    description: 'Prevenire, gestire e recuperare dalla frustrazione, mantenere efficacia sotto pressione e sviluppare mental toughness.',
+    indicators: ['reset', 'frustrazione', 'tenuta mentale', 'mental toughness'],
+    color: '#d65c5c',
   },
   {
     id: 'immaginazione',
-    name: 'Immaginazione mentale e prova mentale',
-    short: 'Immaginazione',
-    description: 'Visualizzazione multisensoriale ed emotiva del gesto, della prestazione e delle situazioni competitive.',
+    name: 'Mental Imagery',
+    short: 'Mental Imagery',
+    description: 'Rappresentazione multisensoriale ed emotiva del gesto, della prestazione e delle situazioni competitive.',
     indicators: ['gesto perfetto', 'successo', 'sensi', 'emozioni'],
+    color: '#2d8f9f',
   },
-];
-
-const MENTAL_TOOLS = [
-  { id: 'visualizzazione', name: 'Visualizzazione', skills: ['immaginazione', 'fiducia', 'concentrazione'] },
-  { id: 'dialogo-interno', name: 'Dialogo interno', skills: ['fiducia', 'concentrazione', 'resilienza'] },
-  { id: 'respirazione-521', name: 'Respirazione 5-2-1', skills: ['regolazione', 'resilienza', 'concentrazione'] },
-  { id: 'linguaggio-corpo', name: 'Linguaggio del corpo', skills: ['fiducia', 'regolazione', 'resilienza'] },
-  { id: 'affermazioni', name: 'Affermazioni', skills: ['fiducia', 'resilienza'] },
-  { id: 'consapevolezza-lampo', name: 'Consapevolezza lampo', skills: ['concentrazione', 'regolazione', 'resilienza'] },
-  { id: 'memoria-selettiva', name: 'Memoria selettiva', skills: ['fiducia', 'resilienza'] },
-  { id: 'richiamo-successi', name: 'Richiamo dei successi', skills: ['fiducia', 'motivazione'] },
-  { id: 'definizione-obiettivi', name: 'Definizione degli obiettivi', skills: ['motivazione', 'concentrazione'] },
-  { id: 'meditazione', name: 'Meditazione pre-partita', skills: ['concentrazione', 'regolazione'] },
-  { id: 'routine-reset', name: 'Routine di reset', skills: ['resilienza', 'concentrazione', 'regolazione'] },
-  { id: 'ancoraggio-sensoriale', name: 'Ancoraggio sensoriale', skills: ['concentrazione', 'regolazione'] },
 ];
 
 const MENTAL_CONTEXTS = [
@@ -136,6 +128,7 @@ let cloudState = {
   visual: { athleteId: '', loaded: false, stop: null, error: '' },
 };
 let enhancementQueued = false;
+let mentalResourceCache = [];
 
 function route() {
   return window.location.hash.replace(/^#\/?/, '') || 'dashboard';
@@ -180,8 +173,42 @@ function skillById(id) {
   return MENTAL_SKILLS.find(item => item.id === id);
 }
 
-function toolById(id) {
-  return MENTAL_TOOLS.find(item => item.id === id);
+function mentalTools(mental = normalizeMentalPayload(store.getState().mental)) {
+  return Array.isArray(mental.tools) ? mental.tools : [];
+}
+
+function toolById(id, mental = normalizeMentalPayload(store.getState().mental)) {
+  return mentalTools(mental).find(item => item.id === id);
+}
+
+function mentalResourceById(id) {
+  return mentalResourceCache.find(item => item.id === id);
+}
+
+async function refreshMentalResourceCache() {
+  try {
+    mentalResourceCache = await fileProvider.listResources('mental');
+  } catch (error) {
+    console.warn('Mental resource library unavailable.', error);
+    mentalResourceCache = [];
+  }
+  return mentalResourceCache;
+}
+
+function openMentalResource(resourceId) {
+  const resource = mentalResourceById(resourceId);
+  if (!resource) return;
+
+  try {
+    sessionStorage.setItem(
+      'tpos.resource-library.focus.v1',
+      JSON.stringify({ moduleId: 'mental', resourceId }),
+    );
+  } catch {}
+
+  document
+    .querySelector('.module-workspace-button[data-module-workspace="library"]')
+    ?.click();
 }
 
 function mentalContextLabel(id) {
@@ -238,7 +265,7 @@ function applyModuleMetadata() {
   if (mental) {
     mental.name = 'Mental';
     mental.subtitle = 'Motivazione · Fiducia · Concentrazione · Regolazione';
-    mental.description = 'Allenamento mentale della prestazione: motivazione, fiducia, concentrazione, regolazione emotiva, resilienza, immaginazione mentale e strumenti operativi.';
+    mental.description = 'Allenamento mentale della prestazione: motivazione, fiducia, concentrazione, regolazione emotiva, mental resilience, mental toughness, mental imagery e strumenti operativi.';
   }
 
   if (visual) {
