@@ -1355,6 +1355,9 @@ function renderMentalExercises(container, mental, host) {
       ? `<div class="mv-exercise-grid">
           ${exercises.map(exercise => {
             const context = mentalContextLabel(exercise.context);
+            const activeSkills = (exercise.skillIds || [])
+              .map(id => skillById(id, mental))
+              .filter(Boolean);
             const linkedResources = (exercise.resourceIds || [])
               .map(mentalResourceById)
               .filter(Boolean);
@@ -1392,8 +1395,8 @@ function renderMentalExercises(container, mental, host) {
                     <div>
                       <strong>Abilità</strong>
                       <div class="mv-tags">
-                        ${exercise.skillIds.length
-                          ? exercise.skillIds.map(id => `<span>${escapeHtml(skillById(id)?.short || id)}</span>`).join('')
+                        ${activeSkills.length
+                          ? activeSkills.map(skill => `<span>${escapeHtml(skill.short || skill.name)}</span>`).join('')
                           : '<span>Non assegnata</span>'}
                       </div>
                     </div>
@@ -1505,6 +1508,7 @@ function renderMentalExercises(container, mental, host) {
 
 async function openMentalExerciseDialog(host, exercise = null) {
   const currentMental = normalizeMentalPayload(store.getState().mental);
+  const skills = mentalSkills(currentMental);
   const tools = mentalTools(currentMental);
   await refreshMentalResourceCache();
   const resources = [...mentalResourceCache].sort((a, b) => String(a.title || a.fileName || '').localeCompare(String(b.title || b.fileName || ''), 'it'));
@@ -1566,7 +1570,7 @@ async function openMentalExerciseDialog(host, exercise = null) {
         <fieldset class="mv-link-fieldset full">
           <legend>Abilità collegate</legend>
           <div class="mv-check-grid">
-            ${MENTAL_SKILLS.map(skill => `
+            ${skills.map(skill => `
               <label>
                 <input type="checkbox" name="skillIds" value="${escapeAttr(skill.id)}" ${current.skillIds.includes(skill.id) ? 'checked' : ''} />
                 <span>${escapeHtml(skill.name)}</span>
@@ -1719,7 +1723,8 @@ function renderMentalTraining(container, mental, host) {
 
                   const skillIds = linkedExercises.length
                     ? [...new Set(linkedExercises.flatMap(exercise => exercise.skillIds || []))]
-                    : (session.skillId ? [session.skillId] : []);
+                        .filter(id => skillById(id, mental))
+                    : (session.skillId && skillById(session.skillId, mental) ? [session.skillId] : []);
 
                   const toolIds = linkedExercises.length
                     ? [...new Set(linkedExercises.flatMap(exercise => exercise.toolIds || []))]
@@ -1742,8 +1747,8 @@ function renderMentalTraining(container, mental, host) {
                       <td>
                         <div class="mv-session-focus">
                           <strong>${skillIds.length
-                            ? skillIds.map(id => escapeHtml(skillById(id)?.short || id)).join(' · ')
-                            : '—'}</strong>
+                            ? skillIds.map(id => escapeHtml(skillById(id, mental)?.short || id)).join(' · ')
+                            : escapeHtml(session.skillNameSnapshot || '—')}</strong>
                           <span>${toolIds.length
                             ? toolIds.map(id => escapeHtml(toolById(id, mental)?.name || id)).join(' · ')
                             : '—'}</span>
@@ -1801,6 +1806,7 @@ function renderMentalTraining(container, mental, host) {
 
 function openMentalSessionDialog(host) {
   const mental = normalizeMentalPayload(store.getState().mental);
+  const skills = mentalSkills(mental);
   const tools = mentalTools(mental);
   const exercises = [...mentalExercises(mental)]
     .sort((a, b) => {
@@ -1854,7 +1860,7 @@ function openMentalSessionDialog(host) {
           <label>Abilità principale <small>solo sessione libera</small></label>
           <select name="skillId">
             <option value="">—</option>
-            ${MENTAL_SKILLS.map(skill => `<option value="${skill.id}">${escapeHtml(skill.name)}</option>`).join('')}
+            ${skills.map(skill => `<option value="${skill.id}">${escapeHtml(skill.name)}</option>`).join('')}
           </select>
         </div>
 
@@ -2107,7 +2113,7 @@ function mentalSessionRow(session) {
 
   const primary = linkedExercises.length
     ? linkedExercises.map(exercise => exercise.title).join(' · ')
-    : (skillById(session.skillId)?.short || 'Sessione mentale');
+    : (skillById(session.skillId, mental)?.short || session.skillNameSnapshot || 'Sessione mentale');
 
   const secondary = [
     formatDate(session.date),
