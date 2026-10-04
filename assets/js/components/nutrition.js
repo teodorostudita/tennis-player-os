@@ -472,8 +472,9 @@ function renderNutritionOverview({ content, main, title, store, state, nutrition
 
   content.querySelectorAll('[data-nutrition-jump]').forEach(button => {
     button.addEventListener('click', () => {
-      nutritionSection = button.dataset.nutritionJump;
-      renderNutrition({ main, title, store });
+      const target = button.dataset.nutritionJump;
+      const tab = main.querySelector(`[data-nutrition-section="${target}"]`);
+      if (tab) tab.click();
     });
   });
 }
