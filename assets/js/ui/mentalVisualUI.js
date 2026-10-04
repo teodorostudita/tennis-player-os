@@ -15,7 +15,7 @@ import {
   normalizeMentalPayload,
   normalizeVisualPayload,
   startStructuredPerformanceSync,
-} from '../cloud/mentalVisualCloud.js?v=1.2.9';
+} from '../cloud/mentalVisualCloud.js?v=1.2.10';
 import {
   showInAppAlert,
   showInAppConfirm,
@@ -1600,7 +1600,7 @@ function renderMentalReview(container, mental, host) {
                 ${reviewScore('Fiducia', review.confidence)}
                 ${reviewScore('Concentrazione', review.focus)}
                 ${reviewScore('Regolazione', review.regulation)}
-                ${reviewScore('Resilienza', review.resilience)}
+                ${reviewScore('Mental resilience', review.resilience)}
               </div>
 
               ${review.notes ? `<div class="mv-note">${escapeHtml(review.notes)}</div>` : ''}
@@ -1664,7 +1664,7 @@ function openMentalReviewDialog(host) {
         ${scoreInput('Fiducia', 'confidence')}
         ${scoreInput('Concentrazione', 'focus')}
         ${scoreInput('Regolazione emotiva', 'regulation')}
-        ${scoreInput('Resilienza / tenuta mentale', 'resilience')}
+        ${scoreInput('Mental resilience / toughness', 'resilience')}
 
         <div class="field full"><label>Note</label><textarea name="notes"></textarea></div>
       </div>
