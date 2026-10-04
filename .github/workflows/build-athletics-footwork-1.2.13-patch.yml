@@ -1,0 +1,68 @@
+name: Build Athletics Footwork 1.2.13 Patch ZIP
+
+on:
+  push:
+    branches: [ chatgpt/athletics-footwork-v1.2.13 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build cumulative patch zip
+        run: |
+          rm -rf patch TPOS_patch_v1.2.13_Athletics_Footwork_Patterns.zip
+          mkdir -p patch/assets/css
+          mkdir -p patch/assets/js/cloud
+          mkdir -p patch/assets/js/components
+          mkdir -p patch/assets/js/ui
+          mkdir -p patch/assets/js
+          mkdir -p patch/supabase/migrations
+
+          cp README-PATCH.txt patch/README-PATCH.txt
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+
+          cp assets/css/athletics-footwork.css patch/assets/css/athletics-footwork.css
+          cp assets/css/mental-visual.css patch/assets/css/mental-visual.css
+
+          cp assets/js/app.js patch/assets/js/app.js
+          cp assets/js/bootstrap.js patch/assets/js/bootstrap.js
+          cp assets/js/cloud/trainingCloud.js patch/assets/js/cloud/trainingCloud.js
+          cp assets/js/components/training.js patch/assets/js/components/training.js
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/athleticsOwnershipUI.js patch/assets/js/ui/athleticsOwnershipUI.js
+          cp assets/js/ui/mentalVisualUI.js patch/assets/js/ui/mentalVisualUI.js
+          cp assets/js/ui/versionDashboard.js patch/assets/js/ui/versionDashboard.js
+          cp assets/js/version.js patch/assets/js/version.js
+
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+          cp supabase/migrations/20261004184500_add_athletics_footwork_patterns.sql patch/supabase/migrations/
+
+          cd patch
+          zip -r ../TPOS_patch_v1.2.13_Athletics_Footwork_Patterns.zip .
+      - name: Check JavaScript syntax
+        run: |
+          node --check patch/assets/js/app.js
+          node --check patch/assets/js/bootstrap.js
+          node --check patch/assets/js/cloud/trainingCloud.js
+          node --check patch/assets/js/components/training.js
+          node --check patch/assets/js/releaseLog.js
+          node --check patch/assets/js/ui/athleticsOwnershipUI.js
+          node --check patch/assets/js/ui/mentalVisualUI.js
+          node --check patch/assets/js/ui/versionDashboard.js
+          node --check patch/assets/js/version.js
+          node --check patch/sw.js
+      - name: Verify patch scope
+        run: |
+          test ! -e patch/tennis-player-os-site
+          test -e patch/supabase/migrations/20261004184500_add_athletics_footwork_patterns.sql
+          unzip -l TPOS_patch_v1.2.13_Athletics_Footwork_Patterns.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.13_Athletics_Footwork_Patterns
+          path: TPOS_patch_v1.2.13_Athletics_Footwork_Patterns.zip
+          if-no-files-found: error
