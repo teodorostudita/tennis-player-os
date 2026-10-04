@@ -8,7 +8,7 @@
   <title>Calendar — Guida Tennis Player OS</title>
   <link rel="stylesheet" href="styles.css?v=1.5" />
   <link rel="stylesheet" href="instructions.css?v=1.2" />
-  <link rel="stylesheet" href="instructions-calendar.css?v=1.0" />
+  <link rel="stylesheet" href="instructions-calendar.css?v=1.1" />
 </head>
 <body class="guide-body calendar-manual-body">
 <header class="site-header guide-header">
@@ -137,6 +137,36 @@
           <p><span data-copy="it">Calendar può richiamare un pasto già salvato in Nutrition &amp; Recovery oppure creare una voce personalizzata, specificando tipo di pasto e dettagli.</span><span data-copy="en">Calendar can use a meal already saved in Nutrition &amp; Recovery or create a custom entry with meal type and details.</span></p>
         </div>
       </div>
+
+      <div class="calendar-equipment-link">
+        <div class="calendar-equipment-head">
+          <span class="calendar-equipment-mark">↗</span>
+          <div>
+            <strong><span data-copy="it">Calendar alimenta automaticamente Equipment</span><span data-copy="en">Calendar automatically feeds Equipment</span></strong>
+            <p><span data-copy="it">Le ore registrate nel planner non restano isolate: TPOS le usa per stimare l'usura reale del materiale.</span><span data-copy="en">Hours recorded in the planner do not remain isolated: TPOS uses them to estimate actual equipment wear.</span></p>
+          </div>
+        </div>
+        <div class="calendar-equipment-grid">
+          <article>
+            <span class="calendar-equipment-icon">🎾</span>
+            <div>
+              <b><span data-copy="it">Corde</span><span data-copy="en">Strings</span></b>
+              <p><span data-copy="it">Dalla data di montaggio dell'incordatura, Equipment somma le ore effettivamente trascorse nelle attività <strong>Tennis</strong> del Calendar. Il totale viene confrontato con le ore di vita previste per mostrare utilizzo e vita residua.</span><span data-copy="en">From the stringing date, Equipment totals the completed hours in <strong>Tennis</strong> activities from Calendar. The total is compared with the expected lifetime to show usage and remaining life.</span></p>
+            </div>
+          </article>
+          <article>
+            <span class="calendar-equipment-icon">👟</span>
+            <div>
+              <b><span data-copy="it">Scarpe</span><span data-copy="en">Shoes</span></b>
+              <p><span data-copy="it">Per le scarpe specifiche da tennis, Equipment conta solo le ore delle attività sulla <strong>superficie corrispondente</strong>; un paio “All court” usa tutte le ore Tennis. Se alcune sessioni non hanno una superficie registrata, la stima viene indicata come <strong>parziale</strong>.</span><span data-copy="en">For surface-specific tennis shoes, Equipment counts only activities on the <strong>matching surface</strong>; an “All court” pair uses all Tennis hours. If some sessions have no surface recorded, the estimate is shown as <strong>partial</strong>.</span></p>
+            </div>
+          </article>
+        </div>
+        <div class="calendar-equipment-foot">
+          <span data-copy="it">Le attività segnate come <strong>saltate</strong> non vengono conteggiate. Per la giornata corrente TPOS considera soltanto il tempo già effettivamente trascorso.</span>
+          <span data-copy="en">Activities marked as <strong>missed</strong> are not counted. For the current day TPOS counts only time that has actually elapsed.</span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -166,7 +196,18 @@
     <div class="calendar-section-copy">
       <span class="kicker"><span data-copy="it">PERSONE & LOGISTICA</span><span data-copy="en">PEOPLE & LOGISTICS</span></span>
       <h2><span data-copy="it">Chi accompagna, quando e dove.</span><span data-copy="en">Who accompanies, when and where.</span></h2>
-      <p><span data-copy="it">Con il pulsante <strong>Persone</strong> puoi creare e modificare l'elenco di genitori, familiari e accompagnatori. Ogni attività può poi essere assegnata a una persona.</span><span data-copy="en">Use <strong>People</strong> to create and edit the list of parents, family members and companions. Each activity can then be assigned to one person.</span></p>
+      <p><span data-copy="it">Gli accompagnatori si creano direttamente nel <strong>Planner settimanale</strong>: in alto premi <strong>Persone</strong>, inserisci il nome e scegli il ruolo fra <strong>Genitore, Familiare, Accompagnatore</strong> o <strong>Altro</strong>. Da lì puoi anche modificare o rimuovere le persone già registrate.</span><span data-copy="en">Companions are created directly in the <strong>Weekly planner</strong>: press <strong>People</strong> at the top, enter the name and choose a role from <strong>Parent, Family member, Companion</strong> or <strong>Other</strong>. You can also edit or remove existing people there.</span></p>
+
+      <div class="calendar-people-flow">
+        <div><span>1</span><b>Planner</b><small><span data-copy="it">premi “Persone”</span><span data-copy="en">press “People”</span></small></div>
+        <i>→</i>
+        <div><span>2</span><b><span data-copy="it">Nome + ruolo</span><span data-copy="en">Name + role</span></b><small><span data-copy="it">salva la persona</span><span data-copy="en">save the person</span></small></div>
+        <i>→</i>
+        <div><span>3</span><b><span data-copy="it">Assegna</span><span data-copy="en">Assign</span></b><small><span data-copy="it">nell'attività o nel torneo</span><span data-copy="en">to an activity or tournament</span></small></div>
+      </div>
+
+      <p class="calendar-small-note"><span data-copy="it">Una volta creata, la persona compare nel menu <strong>Accompagnatore</strong> delle attività e nel campo <strong>Accompagnatore / referente</strong> dei tornei. Se nessuno deve accompagnare l'atleta, scegli esplicitamente <strong>Nessun accompagnatore</strong>: così l'attività non resta segnalata come “Da assegnare”.</span><span data-copy="en">Once created, the person appears in the <strong>Companion</strong> menu for activities and in the tournament <strong>Companion / contact</strong> field. If nobody needs to accompany the athlete, explicitly choose <strong>No companion</strong> so the activity is not left marked as “Unassigned”.</span></p>
+
       <div class="calendar-logistics-row">
         <div><span>👤</span><strong><span data-copy="it">Da assegnare</span><span data-copy="en">Unassigned</span></strong><p><span data-copy="it">L'attività richiede ancora una decisione logistica.</span><span data-copy="en">The activity still needs a logistics decision.</span></p></div>
         <div><span>✓</span><strong><span data-copy="it">Accompagnatore</span><span data-copy="en">Companion</span></strong><p><span data-copy="it">La persona compare direttamente nella vista Logistica/Combinata.</span><span data-copy="en">The person appears directly in Logistics/Combined view.</span></p></div>
@@ -245,7 +286,7 @@
   <div class="brand"><span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span></div>
   <p>One Player. A Complete Journey.</p>
   <div><a href="index.html">Home</a><a href="instructions.html"><span data-copy="it">Guide</span><span data-copy="en">Guides</span></a><a href="https://tennis.polidorionline.it/#/calendar">Calendar</a></div>
-  <small>© 2026 Tennis Player OS · Calendar Guide v1.0</small>
+  <small>© 2026 Tennis Player OS · Calendar Guide v1.1</small>
 </footer>
 
 <script src="instructions.js?v=1.0"></script>
