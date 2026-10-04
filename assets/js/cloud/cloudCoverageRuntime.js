@@ -278,6 +278,7 @@ function hasMeaningfulMental(payload = {}) {
   return Boolean(
     nonDefaultSkill
     || Object.values(goals).some(value => String(value || '').trim())
+    || (Array.isArray(mental.exercises) && mental.exercises.length)
     || (Array.isArray(mental.trainingSessions) && mental.trainingSessions.length)
     || (Array.isArray(mental.matchReviews) && mental.matchReviews.length)
   );
