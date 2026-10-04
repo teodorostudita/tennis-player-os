@@ -1,7 +1,6 @@
 import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
 import { fileProvider } from '../data/providers/provider.js?v=1.2.15';
 import {
-  OWNER_RESOURCE_FILE_LIMIT_BYTES,
   RESOURCE_UPLOAD_PRIVILEGE_ERROR_CODE,
   assertResourceFileUploadAllowed,
   resourceFileLimitBytes,
