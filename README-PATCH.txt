@@ -1,18 +1,17 @@
-Tennis Player OS v1.2.13 — Athletics Footwork Patterns
+Tennis Player OS v1.2.14 — Development library resources
 
 Patch SOLO TPOS. Non contiene e non modifica tennis-player-os-site/.
 
 Novità:
-- nuova tab Footwork Patterns in Athletics;
-- riferimento Bailey: 5 R + Attacking / Rallying / Defensive;
-- pattern aggiunti uno alla volta, senza catalogo precompilato;
-- apprendimento 0–100% con stadi operativi;
-- un solo Focus attuale;
-- collegamento a risorse della Libreria Athletics, inclusi link YouTube;
-- sincronizzazione cloud come record Athletics individuali.
+- i temi tecnici/tattici Development possono collegare risorse oltre ai drills;
+- risorse selezionabili dalla Libreria Development e dalla Libreria Drills;
+- risorse raggruppate per provenienza nel dettaglio del tema;
+- apertura diretta della risorsa, anche cross-module verso Drills -> Libreria;
+- collegamenti salvati come moduleId + resourceId;
+- collegamenti non disponibili conservati in modo non distruttivo;
+- payload Development schema JSON v3.
 
-Supabase:
-- applicare la nuova migration che abilita record_type = footwork_pattern.
+Nessuna migration Supabase.
 
 Applicazione:
-Applica Patch.command -> Pubblica Tennis Player OS.command -> Sì alla nuova migration Supabase.
+Applica Patch.command -> Pubblica Tennis Player OS.command.
