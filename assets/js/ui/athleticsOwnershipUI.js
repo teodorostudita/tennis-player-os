@@ -131,6 +131,33 @@ function applyGoalOwnership(training) {
   });
 }
 
+
+function applyFootworkOwnership(training) {
+  const patterns = Array.isArray(training.footworkPatterns)
+    ? training.footworkPatterns
+    : [];
+
+  patterns.forEach(pattern => {
+    const editable = canEditAthleticsRecord(pattern);
+
+    document.querySelectorAll(
+      `[data-edit-footwork-pattern="${CSS.escape(pattern.id)}"],
+       [data-delete-footwork-pattern="${CSS.escape(pattern.id)}"],
+       [data-focus-footwork-pattern="${CSS.escape(pattern.id)}"]`,
+    ).forEach(button => {
+      setLocked(button, !editable, 'Footwork Pattern gestito da un altro membro dello staff.');
+    });
+
+    const head = document.querySelector(
+      `[data-footwork-pattern-head="${CSS.escape(pattern.id)}"]`,
+    );
+
+    if (head && !head.querySelector('[data-athletics-owner-badge]')) {
+      head.appendChild(ownershipBadge(pattern));
+    }
+  });
+}
+
 function applyWritePermission() {
   const access = getCurrentAccess();
   const canWrite = trainingWritable();
@@ -142,6 +169,8 @@ function applyWritePermission() {
     '#add-training-session',
     '[data-add-day-session]',
     '#add-training-goal',
+    '#add-footwork-pattern',
+    '#empty-add-footwork-pattern',
   ];
 
   for (const selector of creationSelectors) {
@@ -166,6 +195,7 @@ function typeLabel(type) {
     test_result: 'Misurazione',
     session: 'Sessione',
     goal: 'Obiettivo',
+    footwork_pattern: 'Footwork Pattern',
   }[type] || type;
 }
 
@@ -173,6 +203,7 @@ function recordTitle(type, record, training) {
   if (type === 'test') return record.name || 'Test senza nome';
   if (type === 'session') return record.title || 'Sessione';
   if (type === 'goal') return record.title || 'Obiettivo';
+  if (type === 'footwork_pattern') return record.title || 'Footwork Pattern';
   if (type === 'test_result') {
     const test = training.tests.find(item => item.id === record.testId);
     const testName = test?.name || 'Test';
@@ -187,6 +218,9 @@ function recordsForManager(training) {
     ...training.testResults.map(record => ({ type: 'test_result', record })),
     ...training.weeklyProgram.sessions.map(record => ({ type: 'session', record })),
     ...training.goals.map(record => ({ type: 'goal', record })),
+    ...(Array.isArray(training.footworkPatterns)
+      ? training.footworkPatterns.map(record => ({ type: 'footwork_pattern', record }))
+      : []),
   ];
 }
 
@@ -203,6 +237,8 @@ function updateLocalOwner(type, clientId, ownerUserId) {
       record = state.training.weeklyProgram.sessions.find(item => item.id === clientId);
     } else if (type === 'goal') {
       record = state.training.goals.find(item => item.id === clientId);
+    } else if (type === 'footwork_pattern') {
+      record = (state.training.footworkPatterns || []).find(item => item.id === clientId);
     }
 
     if (!record) return;
@@ -364,6 +400,7 @@ function applyOwnershipUI() {
     applyTestOwnership(training);
     applySessionOwnership(training);
     applyGoalOwnership(training);
+    applyFootworkOwnership(training);
     ensureManagerButton();
     void ensureStaffDirectory();
   } finally {
@@ -396,6 +433,11 @@ function installCaptureGuard() {
         '[data-delete-result]',
         '#add-training-goal',
         '[data-edit-goal]',
+        '#add-footwork-pattern',
+        '#empty-add-footwork-pattern',
+        '[data-edit-footwork-pattern]',
+        '[data-delete-footwork-pattern]',
+        '[data-focus-footwork-pattern]',
       ].join(','));
 
       if (mutating) {

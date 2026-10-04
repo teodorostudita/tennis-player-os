@@ -90,6 +90,33 @@ export function normalizeTrainingPayload(payload = {}) {
       }))
     : [];
 
+  let focusAssigned = false;
+  const footworkPatterns = Array.isArray(source.footworkPatterns)
+    ? source.footworkPatterns.map((pattern, index) => {
+        const learningPct = Math.max(0, Math.min(100, Number(pattern?.learningPct || 0)));
+        const requestedFocus = Boolean(pattern?.currentFocus);
+        const currentFocus = requestedFocus && !focusAssigned;
+        if (currentFocus) focusAssigned = true;
+
+        return {
+          id: String(pattern?.id || `footwork-pattern-${Date.now()}-${index}`),
+          title: String(pattern?.title || '').trim(),
+          category: String(pattern?.category || 'other'),
+          stroke: String(pattern?.stroke || 'both'),
+          learningPct,
+          currentFocus,
+          cue: String(pattern?.cue || '').trim(),
+          notes: String(pattern?.notes || '').trim(),
+          resourceIds: Array.isArray(pattern?.resourceIds)
+            ? [...new Set(pattern.resourceIds.map(String).filter(Boolean))]
+            : [],
+          updatedAt: String(pattern?.updatedAt || ''),
+          createdAt: String(pattern?.createdAt || ''),
+          __ownership: pattern?.__ownership,
+        };
+      }).filter(pattern => pattern.title)
+    : [];
+
   return {
     ...source,
     tests: Array.isArray(source.tests) ? source.tests : [],
@@ -103,6 +130,7 @@ export function normalizeTrainingPayload(payload = {}) {
       sessions,
     },
     goals: Array.isArray(source.goals) ? source.goals : [],
+    footworkPatterns,
   };
 }
 
@@ -113,6 +141,7 @@ export function hasMeaningfulTrainingData(payload = {}) {
     training.tests.length
     || training.testResults.length
     || training.goals.length
+    || training.footworkPatterns.length
     || training.weeklyProgram.sessions.length
     || meaningfulWeeklyProgram(training.weeklyProgram)
   );
@@ -147,6 +176,7 @@ function trainingFromRows(rows = []) {
       blocks: Array.isArray(record.blocks) ? record.blocks : [],
     });
     else if (row.record_type === 'goal') training.goals.push(record);
+    else if (row.record_type === 'footwork_pattern') training.footworkPatterns.push(record);
   }
 
   return normalizeTrainingPayload(training);
@@ -208,6 +238,7 @@ function recordsFromTraining(payload, access) {
     ['test_result', training.testResults],
     ['session', training.weeklyProgram.sessions],
     ['goal', training.goals],
+    ['footwork_pattern', training.footworkPatterns],
   ];
 
   for (const [type, items] of groups) {

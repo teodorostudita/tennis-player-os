@@ -29,7 +29,7 @@ import {
 import {
   loadTrainingIntoLocalStore,
   startTrainingCloudSync,
-} from './cloud/trainingCloud.js?v=1.2.6';
+} from './cloud/trainingCloud.js?v=1.2.13';
 import {
   loadEquipmentIntoLocalStore,
   startEquipmentCloudSync,
@@ -365,7 +365,7 @@ if (session) {
           });
         }
 
-        await import('./app.js?v=1.2.10');
+        await import('./app.js?v=1.2.13');
         mountAuthControls(session.user);
         mountAthleteControls({
           currentAthlete: cloudAthlete,

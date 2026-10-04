@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.13',
+    date: '2026-10-04',
+    title: 'Athletics Footwork Patterns',
+    details: [
+      'Aggiunta la nuova linguetta Footwork Patterns nel modulo Athletics, ispirata alla struttura del Bailey Method.',
+      'Ogni pattern può avere famiglia di movimento, colpo/lato, cue tecnico, note, grado di apprendimento 0–100 e un unico Focus attuale.',
+      'Il grado di apprendimento è tradotto operativamente in Non iniziato, Introdotto, Shadow, Fed ball, Live ball, Sotto pressione e Match-ready.',
+      'I pattern possono collegare risorse della Libreria Athletics, con supporto diretto ai link YouTube e apertura della risorsa dalla card.',
+      'I Footwork Pattern vengono sincronizzati come record Athletics individuali, con una migration che estende il record_type esistente.',
+    ],
+  },
+  {
     version: '1.2.12',
     date: '2026-10-04',
     title: 'Mental cosmetic polish',
