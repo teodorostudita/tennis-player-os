@@ -1,0 +1,50 @@
+name: Build Mental 1.2.12 Patch ZIP
+
+on:
+  push:
+    branches: [ chatgpt/mental-cosmetics-v1.2.12 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build patch zip
+        run: |
+          rm -rf patch TPOS_patch_v1.2.12_Mental_Cosmetic_Polish.zip
+          mkdir -p patch/assets/css
+          mkdir -p patch/assets/js/ui
+          mkdir -p patch/assets/js
+
+          cp README-PATCH.txt patch/README-PATCH.txt
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+          cp assets/css/mental-visual.css patch/assets/css/mental-visual.css
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/mentalVisualUI.js patch/assets/js/ui/mentalVisualUI.js
+          cp assets/js/ui/versionDashboard.js patch/assets/js/ui/versionDashboard.js
+          cp assets/js/version.js patch/assets/js/version.js
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+
+          cd patch
+          zip -r ../TPOS_patch_v1.2.12_Mental_Cosmetic_Polish.zip .
+      - name: Check JavaScript syntax
+        run: |
+          node --check patch/assets/js/releaseLog.js
+          node --check patch/assets/js/ui/mentalVisualUI.js
+          node --check patch/assets/js/ui/versionDashboard.js
+          node --check patch/assets/js/version.js
+          node --check patch/sw.js
+      - name: Verify patch scope
+        run: |
+          test ! -e patch/tennis-player-os-site
+          test ! -e patch/supabase
+          unzip -l TPOS_patch_v1.2.12_Mental_Cosmetic_Polish.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.12_Mental_Cosmetic_Polish
+          path: TPOS_patch_v1.2.12_Mental_Cosmetic_Polish.zip
+          if-no-files-found: error
