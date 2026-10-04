@@ -694,92 +694,248 @@ function goalReadOnly(label, value) {
 }
 
 function renderMentalSkills(container, mental, host) {
+  const skills = mentalSkills(mental);
+  const missingDefaults = DEFAULT_MENTAL_SKILLS.filter(
+    defaultSkill => !skills.some(skill => skill.id === defaultSkill.id),
+  );
+
   container.innerHTML = `
     <section class="mv-subhead">
       <div>
         <div class="eyebrow">Abilità mentali</div>
-        <h2>Sei aree di lavoro</h2>
-        <p>Valutazione interna in percentuale. Le barre rendono immediatamente visibile il profilo mentale attuale; non sono test clinici.</p>
+        <h2>Aree di lavoro</h2>
+        <p>Le sei aree predefinite sono il punto di partenza, ma la mappa può essere adattata al singolo atleta. La valutazione resta una misura interna di lavoro.</p>
       </div>
+      ${canWriteModule('mental') ? `
+        <div class="mv-subhead-actions">
+          <button class="button button-ghost" id="mental-restore-default-skills" type="button" ${missingDefaults.length ? '' : 'disabled'}>
+            Ripristina aree predefinite${missingDefaults.length ? ` (${missingDefaults.length})` : ''}
+          </button>
+          <button class="button button-primary" id="mental-add-skill" type="button">+ Nuova area</button>
+        </div>
+      ` : ''}
     </section>
 
-    <div class="mv-skill-grid">
-      ${MENTAL_SKILLS.map(skill => {
-        const value = mental.skills[skill.id] || { scorePct: 60, notes: '' };
-        const score = Math.max(0, Math.min(100, Math.round(Number(value.scorePct ?? 60))));
-        const linked = exercisesForSkill(mental, skill.id);
+    ${skills.length ? `
+      <div class="mv-skill-grid">
+        ${skills.map(skill => {
+          const value = mental.skills[skill.id] || { scorePct: 60, notes: '' };
+          const score = Math.max(0, Math.min(100, Math.round(Number(value.scorePct ?? 60))));
+          const linked = exercisesForSkill(mental, skill.id);
 
-        return `
-          <article class="panel mv-skill-card" data-mental-skill-card="${skill.id}" style="--mv-skill-color:${skill.color}">
-            <div class="panel-body">
-              <div class="mv-skill-card-head">
-                <div>
-                  <div class="eyebrow">${escapeHtml(skill.short)}</div>
-                  <h3>${escapeHtml(skill.name)}</h3>
+          return `
+            <article class="panel mv-skill-card" data-mental-skill-card="${skill.id}" style="--mv-skill-color:${skill.color}">
+              <div class="panel-body">
+                <div class="mv-skill-card-head">
+                  <div>
+                    <div class="eyebrow">${escapeHtml(skill.short)}</div>
+                    <h3>${escapeHtml(skill.name)}</h3>
+                  </div>
+                  <div class="mv-skill-head-actions">
+                    <strong class="mv-level-badge" data-mental-score-badge="${skill.id}">${score}%</strong>
+                    ${canWriteModule('mental') ? `
+                      <div class="mv-exercise-actions">
+                        <button class="button button-ghost mv-small-button" type="button" data-edit-mental-skill="${escapeAttr(skill.id)}">Modifica</button>
+                        <button class="resource-delete" type="button" data-delete-mental-skill="${escapeAttr(skill.id)}">Elimina</button>
+                      </div>
+                    ` : ''}
+                  </div>
                 </div>
-                <strong class="mv-level-badge" data-mental-score-badge="${skill.id}">${score}%</strong>
-              </div>
 
-              <div class="mv-skill-meter" aria-label="${escapeAttr(skill.name)} ${score}%">
-                <div class="mv-skill-meter-fill" data-mental-score-fill="${skill.id}" style="width:${score}%"></div>
-              </div>
-
-              <p>${escapeHtml(skill.description)}</p>
-
-              <div class="mv-tags">
-                ${skill.indicators.map(item => `<span>${escapeHtml(item)}</span>`).join('')}
-              </div>
-
-              <div class="mv-linked-exercises">
-                <div class="mv-linked-head">
-                  <strong>Esercizi collegati</strong>
-                  <span>${linked.length}</span>
+                <div class="mv-skill-meter" aria-label="${escapeAttr(skill.name)} ${score}%">
+                  <div class="mv-skill-meter-fill" data-mental-score-fill="${skill.id}" style="width:${score}%"></div>
                 </div>
-                ${linked.length
-                  ? `<div class="mv-linked-list">
-                      ${linked.map(exercise => `
-                        <button class="mv-link-chip" type="button" data-open-mental-exercise="${escapeAttr(exercise.id)}">
-                          ${escapeHtml(exercise.title)}
-                        </button>
-                      `).join('')}
-                    </div>`
-                  : '<span class="mv-linked-empty">Nessun esercizio collegato.</span>'}
+
+                ${skill.description ? `<p>${escapeHtml(skill.description)}</p>` : ''}
+
+                ${(skill.indicators || []).length ? `
+                  <div class="mv-tags">
+                    ${skill.indicators.map(item => `<span>${escapeHtml(item)}</span>`).join('')}
+                  </div>
+                ` : ''}
+
+                <div class="mv-linked-exercises">
+                  <div class="mv-linked-head">
+                    <strong>Esercizi collegati</strong>
+                    <span>${linked.length}</span>
+                  </div>
+                  ${linked.length
+                    ? `<div class="mv-linked-list">
+                        ${linked.map(exercise => `
+                          <button class="mv-link-chip" type="button" data-open-mental-exercise="${escapeAttr(exercise.id)}">
+                            ${escapeHtml(exercise.title)}
+                          </button>
+                        `).join('')}
+                      </div>`
+                    : '<span class="mv-linked-empty">Nessun esercizio collegato.</span>'}
+                </div>
+
+                ${canWriteModule('mental') ? `
+                  <form data-mental-skill-form="${skill.id}" class="mv-skill-form">
+                    <label class="mv-score-control">
+                      <span>Valutazione attuale</span>
+                      <div>
+                        <input
+                          type="range"
+                          name="scorePct"
+                          min="0"
+                          max="100"
+                          step="5"
+                          value="${score}"
+                          data-mental-score-input="${skill.id}"
+                        />
+                        <output data-mental-score-output="${skill.id}">${score}%</output>
+                      </div>
+                    </label>
+
+                    <label>
+                      <span>Nota di lavoro</span>
+                      <textarea name="notes" placeholder="Cosa stiamo allenando?">${escapeHtml(value.notes)}</textarea>
+                    </label>
+
+                    <button class="button button-ghost" type="submit">Salva</button>
+                  </form>
+                ` : value.notes
+                  ? `<div class="mv-note">${escapeHtml(value.notes)}</div>`
+                  : ''}
               </div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+    ` : `
+      <section class="panel">
+        <div class="panel-body mv-empty-state-actions">
+          ${emptyCopy('Nessuna area mentale attiva.')}
+          ${canWriteModule('mental')
+            ? '<button class="button button-primary" id="mental-restore-default-skills-empty" type="button">Ripristina le sei aree predefinite</button>'
+            : ''}
+        </div>
+      </section>
+    `}
 
-              ${canWriteModule('mental') ? `
-                <form data-mental-skill-form="${skill.id}" class="mv-skill-form">
-                  <label class="mv-score-control">
-                    <span>Valutazione attuale</span>
-                    <div>
-                      <input
-                        type="range"
-                        name="scorePct"
-                        min="0"
-                        max="100"
-                        step="5"
-                        value="${score}"
-                        data-mental-score-input="${skill.id}"
-                      />
-                      <output data-mental-score-output="${skill.id}">${score}%</output>
-                    </div>
-                  </label>
-
-                  <label>
-                    <span>Nota di lavoro</span>
-                    <textarea name="notes" placeholder="Cosa stiamo allenando?">${escapeHtml(value.notes)}</textarea>
-                  </label>
-
-                  <button class="button button-ghost" type="submit">Salva</button>
-                </form>
-              ` : value.notes
-                ? `<div class="mv-note">${escapeHtml(value.notes)}</div>`
-                : ''}
-            </div>
-          </article>
-        `;
-      }).join('')}
-    </div>
+    <section class="panel mv-frustration-panel mv-resilience-framework">
+      <div class="panel-header">
+        <div>
+          <div class="eyebrow">Framework · Mental resilience & Mental toughness</div>
+          <h3>Gestione della frustrazione</h3>
+          <p>Un modello trasversale di prevenzione, gestione e recupero da applicare negli esercizi e nelle situazioni competitive.</p>
+        </div>
+      </div>
+      <div class="panel-body mv-three-columns">
+        <div>
+          <strong>Prevenzione</strong>
+          <span>Preparazione, obiettivi realistici e controllabili, memoria selettiva, aumento della soglia di tolleranza.</span>
+        </div>
+        <div>
+          <strong>Gestione</strong>
+          <span>Autodiagnosi, respirazione, linguaggio del corpo, dialogo interno, reset e consapevolezza breve.</span>
+        </div>
+        <div>
+          <strong>Recupero</strong>
+          <span>Capire senza giudicare, individuare la correzione, lasciare andare l’errore e tornare al punto successivo.</span>
+        </div>
+      </div>
+    </section>
   `;
+
+  const restoreDefaults = () => {
+    store.update(state => {
+      const next = normalizeMentalPayload(state.mental);
+      const existingById = new Map(
+        next.skillDefinitions.map(skill => [skill.id, skill]),
+      );
+      const defaultIds = new Set(DEFAULT_MENTAL_SKILLS.map(skill => skill.id));
+
+      const restoredDefaults = DEFAULT_MENTAL_SKILLS.map(defaultSkill => {
+        const existing = existingById.get(defaultSkill.id);
+        return existing || {
+          ...defaultSkill,
+          indicators: [...defaultSkill.indicators],
+        };
+      });
+
+      const customSkills = next.skillDefinitions.filter(
+        skill => !defaultIds.has(skill.id),
+      );
+
+      next.skillDefinitions = [...restoredDefaults, ...customSkills];
+      state.mental = next;
+    });
+
+    renderMental(host);
+  };
+
+  container.querySelector('#mental-add-skill')?.addEventListener('click', () => {
+    openMentalSkillDialog(host);
+  });
+
+  container.querySelector('#mental-restore-default-skills')?.addEventListener('click', restoreDefaults);
+  container.querySelector('#mental-restore-default-skills-empty')?.addEventListener('click', restoreDefaults);
+
+  container.querySelectorAll('[data-edit-mental-skill]').forEach(button => {
+    button.addEventListener('click', () => {
+      const current = normalizeMentalPayload(store.getState().mental);
+      const skill = skillById(button.dataset.editMentalSkill, current);
+      if (skill) openMentalSkillDialog(host, skill);
+    });
+  });
+
+  container.querySelectorAll('[data-delete-mental-skill]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const id = button.dataset.deleteMentalSkill;
+      const current = normalizeMentalPayload(store.getState().mental);
+      const skill = skillById(id, current);
+      if (!skill) return;
+
+      const linkedTools = mentalTools(current).filter(
+        tool => (tool.skillIds || []).includes(id),
+      ).length;
+      const linkedExercises = exercisesForSkill(current, id).length;
+      const isDefault = isDefaultMentalSkill(id);
+
+      const message = isDefault
+        ? `Eliminare “${skill.name}” dalle aree attive? I collegamenti esistenti vengono conservati e torneranno visibili se ripristini le aree predefinite.`
+        : `Eliminare “${skill.name}”? Verrà rimossa anche dai ${linkedTools} strumenti e ${linkedExercises} esercizi collegati. Le sessioni storiche manterranno il nome dell’area.`;
+
+      const ok = await showInAppConfirm(
+        message,
+        { title: 'Elimina area mentale', confirmLabel: 'Elimina', danger: true },
+      );
+      if (!ok) return;
+
+      store.update(state => {
+        const next = normalizeMentalPayload(state.mental);
+        next.skillDefinitions = next.skillDefinitions.filter(item => item.id !== id);
+
+        next.trainingSessions = next.trainingSessions.map(session => (
+          session.skillId === id
+            ? {
+                ...session,
+                skillNameSnapshot: session.skillNameSnapshot || skill.short || skill.name,
+                skillId: isDefault ? session.skillId : '',
+              }
+            : session
+        ));
+
+        if (!isDefault) {
+          delete next.skills[id];
+          next.tools = next.tools.map(tool => ({
+            ...tool,
+            skillIds: (tool.skillIds || []).filter(skillId => skillId !== id),
+          }));
+          next.exercises = next.exercises.map(exercise => ({
+            ...exercise,
+            skillIds: (exercise.skillIds || []).filter(skillId => skillId !== id),
+          }));
+        }
+
+        state.mental = next;
+      });
+
+      renderMental(host);
+    });
+  });
 
   container.querySelectorAll('[data-open-mental-exercise]').forEach(button => {
     button.addEventListener('click', () => {
@@ -825,6 +981,129 @@ function renderMentalSkills(container, mental, host) {
       );
     });
   });
+}
+
+function openMentalSkillDialog(host, skill = null) {
+  const current = skill || {
+    name: '',
+    short: '',
+    description: '',
+    indicators: [],
+    color: '#637aa0',
+  };
+
+  const dialog = document.createElement('dialog');
+  dialog.className = 'planner-dialog mv-dialog';
+
+  dialog.innerHTML = `
+    <form method="dialog" id="mental-skill-definition-form">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Mental · Aree di lavoro</div>
+          <h3>${skill ? 'Modifica area' : 'Nuova area'}</h3>
+        </div>
+        <button class="dialog-close" type="button" data-close>×</button>
+      </div>
+
+      <div class="dialog-body form-grid">
+        <div class="field full">
+          <label>Nome area</label>
+          <input name="name" value="${escapeAttr(current.name)}" placeholder="Es. Decision making sotto pressione" required />
+        </div>
+
+        <div class="field">
+          <label>Etichetta breve</label>
+          <input name="short" value="${escapeAttr(current.short)}" placeholder="Es. Decision making" />
+        </div>
+
+        <div class="field">
+          <label>Colore barra</label>
+          <input name="color" type="color" value="${escapeAttr(current.color || '#637aa0')}" />
+        </div>
+
+        <div class="field full">
+          <label>Descrizione</label>
+          <textarea name="description" placeholder="Che cosa misura e allena quest’area?">${escapeHtml(current.description || '')}</textarea>
+        </div>
+
+        <div class="field full">
+          <label>Indicatori <span class="field-optional">separati da virgola</span></label>
+          <input name="indicators" value="${escapeAttr((current.indicators || []).join(', '))}" placeholder="es. reset, pressione, lucidità" />
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <div></div>
+        <div class="dialog-save-actions">
+          <button class="button button-ghost" type="button" data-close>Annulla</button>
+          <button class="button button-primary" type="submit">${skill ? 'Salva modifiche' : 'Crea area'}</button>
+        </div>
+      </div>
+    </form>
+  `;
+
+  host.appendChild(dialog);
+
+  dialog.querySelectorAll('[data-close]').forEach(button => {
+    button.addEventListener('click', () => dialog.close());
+  });
+
+  dialog.querySelector('#mental-skill-definition-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const name = String(formData.get('name') || '').trim();
+    if (!name) return;
+
+    const currentMental = normalizeMentalPayload(store.getState().mental);
+    const duplicate = mentalSkills(currentMental).find(item =>
+      item.id !== skill?.id
+      && item.name.trim().toLowerCase() === name.toLowerCase()
+    );
+
+    if (duplicate) {
+      await showInAppAlert(
+        'Esiste già un’area mentale con questo nome.',
+        { title: 'Area duplicata' },
+      );
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const record = {
+      id: skill?.id || uid('mental-skill'),
+      name,
+      short: String(formData.get('short') || '').trim() || name,
+      description: String(formData.get('description') || '').trim(),
+      indicators: String(formData.get('indicators') || '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean),
+      color: String(formData.get('color') || '#637aa0'),
+      createdAt: skill?.createdAt || now,
+      updatedAt: now,
+    };
+
+    store.update(state => {
+      const next = normalizeMentalPayload(state.mental);
+      const index = next.skillDefinitions.findIndex(item => item.id === record.id);
+
+      if (index >= 0) next.skillDefinitions[index] = record;
+      else next.skillDefinitions.push(record);
+
+      if (!next.skills[record.id]) {
+        next.skills[record.id] = { scorePct: 60, level: 3, notes: '' };
+      }
+
+      state.mental = next;
+    });
+
+    dialog.close();
+    mentalSection = 'abilita';
+    renderMental(host);
+  });
+
+  dialog.addEventListener('close', () => dialog.remove());
+  dialog.showModal();
 }
 
 function renderMentalTools(container, mental, host) {
