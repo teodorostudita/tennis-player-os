@@ -254,6 +254,10 @@ function linkedResourcesForItem(item) {
 
 function linkedResourcesMarkup(item) {
   const refs = linkedResourcesForItem(item);
+
+  if (!linkedResourceCacheReady) {
+    return '<div class="dev-inline-empty">Caricamento risorse collegate…</div>';
+  }
   if (!refs.length) {
     return '<div class="dev-inline-empty">Nessuna risorsa collegata.</div>';
   }
@@ -560,6 +564,7 @@ function cardFocus(item) {
 function roadmapCard(item) {
   const records = itemMeasurements(item.id);
   const linkedCount = (item.linkedDrillIds || []).length;
+  const resourceCount = linkedResourcesForItem(item).length;
   const stage = stageById(item.stage);
 
   return `
@@ -580,6 +585,7 @@ function roadmapCard(item) {
           <span><strong>${escapeHtml(stage.short)}</strong></span>
           <span>${item.dueDate ? `Entro ${formatDate(item.dueDate)}` : 'Nessuna scadenza'}</span>
           <span>${linkedCount} drill</span>
+          <span>${resourceCount} risors${resourceCount === 1 ? 'a' : 'e'}</span>
           <span>${records.length} rilevaz.</span>
         </div>
       </button>
@@ -874,6 +880,22 @@ function renderItemDetail(item) {
         </div>
       </section>
 
+      <section class="panel dev-resources-panel">
+        <div class="panel-header dev-panel-header-row">
+          <div>
+            <h3>Risorse collegate</h3>
+            <p>Materiale di riferimento pescato dalle Librerie Development e Drills.</p>
+          </div>
+          <div class="dev-inline-actions">
+            <button class="button button-ghost dev-small-button" type="button" data-open-resource-library="development">Libreria Development</button>
+            <button class="button button-ghost dev-small-button" type="button" data-open-resource-library="drills">Libreria Drills</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          ${linkedResourcesMarkup(item)}
+        </div>
+      </section>
+
       <section class="panel dev-measurement-panel">
         <div class="panel-header dev-panel-header-row">
           <div>
@@ -915,6 +937,14 @@ function renderItemDetail(item) {
 function renderDevelopment() {
   const host = developmentContentHost();
   if (!host) return;
+
+  if (!linkedResourceCacheReady && !linkedResourceLoadPromise) {
+    void ensureLinkedResourceCache().then(() => {
+      if (route() === 'development' && developmentContentHost()) {
+        renderDevelopment();
+      }
+    });
+  }
 
   const state = developmentState();
   const selected = ui.selectedItemId
@@ -972,11 +1002,11 @@ function bindRoadmapEvents() {
   });
 
   document.querySelector('#dev-add-item')?.addEventListener('click', () => {
-    openItemDialog(null, ui.type);
+    void openItemDialog(null, ui.type);
   });
 
   document.querySelector('#dev-empty-add')?.addEventListener('click', () => {
-    openItemDialog(null, ui.type);
+    void openItemDialog(null, ui.type);
   });
 
   document.querySelectorAll('[data-open-development-item]').forEach(button => {
@@ -996,7 +1026,7 @@ function bindDetailEvents(item) {
   });
 
   document.querySelector('#dev-edit-item')?.addEventListener('click', () => {
-    openItemDialog(item, item.type);
+    void openItemDialog(item, item.type);
   });
 
   const assess = () => openAssessmentDialog(item);
@@ -1014,6 +1044,21 @@ function bindDetailEvents(item) {
   document.querySelectorAll('[data-go-drills]').forEach(button => {
     button.addEventListener('click', () => {
       location.hash = '#/drills';
+    });
+  });
+
+  document.querySelectorAll('[data-open-development-resource]').forEach(button => {
+    button.addEventListener('click', () => {
+      openLinkedResource(
+        button.dataset.resourceModule,
+        button.dataset.resourceId,
+      );
+    });
+  });
+
+  document.querySelectorAll('[data-open-resource-library]').forEach(button => {
+    button.addEventListener('click', () => {
+      openLinkedResource(button.dataset.openResourceLibrary, '');
     });
   });
 
