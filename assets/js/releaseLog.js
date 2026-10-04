@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.14',
+    date: '2026-10-04',
+    title: 'Development library resources',
+    details: [
+      'I temi tecnici e tattici di Development possono ora collegare una o più risorse oltre ai drills.',
+      'Il selettore pesca contemporaneamente dalla Libreria Development e dalla Libreria Drills, mantenendo distinta la provenienza di ogni risorsa.',
+      'Nel dettaglio del tema le risorse sono raggruppate per libreria e possono essere aperte direttamente, incluso il passaggio automatico alla Libreria Drills quando necessario.',
+      'I riferimenti sono salvati come coppie moduleId + resourceId e i collegamenti a risorse temporaneamente non disponibili vengono conservati senza essere cancellati durante una modifica.',
+      'Development passa allo schema JSON v3; nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.13',
     date: '2026-10-04',
     title: 'Athletics Footwork Patterns',
