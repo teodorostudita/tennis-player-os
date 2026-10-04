@@ -14,7 +14,7 @@ import {
   normalizeMentalPayload,
   normalizeVisualPayload,
   startStructuredPerformanceSync,
-} from '../cloud/mentalVisualCloud.js?v=1.2.6';
+} from '../cloud/mentalVisualCloud.js?v=1.2.9';
 import {
   showInAppAlert,
   showInAppConfirm,
