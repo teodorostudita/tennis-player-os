@@ -1130,12 +1130,18 @@ function renderMentalExercises(container, mental, host) {
   });
 }
 
-function openMentalExerciseDialog(host, exercise = null) {
+async function openMentalExerciseDialog(host, exercise = null) {
+  const currentMental = normalizeMentalPayload(store.getState().mental);
+  const tools = mentalTools(currentMental);
+  await refreshMentalResourceCache();
+  const resources = [...mentalResourceCache].sort((a, b) => String(a.title || a.fileName || '').localeCompare(String(b.title || b.fileName || ''), 'it'));
+
   const current = exercise || {
     title: '',
     objective: '',
     skillIds: [],
     toolIds: [],
+    resourceIds: [],
     context: '',
     durationMin: 0,
     instructions: '',
@@ -1199,13 +1205,30 @@ function openMentalExerciseDialog(host, exercise = null) {
         <fieldset class="mv-link-fieldset full">
           <legend>Strumenti utilizzati</legend>
           <div class="mv-check-grid">
-            ${MENTAL_TOOLS.map(tool => `
+            ${tools.map(tool => `
               <label>
                 <input type="checkbox" name="toolIds" value="${escapeAttr(tool.id)}" ${current.toolIds.includes(tool.id) ? 'checked' : ''} />
                 <span>${escapeHtml(tool.name)}</span>
               </label>
             `).join('')}
           </div>
+        </fieldset>
+
+        <fieldset class="mv-link-fieldset full">
+          <legend>Risorse di libreria collegate</legend>
+          ${resources.length
+            ? `<div class="mv-check-grid mv-resource-check-grid">
+                ${resources.map(resource => `
+                  <label>
+                    <input type="checkbox" name="resourceIds" value="${escapeAttr(resource.id)}" ${(current.resourceIds || []).includes(resource.id) ? 'checked' : ''} />
+                    <span>
+                      <strong>${escapeHtml(resource.title || resource.fileName || 'Risorsa')}</strong>
+                      <small>${escapeHtml(resource.kind === 'file' ? (resource.fileName || 'File') : (resource.linkType === 'youtube' ? 'YouTube' : 'Link'))}</small>
+                    </span>
+                  </label>
+                `).join('')}
+              </div>`
+            : '<div class="mv-linked-empty">Nessuna risorsa disponibile nella Libreria Mental. Aggiungila dalla tab Libreria e poi riapri questo esercizio.</div>'}
         </fieldset>
 
         <div class="field full">
@@ -1257,6 +1280,7 @@ function openMentalExerciseDialog(host, exercise = null) {
       objective: String(formData.get('objective') || '').trim(),
       skillIds: formData.getAll('skillIds').map(String),
       toolIds: formData.getAll('toolIds').map(String),
+      resourceIds: formData.getAll('resourceIds').map(String),
       context: String(formData.get('context') || ''),
       durationMin: Math.max(0, Number(formData.get('durationMin') || 0)),
       instructions: String(formData.get('instructions') || '').trim(),
