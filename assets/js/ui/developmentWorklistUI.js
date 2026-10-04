@@ -7,7 +7,7 @@ import {
 
 import {
   normalizeDevelopmentPayload,
-} from '../cloud/developmentCloud.js?v=1.2.4';
+} from '../cloud/developmentCloud.js?v=1.2.14';
 
 import { store } from '../data/store.js?v=1.2.4';
 
