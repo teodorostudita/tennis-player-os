@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Guida all'uso del modulo Calendar di Tennis Player OS: planner settimanale, attività, logistica, ricorrenze, recuperi e tornei." />
+  <meta name="theme-color" content="#0d2345" />
+  <title>Calendar — Guida Tennis Player OS</title>
+  <link rel="stylesheet" href="styles.css?v=1.5" />
+  <link rel="stylesheet" href="instructions.css?v=1.2" />
+  <link rel="stylesheet" href="instructions-calendar.css?v=1.0" />
+</head>
+<body class="guide-body calendar-manual-body">
+<header class="site-header guide-header">
+  <a class="brand" href="index.html#top" aria-label="Tennis Player OS home">
+    <span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span>
+  </a>
+  <nav aria-label="Navigazione guida Calendar">
+    <a href="instructions.html"><span data-copy="it">← Tutte le guide</span><span data-copy="en">← All guides</span></a>
+    <a href="#planner">Planner</a>
+    <a href="#activities"><span data-copy="it">Attività</span><span data-copy="en">Activities</span></a>
+    <a href="#makeups"><span data-copy="it">Recuperi</span><span data-copy="en">Make-ups</span></a>
+    <a href="#tournaments"><span data-copy="it">Tornei</span><span data-copy="en">Tournaments</span></a>
+  </nav>
+  <div class="header-actions">
+    <div class="language-switch" aria-label="Lingua">
+      <button class="language active" data-guide-lang="it" title="Italiano"><span class="flag">🇮🇹</span><b>IT</b></button>
+      <button class="language" data-guide-lang="en" title="English"><span class="flag">🇬🇧</span><b>EN</b></button>
+    </div>
+    <a class="signin" href="https://tennis.polidorionline.it/#/calendar">
+      <span data-copy="it">Apri Calendar</span><span data-copy="en">Open Calendar</span>
+    </a>
+  </div>
+</header>
+
+<main class="guide-main calendar-manual">
+  <section class="calendar-guide-hero">
+    <div class="calendar-guide-copy">
+      <span class="calendar-module-number">01 · CALENDAR</span>
+      <h1>
+        <span data-copy="it">La settimana dell'atleta,<br><em>in un solo posto.</em></span>
+        <span data-copy="en">The athlete's week,<br><em>in one place.</em></span>
+      </h1>
+      <p>
+        <span data-copy="it">Calendar unisce programmazione, orari, spostamenti, accompagnatori, recuperi e stagione agonistica. Non è soltanto un'agenda: è il punto in cui il lavoro sportivo incontra la logistica reale.</span>
+        <span data-copy="en">Calendar combines planning, schedules, travel, companions, make-ups and tournament season. It is more than an agenda: it is where sporting work meets real-life logistics.</span>
+      </p>
+      <div class="guide-hero-actions">
+        <a class="button" href="https://tennis.polidorionline.it/#/calendar"><span data-copy="it">Apri Calendar</span><span data-copy="en">Open Calendar</span></a>
+        <a class="button ghost" href="#planner"><span data-copy="it">Vai alla guida ↓</span><span data-copy="en">Read the guide ↓</span></a>
+      </div>
+    </div>
+
+    <div class="calendar-demo-shell" aria-hidden="true">
+      <div class="calendar-demo-top">
+        <div>
+          <small>WEEKLY PLANNER</small>
+          <strong><span data-copy="it">Questa settimana</span><span data-copy="en">This week</span></strong>
+        </div>
+        <span class="calendar-demo-pill">COMBINATO</span>
+      </div>
+      <div class="calendar-demo-grid">
+        <div class="calendar-demo-time">09</div><div></div><div class="demo-event school">School</div><div></div><div></div><div></div><div></div><div></div>
+        <div class="calendar-demo-time">11</div><div class="demo-event tennis">Tennis</div><div></div><div class="demo-event physical">Athletics</div><div></div><div class="demo-event tennis">Private</div><div></div><div></div>
+        <div class="calendar-demo-time">14</div><div></div><div class="demo-event travel">Travel</div><div></div><div class="demo-event nutrition">Lunch</div><div></div><div></div><div></div>
+        <div class="calendar-demo-time">17</div><div class="demo-event mental">Mental</div><div></div><div class="demo-event tennis">Group</div><div></div><div class="demo-event recovery">Recovery</div><div></div><div></div>
+      </div>
+      <div class="calendar-demo-footer">
+        <span>📅 Planner</span><span>↺ Recuperi</span><span>🏆 Tornei</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="calendar-three-areas">
+    <article class="calendar-area-card">
+      <span>01</span><strong><span data-copy="it">Planner settimanale</span><span data-copy="en">Weekly planner</span></strong>
+      <p><span data-copy="it">Attività, orari, carico e logistica in una vista unica.</span><span data-copy="en">Activities, times, load and logistics in one view.</span></p>
+    </article>
+    <article class="calendar-area-card">
+      <span>02</span><strong><span data-copy="it">Recuperi</span><span data-copy="en">Make-ups</span></strong>
+      <p><span data-copy="it">Sessioni saltate, da riprogrammare o già recuperate.</span><span data-copy="en">Missed sessions, sessions to reschedule or already made up.</span></p>
+    </article>
+    <article class="calendar-area-card">
+      <span>03</span><strong><span data-copy="it">Tornei · Stagione</span><span data-copy="en">Tournaments · Season</span></strong>
+      <p><span data-copy="it">Il calendario agonistico annuale prima che diventi viaggio, match e costo.</span><span data-copy="en">The annual competition plan before it becomes travel, matches and cost.</span></p>
+    </article>
+  </section>
+
+  <section class="calendar-manual-section" id="planner">
+    <div class="calendar-section-index">01</div>
+    <div class="calendar-section-copy">
+      <span class="kicker"><span data-copy="it">PLANNER SETTIMANALE</span><span data-copy="en">WEEKLY PLANNER</span></span>
+      <h2><span data-copy="it">Leggere e muoversi nella settimana.</span><span data-copy="en">Read and navigate the week.</span></h2>
+      <p><span data-copy="it">In alto trovi il riepilogo della settimana: numero di attività, ore pianificate, tornei e incarichi ancora da assegnare. Le frecce cambiano settimana; <strong>Questa settimana</strong> riporta subito a quella corrente.</span><span data-copy="en">At the top you see the weekly summary: number of activities, planned hours, tournaments and assignments still unassigned. Arrows move between weeks; <strong>This week</strong> returns to the current week.</span></p>
+
+      <div class="calendar-tip-grid">
+        <div class="calendar-tip">
+          <b>Atleta</b>
+          <span data-copy="it">Mostra il programma dell'atleta senza il rumore della logistica.</span><span data-copy="en">Shows the athlete schedule without logistics noise.</span>
+        </div>
+        <div class="calendar-tip">
+          <b>Logistica</b>
+          <span data-copy="it">Mette in evidenza accompagnatori e attività ancora da assegnare.</span><span data-copy="en">Highlights companions and activities still needing assignment.</span>
+        </div>
+        <div class="calendar-tip">
+          <b>Combinato</b>
+          <span data-copy="it">Programma sportivo e organizzazione familiare nella stessa vista.</span><span data-copy="en">Sport schedule and family organisation in the same view.</span>
+        </div>
+      </div>
+
+      <div class="calendar-note">
+        <strong><span data-copy="it">Scorciatoia utile</span><span data-copy="en">Useful shortcut</span></strong>
+        <span data-copy="it">Il piccolo <strong>＋</strong> nell'intestazione di ogni giorno apre direttamente una nuova attività per quella data.</span>
+        <span data-copy="en">The small <strong>＋</strong> in each day header opens a new activity directly for that date.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="calendar-manual-section" id="activities">
+    <div class="calendar-section-index">02</div>
+    <div class="calendar-section-copy">
+      <span class="kicker"><span data-copy="it">ATTIVITÀ</span><span data-copy="en">ACTIVITIES</span></span>
+      <h2><span data-copy="it">Creare un'attività e farla diventare parte del sistema.</span><span data-copy="en">Create an activity and make it part of the system.</span></h2>
+      <p><span data-copy="it">Premi <strong>+ Nuova attività</strong>, il ＋ del giorno oppure clicca in uno spazio vuoto della timeline. Calendar precompila data e orario quando può.</span><span data-copy="en">Press <strong>+ New activity</strong>, the day ＋, or click an empty space in the timeline. Calendar prefills date and time whenever possible.</span></p>
+
+      <div class="calendar-form-map">
+        <div><span>1</span><strong><span data-copy="it">Titolo e tipo</span><span data-copy="en">Title and type</span></strong><p><span data-copy="it">Tennis, Preparazione fisica, Scuola, Recupero, Torneo/Match, Viaggio, Salute, Personale, Alimentazione o Mental.</span><span data-copy="en">Tennis, physical preparation, school, recovery, tournament/match, travel, health, personal, nutrition or mental.</span></p></div>
+        <div><span>2</span><strong><span data-copy="it">Data e orari</span><span data-copy="en">Date and times</span></strong><p><span data-copy="it">Imposta inizio e fine: nella timeline gli spostamenti lavorano a scatti di 15 minuti.</span><span data-copy="en">Set start and end: timeline movements snap to 15-minute intervals.</span></p></div>
+        <div><span>3</span><strong><span data-copy="it">Luogo e logistica</span><span data-copy="en">Location and logistics</span></strong><p><span data-copy="it">Puoi assegnare un accompagnatore, lasciare da definire oppure indicare esplicitamente “Nessun accompagnatore”.</span><span data-copy="en">Assign a companion, leave it undefined, or explicitly choose “No companion”.</span></p></div>
+        <div><span>4</span><strong><span data-copy="it">Note</span><span data-copy="en">Notes</span></strong><p><span data-copy="it">Usale per materiale, indicazioni, dettagli di viaggio o altre informazioni operative.</span><span data-copy="en">Use them for equipment, instructions, travel details or other operational information.</span></p></div>
+      </div>
+
+      <div class="calendar-special-card">
+        <div class="calendar-special-icon">🍏</div>
+        <div>
+          <strong><span data-copy="it">Se scegli Alimentazione</span><span data-copy="en">If you choose Nutrition</span></strong>
+          <p><span data-copy="it">Calendar può richiamare un pasto già salvato in Nutrition &amp; Recovery oppure creare una voce personalizzata, specificando tipo di pasto e dettagli.</span><span data-copy="en">Calendar can use a meal already saved in Nutrition &amp; Recovery or create a custom entry with meal type and details.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="calendar-manual-section" id="recurrences">
+    <div class="calendar-section-index">03</div>
+    <div class="calendar-section-copy">
+      <span class="kicker"><span data-copy="it">RICORRENZE & MODIFICHE RAPIDE</span><span data-copy="en">RECURRENCES & QUICK EDITING</span></span>
+      <h2><span data-copy="it">Le attività ripetitive si impostano una volta sola.</span><span data-copy="en">Set repetitive activities once.</span></h2>
+      <p><span data-copy="it">Una nuova attività può essere singola, settimanale oppure ripetersi ogni 2–52 settimane. Quando modifichi un elemento di una serie, TPOS applica la modifica a quell'occorrenza e a tutte le successive.</span><span data-copy="en">A new activity can be single, weekly, or repeat every 2–52 weeks. When you edit an item in a recurring series, TPOS applies the change to that occurrence and all subsequent ones.</span></p>
+
+      <div class="calendar-action-list">
+        <article><span>↕</span><div><strong>Drag</strong><p><span data-copy="it">Trascina una scheda per cambiarne giorno o orario mantenendo la durata.</span><span data-copy="en">Drag a card to change day or time while keeping its duration.</span></p></div></article>
+        <article><span>↔</span><div><strong>Resize</strong><p><span data-copy="it">Trascina la maniglia in fondo all'attività per modificarne l'orario di fine.</span><span data-copy="en">Drag the handle at the bottom of an activity to change its end time.</span></p></div></article>
+        <article><span>⧉</span><div><strong><span data-copy="it">Copia</span><span data-copy="en">Copy</span></strong><p><span data-copy="it">Apri un'attività, premi Copia e poi clicca uno spazio vuoto: la nuova attività mantiene la stessa durata.</span><span data-copy="en">Open an activity, press Copy, then click an empty slot: the new activity keeps the same duration.</span></p></div></article>
+      </div>
+
+      <div class="calendar-warning">
+        <strong><span data-copy="it">Attenzione alle ricorrenze</span><span data-copy="en">Recurring-event warning</span></strong>
+        <span data-copy="it">Una ricorrenza può sovrascrivere automaticamente attività già presenti nello stesso intervallo orario, anche in caso di sovrapposizione parziale. Controlla sempre il planner dopo aver creato o modificato una serie.</span>
+        <span data-copy="en">A recurring series can automatically overwrite activities already present in the same time range, even with partial overlap. Always review the planner after creating or editing a series.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="calendar-manual-section" id="logistics">
+    <div class="calendar-section-index">04</div>
+    <div class="calendar-section-copy">
+      <span class="kicker"><span data-copy="it">PERSONE & LOGISTICA</span><span data-copy="en">PEOPLE & LOGISTICS</span></span>
+      <h2><span data-copy="it">Chi accompagna, quando e dove.</span><span data-copy="en">Who accompanies, when and where.</span></h2>
+      <p><span data-copy="it">Con il pulsante <strong>Persone</strong> puoi creare e modificare l'elenco di genitori, familiari e accompagnatori. Ogni attività può poi essere assegnata a una persona.</span><span data-copy="en">Use <strong>People</strong> to create and edit the list of parents, family members and companions. Each activity can then be assigned to one person.</span></p>
+      <div class="calendar-logistics-row">
+        <div><span>👤</span><strong><span data-copy="it">Da assegnare</span><span data-copy="en">Unassigned</span></strong><p><span data-copy="it">L'attività richiede ancora una decisione logistica.</span><span data-copy="en">The activity still needs a logistics decision.</span></p></div>
+        <div><span>✓</span><strong><span data-copy="it">Accompagnatore</span><span data-copy="en">Companion</span></strong><p><span data-copy="it">La persona compare direttamente nella vista Logistica/Combinata.</span><span data-copy="en">The person appears directly in Logistics/Combined view.</span></p></div>
+        <div><span>—</span><strong><span data-copy="it">Nessun accompagnatore</span><span data-copy="en">No companion</span></strong><p><span data-copy="it">Scelta esplicita: non viene conteggiata come attività ancora da assegnare.</span><span data-copy="en">Explicit choice: it is not counted as an activity still needing assignment.</span></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="calendar-manual-section" id="makeups">
+    <div class="calendar-section-index">05</div>
+    <div class="calendar-section-copy">
+      <span class="kicker"><span data-copy="it">SESSIONI SALTATE & RECUPERI</span><span data-copy="en">MISSED SESSIONS & MAKE-UPS</span></span>
+      <h2><span data-copy="it">Una sessione saltata non sparisce dal percorso.</span><span data-copy="en">A missed session does not disappear from the journey.</span></h2>
+      <p><span data-copy="it">Apri un'attività e usa <strong>Segna saltata</strong>. Puoi registrare il motivo e decidere se deve essere recuperata. Per Tennis e Preparazione fisica, i recuperi vengono poi gestiti nella sezione dedicata.</span><span data-copy="en">Open an activity and use <strong>Mark missed</strong>. You can record the reason and decide whether it needs a make-up. Tennis and physical-preparation make-ups are then managed in the dedicated section.</span></p>
+
+      <div class="makeup-flow">
+        <div><span>1</span><b><span data-copy="it">Saltata</span><span data-copy="en">Missed</span></b><small><span data-copy="it">motivo + recupero sì/no</span><span data-copy="en">reason + make-up yes/no</span></small></div>
+        <i>→</i>
+        <div><span>2</span><b><span data-copy="it">Da programmare</span><span data-copy="en">To schedule</span></b><small><span data-copy="it">entra nella coda Recuperi</span><span data-copy="en">enters the Make-ups queue</span></small></div>
+        <i>→</i>
+        <div><span>3</span><b><span data-copy="it">Programmato</span><span data-copy="en">Scheduled</span></b><small><span data-copy="it">crea una vera attività nel planner</span><span data-copy="en">creates a real planner activity</span></small></div>
+        <i>→</i>
+        <div><span>4</span><b><span data-copy="it">Recuperato</span><span data-copy="en">Recovered</span></b><small><span data-copy="it">chiude il ciclo</span><span data-copy="en">closes the cycle</span></small></div>
+      </div>
+
+      <p class="calendar-small-note"><span data-copy="it">Puoi anche scegliere <strong>Non recuperare</strong>, riprogrammare un recupero già fissato o riportarlo allo stato “Da programmare”. Lo storico conserva anche quelli conclusi o non necessari.</span><span data-copy="en">You can also choose <strong>Do not make up</strong>, reschedule an existing make-up or return it to “To schedule”. History keeps completed and waived items too.</span></p>
+    </div>
+  </section>
+
+  <section class="calendar-manual-section" id="tournaments">
+    <div class="calendar-section-index">06</div>
+    <div class="calendar-section-copy">
+      <span class="kicker"><span data-copy="it">TORNEI · STAGIONE</span><span data-copy="en">TOURNAMENTS · SEASON</span></span>
+      <h2><span data-copy="it">Prima si costruisce la stagione. Poi arriva la logistica.</span><span data-copy="en">Build the season first. Logistics comes next.</span></h2>
+      <p><span data-copy="it">La vista annuale organizza i tornei per mese. Puoi filtrare per circuito e stato, assegnare priorità e accompagnatore e registrare deadline e note strategiche.</span><span data-copy="en">The annual view organises tournaments by month. Filter by circuit and status, assign priority and companion, and record deadlines and strategic notes.</span></p>
+
+      <div class="tournament-guide-grid">
+        <div><strong><span data-copy="it">Circuiti</span><span data-copy="en">Circuits</span></strong><span>FITP · Junior · Open · Macroarea · Tennis Europe</span></div>
+        <div><strong><span data-copy="it">Priorità</span><span data-copy="en">Priority</span></strong><span>A · B · C</span></div>
+        <div><strong><span data-copy="it">Stato</span><span data-copy="en">Status</span></strong><span><span data-copy="it">Da valutare · Obiettivo · In programma · Iscritta · Giocato · Saltato</span><span data-copy="en">Candidate · Target · Planned · Registered · Played · Skipped</span></span></div>
+        <div><strong><span data-copy="it">Dettagli</span><span data-copy="en">Details</span></strong><span><span data-copy="it">Categoria, date, luogo, superficie, deadline, accompagnatore e note.</span><span data-copy="en">Category, dates, location, surface, deadline, companion and notes.</span></span></div>
+      </div>
+
+      <div class="calendar-note tournament-note">
+        <strong><span data-copy="it">Collegamento automatico</span><span data-copy="en">Automatic link</span></strong>
+        <span data-copy="it">Un torneo salvato nella stagione compare automaticamente nelle settimane comprese fra la data di inizio e la data di fine: non serve creare una seconda attività nel Planner.</span>
+        <span data-copy="en">A tournament saved in the season automatically appears in every week between its start and end dates: you do not need to create a second Planner activity.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="calendar-manual-section compact-section">
+    <div class="calendar-section-index">07</div>
+    <div class="calendar-section-copy">
+      <span class="kicker"><span data-copy="it">ULTIME DUE COSE UTILI</span><span data-copy="en">TWO FINAL USEFUL THINGS</span></span>
+      <div class="calendar-final-tips">
+        <article><span>🖨</span><div><strong><span data-copy="it">Stampa planner</span><span data-copy="en">Print planner</span></strong><p><span data-copy="it">Il comando <strong>Stampa planner</strong> prepara una versione settimanale stampabile.</span><span data-copy="en"><strong>Print planner</strong> prepares a printable weekly version.</span></p></div></article>
+        <article><span>📊</span><div><strong><span data-copy="it">Riepilogo settimanale</span><span data-copy="en">Weekly summary</span></strong><p><span data-copy="it">In fondo alla vista trovi il carico logistico per persona e un riepilogo del carico dell'atleta.</span><span data-copy="en">At the bottom you find logistics load by person and a summary of the athlete's weekly load.</span></p></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-final calendar-guide-final">
+    <div>
+      <span class="kicker"><span data-copy="it">CALENDAR</span><span data-copy="en">CALENDAR</span></span>
+      <h2><span data-copy="it">Apri la settimana e prova a costruire il tuo flusso reale.</span><span data-copy="en">Open the week and build your real workflow.</span></h2>
+    </div>
+    <div class="guide-final-actions">
+      <a class="button" href="https://tennis.polidorionline.it/#/calendar"><span data-copy="it">Apri Calendar</span><span data-copy="en">Open Calendar</span></a>
+      <a class="button ghost dark-ghost" href="instructions.html"><span data-copy="it">Tutte le guide</span><span data-copy="en">All guides</span></a>
+    </div>
+  </section>
+</main>
+
+<footer class="guide-footer">
+  <div class="brand"><span class="brand-mark">T</span><span>Tennis Player <b>OS</b></span></div>
+  <p>One Player. A Complete Journey.</p>
+  <div><a href="index.html">Home</a><a href="instructions.html"><span data-copy="it">Guide</span><span data-copy="en">Guides</span></a><a href="https://tennis.polidorionline.it/#/calendar">Calendar</a></div>
+  <small>© 2026 Tennis Player OS · Calendar Guide v1.0</small>
+</footer>
+
+<script src="instructions.js?v=1.0"></script>
+</body>
+</html>
