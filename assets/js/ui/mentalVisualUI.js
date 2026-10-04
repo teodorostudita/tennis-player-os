@@ -567,7 +567,7 @@ function renderMentalOverview(container, mental, host) {
       <article class="mv-kpi mv-kpi-card mv-kpi-average">
         <div
           class="mv-average-gauge"
-          style="--mv-gauge-value:${Math.max(0, Math.min(100, Math.round(levelAverage)))}"
+          style="--mv-gauge-angle:${Math.max(0, Math.min(100, Math.round(levelAverage))) * 3.6}deg"
           aria-label="Valutazione media ${Math.round(levelAverage)}%"
         >
           <div class="mv-average-gauge-inner">
@@ -740,7 +740,7 @@ function renderMentalOverview(container, mental, host) {
 
 function goalField(label, name, value) {
   return `
-    <label>
+    <label class="mv-goal-field mv-goal-${name}">
       <span>${label}</span>
       <textarea name="${name}" placeholder="Obiettivo ${label.toLowerCase()}">${escapeHtml(value)}</textarea>
     </label>
@@ -748,8 +748,14 @@ function goalField(label, name, value) {
 }
 
 function goalReadOnly(label, value) {
+  const key = label.toLowerCase() === 'bronzo'
+    ? 'bronze'
+    : label.toLowerCase() === 'argento'
+      ? 'silver'
+      : 'gold';
+
   return `
-    <div>
+    <div class="mv-goal-readonly mv-goal-${key}">
       <span>${label}</span>
       <strong>${escapeHtml(value || '—')}</strong>
     </div>
