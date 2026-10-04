@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.12',
+    date: '2026-10-04',
+    title: 'Mental cosmetic polish',
+    details: [
+      'Overview resa più visuale con KPI card colorate e una nuova visualizzazione circolare della valutazione media.',
+      'Il pannello obiettivi e la sintesi degli ultimi 30 giorni ricevono una gerarchia grafica più chiara e accenti cromatici dedicati.',
+      'La Cassetta degli attrezzi usa ora card più riconoscibili con monogramma, colore deterministico, badge delle aree collegate e contatore degli esercizi.',
+      'Nessuna modifica al modello dati, alle logiche cloud o ai collegamenti Mental introdotti nelle versioni precedenti.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.11',
     date: '2026-10-04',
     title: 'Mental Overview + custom work areas',
