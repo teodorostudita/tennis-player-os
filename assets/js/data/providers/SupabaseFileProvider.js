@@ -3,7 +3,7 @@ import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../../cloud/access.js?v=1.2.4';
+} from '../../cloud/access.js?v=1.2.6';
 import { supabase } from '../../cloud/supabaseClient.js?v=1.2.4';
 import { assertResourceFileUploadAllowed } from '../resourceUploadPolicy.js?v=1.2.15';
 
