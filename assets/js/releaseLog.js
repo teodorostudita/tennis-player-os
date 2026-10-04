@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.18',
+    date: '2026-10-04',
+    title: 'Footwork library refresh fix',
+    details: [
+      'Corretto il picker risorse in Athletics → Footwork Patterns: i link presenti nella Libreria Athletics vengono ora ricaricati prima di creare o modificare un pattern.',
+      'La cache Footwork viene invalidata quando si apre la Libreria Athletics, così le nuove risorse compaiono subito al ritorno.',
+      'Il moduleId usato resta training, coerente con la Libreria Athletics esistente.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.17',
     date: '2026-10-04',
     title: 'Perception & Neuro color polish',

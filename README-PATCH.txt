@@ -1,14 +1,12 @@
-Tennis Player OS v1.2.17 — Perception & Neuro color polish
+Tennis Player OS v1.2.18 — Footwork library refresh fix
 
 Patch SOLO TPOS. Non contiene e non modifica tennis-player-os-site/.
 
-Modifiche:
-- nuovo header colorato Perception & Neuro;
-- quattro domini con colori e simboli distinti;
-- protocol cards colorate per dominio principale;
-- misurazioni attive e grafici longitudinali coerenti con il colore del dominio;
-- Overview e allenamento recente più visuali;
-- nessuna modifica ai dati o alle logiche del modulo.
+Fix:
+- Athletics → Footwork Patterns rilegge la Libreria Athletics prima di aprire il picker risorse;
+- la cache viene invalidata quando si entra nella Libreria;
+- i link appena aggiunti compaiono subito in Nuovo/Modifica pattern;
+- nessuna modifica ai dati salvati.
 
 Nessuna migration Supabase.
 
