@@ -1372,7 +1372,7 @@ function renderMentalTraining(container, mental, host) {
                             ? skillIds.map(id => escapeHtml(skillById(id)?.short || id)).join(' · ')
                             : '—'}</strong>
                           <span>${toolIds.length
-                            ? toolIds.map(id => escapeHtml(toolById(id)?.name || id)).join(' · ')
+                            ? toolIds.map(id => escapeHtml(toolById(id, mental)?.name || id)).join(' · ')
                             : '—'}</span>
                         </div>
                       </td>
@@ -1428,6 +1428,7 @@ function renderMentalTraining(container, mental, host) {
 
 function openMentalSessionDialog(host) {
   const mental = normalizeMentalPayload(store.getState().mental);
+  const tools = mentalTools(mental);
   const exercises = [...mentalExercises(mental)]
     .sort((a, b) => {
       const favoriteDiff = Number(Boolean(b.favorite)) - Number(Boolean(a.favorite));
@@ -1488,7 +1489,7 @@ function openMentalSessionDialog(host) {
           <label>Strumento principale <small>solo sessione libera</small></label>
           <select name="toolId">
             <option value="">—</option>
-            ${MENTAL_TOOLS.map(tool => `<option value="${tool.id}">${escapeHtml(tool.name)}</option>`).join('')}
+            ${tools.map(tool => `<option value="${tool.id}">${escapeHtml(tool.name)}</option>`).join('')}
           </select>
         </div>
 
@@ -1740,7 +1741,7 @@ function mentalSessionRow(session) {
     mentalContextLabel(session.context),
     linkedExercises.length
       ? `${linkedExercises.length} esercizi${linkedExercises.length === 1 ? 'o' : ''}`
-      : toolById(session.toolId)?.name,
+      : (toolById(session.toolId, mental)?.name || session.toolNameSnapshot),
   ].filter(Boolean).join(' · ');
 
   return `
