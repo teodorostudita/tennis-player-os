@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.17',
+    date: '2026-10-04',
+    title: 'Perception & Neuro color polish',
+    details: [
+      'Perception & Neuro riceve una nuova identità visiva più colorata senza modifiche ai dati o alla logica del modulo.',
+      'I quattro domini usano ora colori e simboli distinti: Funzione visiva, Percezione e anticipazione, Neurocognitivo e Sensomotorio.',
+      'Protocol cards, misurazioni attive e grafici longitudinali ereditano il colore del dominio principale, rendendo più immediata la lettura della provenienza.',
+      'Rivisti header, tab, pannelli Overview e allenamento recente con gradienti e accenti coerenti.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.16',
     date: '2026-10-04',
     title: 'Nutrition Overview + planning gaps',
