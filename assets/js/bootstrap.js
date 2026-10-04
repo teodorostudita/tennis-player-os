@@ -29,7 +29,7 @@ import {
 import {
   loadTrainingIntoLocalStore,
   startTrainingCloudSync,
-} from './cloud/trainingCloud.js?v=1.2.6';
+} from './cloud/trainingCloud.js?v=1.2.13';
 import {
   loadEquipmentIntoLocalStore,
   startEquipmentCloudSync,
