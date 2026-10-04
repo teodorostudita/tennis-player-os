@@ -582,11 +582,12 @@ function athleticsResourceById(id) {
   return athleticsResourceCache.find(resource => resource.id === id) || null;
 }
 
-async function ensureAthleticsResources(athleteId = '') {
+async function ensureAthleticsResources(athleteId = '', { force = false } = {}) {
   const normalizedAthleteId = String(athleteId || '');
 
   if (
-    athleticsResourceLoaded
+    !force
+    && athleticsResourceLoaded
     && athleticsResourceAthleteId === normalizedAthleteId
   ) {
     return athleticsResourceCache;
@@ -622,6 +623,10 @@ async function ensureAthleticsResources(athleteId = '') {
 }
 
 function openAthleticsLibrary(resourceId = '') {
+  // The Library can be modified while Footwork is not rendered.
+  // Invalidate the in-memory cache so returning to Footwork reloads it.
+  athleticsResourceLoaded = false;
+
   if (resourceId) {
     try {
       sessionStorage.setItem(
@@ -848,7 +853,9 @@ function renderFootworkPatterns(container, training, store, athleteId = '') {
 }
 
 async function openFootworkPatternDialog(container, store, pattern = null, athleteId = '') {
-  await ensureAthleticsResources(athleteId);
+  // Always refresh here: the athlete may have added links in the Athletics
+  // Library after Footwork first populated its cache.
+  await ensureAthleticsResources(athleteId, { force: true });
 
   const resources = [...athleticsResourceCache].sort((a, b) => {
     const youtubeDiff = Number(b.linkType === 'youtube') - Number(a.linkType === 'youtube');
