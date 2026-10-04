@@ -1,7 +1,12 @@
 import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
-import { fileProvider } from '../data/providers/provider.js?v=1.2.4';
-
-const MAX_FILE_SIZE = 200 * 1024 * 1024;
+import { fileProvider } from '../data/providers/provider.js?v=1.2.15';
+import {
+  OWNER_RESOURCE_FILE_LIMIT_BYTES,
+  RESOURCE_UPLOAD_PRIVILEGE_ERROR_CODE,
+  assertResourceFileUploadAllowed,
+  resourceFileLimitBytes,
+  resourceUploadPrivilegeMessage,
+} from '../data/resourceUploadPolicy.js?v=1.2.15';
 
 let activeObjectUrl = '';
 
@@ -52,6 +57,8 @@ export async function renderResourceLibrary({ main, title, moduleId, moduleName,
   const form = main.querySelector('#resource-form');
   const kindSelect = form.elements.kind;
   const fileField = main.querySelector('#resource-file-field');
+  const fileInput = form.elements.file;
+  const filePolicyNote = main.querySelector('#resource-file-policy-note');
   const linkField = main.querySelector('#resource-link-field');
   const grid = main.querySelector('#resource-library-grid');
   const search = main.querySelector('#resource-search');
@@ -63,6 +70,13 @@ export async function renderResourceLibrary({ main, title, moduleId, moduleName,
     linkField.hidden = isFile;
     form.elements.file.required = isFile;
     form.elements.url.required = !isFile;
+
+    if (filePolicyNote) {
+      const limitMb = Math.round(resourceFileLimitBytes() / (1024 * 1024));
+      filePolicyNote.textContent = limitMb >= 200
+        ? 'Owner: file fino a 200 MB.'
+        : 'Questo account può caricare file fino a 5 MB. Per materiali più pesanti usa un link o YouTube.';
+    }
   };
 
   const refresh = async () => {
@@ -133,6 +147,27 @@ export async function renderResourceLibrary({ main, title, moduleId, moduleName,
   kindSelect.addEventListener('change', syncKind);
   search.addEventListener('input', paint);
 
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+
+    try {
+      assertResourceFileUploadAllowed(file.size);
+    } catch (error) {
+      fileInput.value = '';
+      await showInAppAlert(
+        error?.code === RESOURCE_UPLOAD_PRIVILEGE_ERROR_CODE
+          ? resourceUploadPrivilegeMessage()
+          : (error?.message || 'Il file non può essere caricato.'),
+        {
+          title: error?.code === RESOURCE_UPLOAD_PRIVILEGE_ERROR_CODE
+            ? 'Privilegi insufficienti'
+            : 'File troppo grande',
+        },
+      );
+    }
+  });
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (!form.reportValidity()) return;
@@ -144,10 +179,23 @@ export async function renderResourceLibrary({ main, title, moduleId, moduleName,
       if (kind === 'file') {
         const file = form.elements.file.files?.[0];
         if (!file) return;
-        if (file.size > MAX_FILE_SIZE) {
-          await showInAppAlert('Il file supera 200 MB. Per i video di grandi dimensioni è preferibile salvare un link esterno o YouTube.', { title: 'File troppo grande' });
+
+        try {
+          assertResourceFileUploadAllowed(file.size);
+        } catch (error) {
+          await showInAppAlert(
+            error?.code === RESOURCE_UPLOAD_PRIVILEGE_ERROR_CODE
+              ? resourceUploadPrivilegeMessage()
+              : (error?.message || 'Il file non può essere caricato.'),
+            {
+              title: error?.code === RESOURCE_UPLOAD_PRIVILEGE_ERROR_CODE
+                ? 'Privilegi insufficienti'
+                : 'File troppo grande',
+            },
+          );
           return;
         }
+
         await fileProvider.putResource({
           id: uid('res'), moduleId, athleteId, kind: 'file',
           title: titleValue || file.name,
@@ -181,7 +229,18 @@ export async function renderResourceLibrary({ main, title, moduleId, moduleName,
       await refresh();
     } catch (error) {
       console.error(error);
-      await showInAppAlert('Non sono riuscito a salvare la risorsa sul dispositivo.', { title: 'Salvataggio non riuscito' });
+
+      if (error?.code === RESOURCE_UPLOAD_PRIVILEGE_ERROR_CODE) {
+        await showInAppAlert(
+          resourceUploadPrivilegeMessage(),
+          { title: 'Privilegi insufficienti' },
+        );
+      } else {
+        await showInAppAlert(
+          error?.message || 'Non sono riuscito a salvare la risorsa.',
+          { title: 'Salvataggio non riuscito' },
+        );
+      }
     }
   });
 
@@ -208,7 +267,11 @@ function resourceDialog() {
           </div>
           <div class="field"><label>Titolo <span class="field-optional">opzionale</span></label><input name="title" placeholder="Titolo della risorsa" /></div>
           <div class="field full" id="resource-link-field"><label>URL</label><input name="url" type="url" placeholder="https://…" /></div>
-          <div class="field full" id="resource-file-field" hidden><label>File</label><input name="file" type="file" /></div>
+          <div class="field full" id="resource-file-field" hidden>
+            <label>File</label>
+            <input name="file" type="file" />
+            <small class="field-optional" id="resource-file-policy-note"></small>
+          </div>
           <div class="field full"><label>Note</label><textarea name="notes" placeholder="Perché è utile, cosa guardare, riferimenti…"></textarea></div>
         </div>
         <div class="dialog-actions">
