@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.2.9 — Mental exercise library
+- Nuova tab **Esercizi** nel modulo Mental con CRUD completo, preferiti, contesto, durata, protocollo, progressione e note.
+- Ogni esercizio può collegare più **Abilità** e più **Strumenti**; i collegamenti inversi vengono calcolati automaticamente e sono navigabili.
+- Le **Sessioni mentali** possono richiamare uno o più esercizi; abilità e strumenti vengono dedotti dagli esercizi selezionati, mantenendo la modalità libera per lo storico e per lavori non strutturati.
+- Eliminando un esercizio non si elimina lo storico delle sessioni: viene rimosso soltanto il collegamento all’esercizio.
+- Payload Mental aggiornato allo schema JSON v2; **nessuna migration SQL** e nessuna modifica al sito marketing.
+- Riallineati gli import interni Mental al runtime condiviso della app.
+
 ## v1.2.8 — Nutrition cloud runtime repair
 - Ripristinato il **merge record-level di Nutrition**: `mergeRows()` è ora definita e il caricamento cloud non ricade più automaticamente sulla sola cache locale.
 - `cloudCoverageRuntime.js` usa le stesse istanze canoniche di **bootstrap**, **access** e **store** del core TPOS, eliminando i vecchi import `?v=1.2.4` che potevano creare moduli/stato duplicati nel browser.

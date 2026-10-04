@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.9',
+    date: '2026-10-04',
+    title: 'Mental exercise library',
+    details: [
+      'Aggiunta la nuova sezione Esercizi nel modulo Mental con creazione, modifica, eliminazione, preferiti, contesto, durata, protocollo e progressione.',
+      'Ogni esercizio può collegare più abilità e più strumenti; Abilità e Strumenti mostrano automaticamente i collegamenti inversi senza duplicare la relazione.',
+      'Le sessioni mentali possono ora richiamare uno o più esercizi e ricavano automaticamente abilità, strumenti, durata indicativa e contesto quando possibile.',
+      'Le vecchie sessioni restano compatibili come sessioni libere; il payload Mental passa allo schema JSON v2 senza migration SQL.',
+      'Gli import interni Mental sono riallineati al runtime condiviso della app per evitare istanze duplicate di store e permessi.',
+    ],
+  },
+  {
     version: '1.2.8',
     date: '2026-10-03',
     title: 'Nutrition cloud runtime repair',

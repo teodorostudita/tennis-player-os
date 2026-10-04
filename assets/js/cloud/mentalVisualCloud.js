@@ -1,7 +1,7 @@
 import {
   loadCloudModuleState,
   saveCloudModuleState,
-} from './moduleStateCloud.js?v=1.2.4';
+} from './moduleStateCloud.js?v=1.2.6';
 
 const SAVE_DELAY_MS = 350;
 
@@ -12,6 +12,21 @@ const MENTAL_SKILL_IDS = [
   'regolazione',
   'resilienza',
   'immaginazione',
+];
+
+const MENTAL_TOOL_IDS = [
+  'visualizzazione',
+  'dialogo-interno',
+  'respirazione-521',
+  'linguaggio-corpo',
+  'affermazioni',
+  'consapevolezza-lampo',
+  'memoria-selettiva',
+  'richiamo-successi',
+  'definizione-obiettivi',
+  'meditazione',
+  'routine-reset',
+  'ancoraggio-sensoriale',
 ];
 
 export const VISUAL_STARTER_PROTOCOLS = [
@@ -128,6 +143,36 @@ function defaultMentalSkill() {
   return { level: 3, notes: '' };
 }
 
+function normalizeMentalExercise(exercise, index = 0) {
+  const source = exercise && typeof exercise === 'object' && !Array.isArray(exercise)
+    ? exercise
+    : {};
+
+  const title = String(source.title || '').trim();
+
+  return {
+    id: String(source.id || `mental-exercise-${Date.now()}-${index}`),
+    title,
+    objective: String(source.objective || '').trim(),
+    skillIds: Array.isArray(source.skillIds)
+      ? [...new Set(source.skillIds.map(String))]
+          .filter(id => MENTAL_SKILL_IDS.includes(id))
+      : [],
+    toolIds: Array.isArray(source.toolIds)
+      ? [...new Set(source.toolIds.map(String))]
+          .filter(id => MENTAL_TOOL_IDS.includes(id))
+      : [],
+    context: String(source.context || '').trim(),
+    durationMin: Math.max(0, Number(source.durationMin || 0)),
+    instructions: String(source.instructions || '').trim(),
+    progression: String(source.progression || '').trim(),
+    notes: String(source.notes || '').trim(),
+    favorite: Boolean(source.favorite),
+    createdAt: String(source.createdAt || ''),
+    updatedAt: String(source.updatedAt || ''),
+  };
+}
+
 export function normalizeMentalPayload(payload = {}) {
   const source = payload && typeof payload === 'object' && !Array.isArray(payload)
     ? payload
@@ -156,8 +201,19 @@ export function normalizeMentalPayload(payload = {}) {
       silver: String(source.goals?.silver || ''),
       gold: String(source.goals?.gold || ''),
     },
+    exercises: Array.isArray(source.exercises)
+      ? source.exercises
+          .map(normalizeMentalExercise)
+          .filter(exercise => exercise.title)
+      : [],
     trainingSessions: Array.isArray(source.trainingSessions)
-      ? source.trainingSessions
+      ? source.trainingSessions.map(session => ({
+          ...session,
+          exerciseIds: Array.isArray(session?.exerciseIds)
+            ? [...new Set(session.exerciseIds.map(String))]
+            : [],
+          context: String(session?.context || ''),
+        }))
       : [],
     matchReviews: Array.isArray(source.matchReviews)
       ? source.matchReviews
@@ -401,7 +457,11 @@ export function startStructuredPerformanceSync({
         athleteId,
         moduleKey,
         payload,
-        schemaVersion: moduleKey === 'visual' ? 2 : 1,
+        schemaVersion: moduleKey === 'visual'
+          ? 2
+          : moduleKey === 'mental'
+            ? 2
+            : 1,
       });
 
       lastSavedFingerprint = nextFingerprint;

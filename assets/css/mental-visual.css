@@ -733,3 +733,248 @@
   stroke:white;
   stroke-width:1.4;
 }
+
+
+/* v1.2.9 · Mental exercise library */
+.mv-linked-exercises {
+  display:grid;
+  gap:8px;
+  padding:10px;
+  border:1px solid #e2e7ee;
+  border-radius:10px;
+  background:#fafbfd;
+}
+.mv-linked-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.mv-linked-head strong {
+  font-size:.7rem;
+  color:#56657a;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.mv-linked-head span {
+  min-width:24px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#edf1f6;
+  color:#5f6e82;
+  font-size:.62rem;
+  font-weight:850;
+  text-align:center;
+}
+.mv-linked-list,
+.mv-session-exercises {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.mv-link-chip {
+  appearance:none;
+  border:1px solid #dce3ec;
+  border-radius:999px;
+  background:white;
+  color:#40536d;
+  padding:6px 9px;
+  font-size:.66rem;
+  font-weight:800;
+  line-height:1.2;
+  cursor:pointer;
+}
+.mv-link-chip:hover {
+  border-color:#bfcbd9;
+  background:#f7f9fc;
+}
+.mv-linked-empty {
+  color:#8a96a7;
+  font-size:.68rem;
+}
+
+.mv-exercise-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.mv-exercise-card {
+  transition:box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}
+.mv-exercise-highlight {
+  border-color:#8ea4c0;
+  box-shadow:0 0 0 3px rgba(99,122,160,.14), 0 12px 28px rgba(11,31,58,.10);
+  transform:translateY(-1px);
+}
+.mv-exercise-card .panel-body {
+  display:grid;
+  gap:12px;
+}
+.mv-exercise-card-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+.mv-exercise-card-head h3 {
+  margin:4px 0 0;
+  font-size:1.02rem;
+}
+.mv-exercise-actions {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.mv-exercise-objective {
+  margin:0;
+  color:#5f6c7e;
+  font-size:.76rem;
+  line-height:1.5;
+}
+.mv-exercise-meta {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.mv-exercise-meta span {
+  padding:5px 8px;
+  border-radius:999px;
+  background:#f0f3f7;
+  color:#617086;
+  font-size:.64rem;
+  font-weight:800;
+}
+.mv-exercise-links {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.mv-exercise-links > div {
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+.mv-exercise-links > div > strong,
+.mv-exercise-section > strong {
+  color:#59687c;
+  font-size:.66rem;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.mv-exercise-section {
+  display:grid;
+  gap:5px;
+  padding-top:9px;
+  border-top:1px solid #edf0f4;
+}
+.mv-exercise-section p {
+  margin:0;
+  color:#657287;
+  font-size:.72rem;
+  line-height:1.5;
+  white-space:pre-wrap;
+}
+.mv-exercise-notes {
+  background:#fafbfd;
+  border:1px solid #edf0f4;
+  border-radius:9px;
+  padding:9px 10px;
+}
+
+.mv-exercise-dialog {
+  width:min(900px,calc(100% - 24px));
+}
+.mv-link-fieldset {
+  margin:0;
+  padding:12px;
+  border:1px solid #dfe5ed;
+  border-radius:12px;
+  min-width:0;
+}
+.mv-link-fieldset legend {
+  padding:0 6px;
+  color:#5d6b7e;
+  font-size:.72rem;
+  font-weight:850;
+}
+.mv-check-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.mv-check-grid label,
+.mv-favorite-check {
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:9px 10px;
+  border:1px solid #e4e9f0;
+  border-radius:9px;
+  background:#fafbfd;
+  color:#526176;
+  font-size:.72rem;
+  font-weight:750;
+}
+.mv-check-grid input,
+.mv-favorite-check input {
+  width:16px;
+  height:16px;
+  flex:0 0 auto;
+  margin-top:1px;
+}
+.mv-session-exercise-checks label > span {
+  display:grid;
+  gap:2px;
+}
+.mv-session-exercise-checks label strong {
+  font-size:.73rem;
+  color:#42526a;
+}
+.mv-session-exercise-checks label small,
+.field label small {
+  color:#8a96a7;
+  font-size:.62rem;
+  font-weight:700;
+}
+.mv-favorite-check {
+  width:max-content;
+  max-width:100%;
+  align-items:center;
+}
+.mv-session-focus {
+  display:grid;
+  gap:3px;
+  min-width:150px;
+}
+.mv-session-focus strong {
+  color:#46566d;
+  font-size:.72rem;
+}
+.mv-session-focus span {
+  color:#7b8798;
+  font-size:.65rem;
+}
+.mv-mental-session-table {
+  min-width:980px;
+}
+
+@media (max-width:850px) {
+  .mv-exercise-grid,
+  .mv-exercise-links {
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width:620px) {
+  .mv-check-grid {
+    grid-template-columns:1fr;
+  }
+  .mv-exercise-card-head {
+    flex-direction:column;
+  }
+  .mv-exercise-actions {
+    justify-content:flex-start;
+  }
+}

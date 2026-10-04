@@ -1,12 +1,12 @@
-import '../bootstrap.js?v=1.2.4';
+import '../bootstrap.js?v=1.2.6';
 
-import { modules } from '../data/schema.js?v=1.2.4';
-import { store } from '../data/store.js?v=1.2.4';
+import { modules } from '../data/schema.js?v=1.2.6';
+import { store } from '../data/store.js?v=1.2.6';
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from '../cloud/access.js?v=1.2.4';
+} from '../cloud/access.js?v=1.2.6';
 import {
   REFLEXION_PRESET,
   VISUAL_STARTER_PROTOCOLS,
@@ -14,11 +14,11 @@ import {
   normalizeMentalPayload,
   normalizeVisualPayload,
   startStructuredPerformanceSync,
-} from '../cloud/mentalVisualCloud.js?v=1.2.4';
+} from '../cloud/mentalVisualCloud.js?v=1.2.9';
 import {
   showInAppAlert,
   showInAppConfirm,
-} from './inAppMessages.js?v=1.2.4';
+} from './inAppMessages.js?v=1.2.6';
 
 const MENTAL_SKILLS = [
   {
@@ -78,6 +78,17 @@ const MENTAL_TOOLS = [
   { id: 'meditazione', name: 'Meditazione pre-partita', skills: ['concentrazione', 'regolazione'] },
   { id: 'routine-reset', name: 'Routine di reset', skills: ['resilienza', 'concentrazione', 'regolazione'] },
   { id: 'ancoraggio-sensoriale', name: 'Ancoraggio sensoriale', skills: ['concentrazione', 'regolazione'] },
+];
+
+const MENTAL_CONTEXTS = [
+  { id: '', label: 'Non specificato' },
+  { id: 'off-court', label: 'Fuori campo' },
+  { id: 'court', label: 'Campo' },
+  { id: 'pre-match', label: 'Pre-match' },
+  { id: 'between-points', label: 'Tra i punti' },
+  { id: 'changeover', label: 'Cambio campo' },
+  { id: 'post-match', label: 'Post-match' },
+  { id: 'match-simulation', label: 'Match simulation' },
 ];
 
 const PEAK_STATES = [
@@ -171,6 +182,45 @@ function skillById(id) {
 
 function toolById(id) {
   return MENTAL_TOOLS.find(item => item.id === id);
+}
+
+function mentalContextLabel(id) {
+  return MENTAL_CONTEXTS.find(item => item.id === id)?.label || '';
+}
+
+function mentalExercises(mental = normalizeMentalPayload(store.getState().mental)) {
+  return Array.isArray(mental.exercises) ? mental.exercises : [];
+}
+
+function exercisesForSkill(mental, skillId) {
+  return mentalExercises(mental).filter(exercise =>
+    Array.isArray(exercise.skillIds) && exercise.skillIds.includes(skillId)
+  );
+}
+
+function exercisesForTool(mental, toolId) {
+  return mentalExercises(mental).filter(exercise =>
+    Array.isArray(exercise.toolIds) && exercise.toolIds.includes(toolId)
+  );
+}
+
+function exerciseById(id, mental = normalizeMentalPayload(store.getState().mental)) {
+  return mentalExercises(mental).find(exercise => exercise.id === id);
+}
+
+function openMentalExercise(host, exerciseId) {
+  mentalSection = 'esercizi';
+  renderMental(host);
+
+  requestAnimationFrame(() => {
+    const card = [...host.querySelectorAll('[data-mental-exercise-card]')]
+      .find(node => node.dataset.mentalExerciseCard === exerciseId);
+
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('mv-exercise-highlight');
+    window.setTimeout(() => card.classList.remove('mv-exercise-highlight'), 1400);
+  });
 }
 
 function protocolById(id, visual = normalizeVisualPayload(store.getState().visual)) {
@@ -352,6 +402,7 @@ function renderMental(host) {
       { id: 'panoramica', label: 'Panoramica' },
       { id: 'abilita', label: 'Abilità' },
       { id: 'strumenti', label: 'Strumenti' },
+      { id: 'esercizi', label: 'Esercizi' },
       { id: 'allenamento', label: 'Allenamento' },
       { id: 'review', label: 'Review partita' },
     ], 'data-mental-section')}
@@ -369,9 +420,11 @@ function renderMental(host) {
   const sectionHost = host.querySelector('#mental-section-host');
 
   if (mentalSection === 'abilita') {
-    renderMentalSkills(sectionHost, mental);
+    renderMentalSkills(sectionHost, mental, host);
   } else if (mentalSection === 'strumenti') {
-    renderMentalTools(sectionHost);
+    renderMentalTools(sectionHost, mental, host);
+  } else if (mentalSection === 'esercizi') {
+    renderMentalExercises(sectionHost, mental, host);
   } else if (mentalSection === 'allenamento') {
     renderMentalTraining(sectionHost, mental, host);
   } else if (mentalSection === 'review') {
@@ -505,19 +558,20 @@ function goalReadOnly(label, value) {
   `;
 }
 
-function renderMentalSkills(container, mental) {
+function renderMentalSkills(container, mental, host) {
   container.innerHTML = `
     <section class="mv-subhead">
       <div>
         <div class="eyebrow">Abilità mentali</div>
         <h2>Sei aree di lavoro</h2>
-        <p>La scala 1–5 è una valutazione interna di lavoro, non un test clinico.</p>
+        <p>La scala 1–5 è una valutazione interna di lavoro. Gli esercizi collegati sono ricavati automaticamente dalla libreria.</p>
       </div>
     </section>
 
     <div class="mv-skill-grid">
       ${MENTAL_SKILLS.map(skill => {
         const value = mental.skills[skill.id] || { level: 3, notes: '' };
+        const linked = exercisesForSkill(mental, skill.id);
 
         return `
           <article class="panel mv-skill-card">
@@ -534,6 +588,22 @@ function renderMentalSkills(container, mental) {
 
               <div class="mv-tags">
                 ${skill.indicators.map(item => `<span>${escapeHtml(item)}</span>`).join('')}
+              </div>
+
+              <div class="mv-linked-exercises">
+                <div class="mv-linked-head">
+                  <strong>Esercizi collegati</strong>
+                  <span>${linked.length}</span>
+                </div>
+                ${linked.length
+                  ? `<div class="mv-linked-list">
+                      ${linked.map(exercise => `
+                        <button class="mv-link-chip" type="button" data-open-mental-exercise="${escapeAttr(exercise.id)}">
+                          ${escapeHtml(exercise.title)}
+                        </button>
+                      `).join('')}
+                    </div>`
+                  : '<span class="mv-linked-empty">Nessun esercizio collegato.</span>'}
               </div>
 
               ${canWriteModule('mental') ? `
@@ -564,6 +634,12 @@ function renderMentalSkills(container, mental) {
     </div>
   `;
 
+  container.querySelectorAll('[data-open-mental-exercise]').forEach(button => {
+    button.addEventListener('click', () => {
+      openMentalExercise(host, button.dataset.openMentalExercise);
+    });
+  });
+
   container.querySelectorAll('[data-mental-skill-form]').forEach(form => {
     form.addEventListener('submit', event => {
       event.preventDefault();
@@ -580,32 +656,56 @@ function renderMentalSkills(container, mental) {
         state.mental = next;
       });
 
-      renderMentalSkills(container, normalizeMentalPayload(store.getState().mental));
+      renderMentalSkills(
+        container,
+        normalizeMentalPayload(store.getState().mental),
+        host,
+      );
     });
   });
 }
 
-function renderMentalTools(container) {
+function renderMentalTools(container, mental, host) {
   container.innerHTML = `
     <section class="mv-subhead">
       <div>
         <div class="eyebrow">Strumenti</div>
         <h2>Cassetta degli attrezzi mentale</h2>
-        <p>Uno strumento può servire contemporaneamente più abilità; non viene duplicato nelle diverse aree.</p>
+        <p>Uno strumento può servire più abilità. Gli esercizi mostrano come lo strumento viene allenato concretamente.</p>
       </div>
     </section>
 
     <div class="mv-tool-grid">
-      ${MENTAL_TOOLS.map(tool => `
-        <article class="panel mv-tool-card">
-          <div class="panel-body">
-            <h3>${escapeHtml(tool.name)}</h3>
-            <div class="mv-tags">
-              ${tool.skills.map(id => `<span>${escapeHtml(skillById(id)?.short || id)}</span>`).join('')}
+      ${MENTAL_TOOLS.map(tool => {
+        const linked = exercisesForTool(mental, tool.id);
+
+        return `
+          <article class="panel mv-tool-card">
+            <div class="panel-body">
+              <h3>${escapeHtml(tool.name)}</h3>
+              <div class="mv-tags">
+                ${tool.skills.map(id => `<span>${escapeHtml(skillById(id)?.short || id)}</span>`).join('')}
+              </div>
+
+              <div class="mv-linked-exercises">
+                <div class="mv-linked-head">
+                  <strong>Esercizi collegati</strong>
+                  <span>${linked.length}</span>
+                </div>
+                ${linked.length
+                  ? `<div class="mv-linked-list">
+                      ${linked.map(exercise => `
+                        <button class="mv-link-chip" type="button" data-open-mental-exercise="${escapeAttr(exercise.id)}">
+                          ${escapeHtml(exercise.title)}
+                        </button>
+                      `).join('')}
+                    </div>`
+                  : '<span class="mv-linked-empty">Nessun esercizio collegato.</span>'}
+              </div>
             </div>
-          </div>
-        </article>
-      `).join('')}
+          </article>
+        `;
+      }).join('')}
     </div>
 
     <section class="panel mv-frustration-panel">
@@ -629,6 +729,323 @@ function renderMentalTools(container) {
       </div>
     </section>
   `;
+
+  container.querySelectorAll('[data-open-mental-exercise]').forEach(button => {
+    button.addEventListener('click', () => {
+      openMentalExercise(host, button.dataset.openMentalExercise);
+    });
+  });
+}
+
+function renderMentalExercises(container, mental, host) {
+  const exercises = [...mentalExercises(mental)]
+    .sort((a, b) => {
+      const favoriteDiff = Number(Boolean(b.favorite)) - Number(Boolean(a.favorite));
+      if (favoriteDiff) return favoriteDiff;
+      return String(a.title || '').localeCompare(String(b.title || ''), 'it');
+    });
+
+  container.innerHTML = `
+    <section class="mv-subhead">
+      <div>
+        <div class="eyebrow">Esercizi mentali</div>
+        <h2>Dall’abilità al lavoro concreto</h2>
+        <p>Ogni esercizio può collegare più abilità e più strumenti. I collegamenti inversi nelle altre sezioni vengono calcolati automaticamente.</p>
+      </div>
+      ${canWriteModule('mental')
+        ? '<button class="button button-primary" id="mental-add-exercise" type="button">+ Nuovo esercizio</button>'
+        : ''}
+    </section>
+
+    ${exercises.length
+      ? `<div class="mv-exercise-grid">
+          ${exercises.map(exercise => {
+            const context = mentalContextLabel(exercise.context);
+
+            return `
+              <article class="panel mv-exercise-card" data-mental-exercise-card="${escapeAttr(exercise.id)}">
+                <div class="panel-body">
+                  <div class="mv-exercise-card-head">
+                    <div>
+                      <div class="eyebrow">${exercise.favorite ? '★ Preferito' : 'Esercizio'}</div>
+                      <h3>${escapeHtml(exercise.title)}</h3>
+                    </div>
+                    ${canWriteModule('mental') ? `
+                      <div class="mv-exercise-actions">
+                        <button class="button button-ghost mv-small-button" type="button" data-edit-mental-exercise="${escapeAttr(exercise.id)}">Modifica</button>
+                        <button class="resource-delete" type="button" data-delete-mental-exercise="${escapeAttr(exercise.id)}">Elimina</button>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  ${exercise.objective
+                    ? `<p class="mv-exercise-objective">${escapeHtml(exercise.objective)}</p>`
+                    : ''}
+
+                  ${(context || Number(exercise.durationMin || 0)) ? `
+                    <div class="mv-exercise-meta">
+                      ${context ? `<span>${escapeHtml(context)}</span>` : ''}
+                      ${Number(exercise.durationMin || 0)
+                        ? `<span>${Number(exercise.durationMin)} min</span>`
+                        : ''}
+                    </div>
+                  ` : ''}
+
+                  <div class="mv-exercise-links">
+                    <div>
+                      <strong>Abilità</strong>
+                      <div class="mv-tags">
+                        ${exercise.skillIds.length
+                          ? exercise.skillIds.map(id => `<span>${escapeHtml(skillById(id)?.short || id)}</span>`).join('')
+                          : '<span>Non assegnata</span>'}
+                      </div>
+                    </div>
+                    <div>
+                      <strong>Strumenti</strong>
+                      <div class="mv-tags">
+                        ${exercise.toolIds.length
+                          ? exercise.toolIds.map(id => `<span>${escapeHtml(toolById(id)?.name || id)}</span>`).join('')
+                          : '<span>Non assegnato</span>'}
+                      </div>
+                    </div>
+                  </div>
+
+                  ${exercise.instructions ? `
+                    <div class="mv-exercise-section">
+                      <strong>Protocollo</strong>
+                      <p>${escapeHtml(exercise.instructions)}</p>
+                    </div>
+                  ` : ''}
+
+                  ${exercise.progression ? `
+                    <div class="mv-exercise-section">
+                      <strong>Progressione</strong>
+                      <p>${escapeHtml(exercise.progression)}</p>
+                    </div>
+                  ` : ''}
+
+                  ${exercise.notes ? `
+                    <div class="mv-exercise-section mv-exercise-notes">
+                      <strong>Note</strong>
+                      <p>${escapeHtml(exercise.notes)}</p>
+                    </div>
+                  ` : ''}
+                </div>
+              </article>
+            `;
+          }).join('')}
+        </div>`
+      : `<section class="panel">
+          <div class="panel-body mv-empty-state-actions">
+            ${emptyCopy('Nessun esercizio mentale ancora creato.')}
+            ${canWriteModule('mental')
+              ? '<button class="button button-primary" id="mental-add-exercise-empty" type="button">Crea il primo esercizio</button>'
+              : ''}
+          </div>
+        </section>`}
+  `;
+
+  const add = () => openMentalExerciseDialog(host);
+
+  container.querySelector('#mental-add-exercise')?.addEventListener('click', add);
+  container.querySelector('#mental-add-exercise-empty')?.addEventListener('click', add);
+
+  container.querySelectorAll('[data-edit-mental-exercise]').forEach(button => {
+    button.addEventListener('click', () => {
+      const exercise = exerciseById(
+        button.dataset.editMentalExercise,
+        normalizeMentalPayload(store.getState().mental),
+      );
+      if (exercise) openMentalExerciseDialog(host, exercise);
+    });
+  });
+
+  container.querySelectorAll('[data-delete-mental-exercise]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const id = button.dataset.deleteMentalExercise;
+      const exercise = exerciseById(id, normalizeMentalPayload(store.getState().mental));
+
+      const ok = await showInAppConfirm(
+        `Eliminare l’esercizio “${exercise?.title || 'selezionato'}”? Le sessioni già registrate restano, ma il collegamento all’esercizio viene rimosso.`,
+        { title: 'Elimina esercizio', confirmLabel: 'Elimina', danger: true },
+      );
+
+      if (!ok) return;
+
+      store.update(state => {
+        const next = normalizeMentalPayload(state.mental);
+        next.exercises = next.exercises.filter(item => item.id !== id);
+        next.trainingSessions = next.trainingSessions.map(session => ({
+          ...session,
+          exerciseIds: (session.exerciseIds || []).filter(exerciseId => exerciseId !== id),
+        }));
+        state.mental = next;
+      });
+
+      renderMental(host);
+    });
+  });
+}
+
+function openMentalExerciseDialog(host, exercise = null) {
+  const current = exercise || {
+    title: '',
+    objective: '',
+    skillIds: [],
+    toolIds: [],
+    context: '',
+    durationMin: 0,
+    instructions: '',
+    progression: '',
+    notes: '',
+    favorite: false,
+  };
+
+  const dialog = document.createElement('dialog');
+  dialog.className = 'planner-dialog mv-dialog mv-exercise-dialog';
+
+  dialog.innerHTML = `
+    <form method="dialog" id="mental-exercise-form">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">Mental · Esercizi</div>
+          <h3>${exercise ? 'Modifica esercizio' : 'Nuovo esercizio'}</h3>
+        </div>
+        <button class="dialog-close" type="button" data-close>×</button>
+      </div>
+
+      <div class="dialog-body form-grid">
+        <div class="field full">
+          <label>Nome esercizio</label>
+          <input name="title" value="${escapeAttr(current.title)}" placeholder="Es. Reset 10 secondi dopo errore" required />
+        </div>
+
+        <div class="field full">
+          <label>Obiettivo</label>
+          <textarea name="objective" placeholder="Che cosa deve allenare concretamente?">${escapeHtml(current.objective)}</textarea>
+        </div>
+
+        <div class="field">
+          <label>Contesto</label>
+          <select name="context">
+            ${MENTAL_CONTEXTS.map(item => `
+              <option value="${escapeAttr(item.id)}" ${current.context === item.id ? 'selected' : ''}>
+                ${escapeHtml(item.label)}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Durata indicativa (min)</label>
+          <input type="number" min="0" step="1" name="durationMin" value="${Number(current.durationMin || 0) || ''}" />
+        </div>
+
+        <fieldset class="mv-link-fieldset full">
+          <legend>Abilità collegate</legend>
+          <div class="mv-check-grid">
+            ${MENTAL_SKILLS.map(skill => `
+              <label>
+                <input type="checkbox" name="skillIds" value="${escapeAttr(skill.id)}" ${current.skillIds.includes(skill.id) ? 'checked' : ''} />
+                <span>${escapeHtml(skill.name)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </fieldset>
+
+        <fieldset class="mv-link-fieldset full">
+          <legend>Strumenti utilizzati</legend>
+          <div class="mv-check-grid">
+            ${MENTAL_TOOLS.map(tool => `
+              <label>
+                <input type="checkbox" name="toolIds" value="${escapeAttr(tool.id)}" ${current.toolIds.includes(tool.id) ? 'checked' : ''} />
+                <span>${escapeHtml(tool.name)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </fieldset>
+
+        <div class="field full">
+          <label>Protocollo / istruzioni</label>
+          <textarea name="instructions" placeholder="Passaggi operativi dell’esercizio">${escapeHtml(current.instructions)}</textarea>
+        </div>
+
+        <div class="field full">
+          <label>Progressione</label>
+          <textarea name="progression" placeholder="Come aumentare gradualmente difficoltà o pressione">${escapeHtml(current.progression)}</textarea>
+        </div>
+
+        <div class="field full">
+          <label>Note</label>
+          <textarea name="notes">${escapeHtml(current.notes)}</textarea>
+        </div>
+
+        <label class="mv-favorite-check full">
+          <input type="checkbox" name="favorite" ${current.favorite ? 'checked' : ''} />
+          <span>Segna come preferito</span>
+        </label>
+      </div>
+
+      <div class="dialog-actions">
+        <div></div>
+        <div class="dialog-save-actions">
+          <button class="button button-ghost" type="button" data-close>Annulla</button>
+          <button class="button button-primary" type="submit">${exercise ? 'Salva modifiche' : 'Crea esercizio'}</button>
+        </div>
+      </div>
+    </form>
+  `;
+
+  host.appendChild(dialog);
+
+  dialog.querySelectorAll('[data-close]').forEach(button => {
+    button.addEventListener('click', () => dialog.close());
+  });
+
+  dialog.querySelector('#mental-exercise-form').addEventListener('submit', event => {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const now = new Date().toISOString();
+
+    const record = {
+      id: exercise?.id || uid('mental-exercise'),
+      title: String(formData.get('title') || '').trim(),
+      objective: String(formData.get('objective') || '').trim(),
+      skillIds: formData.getAll('skillIds').map(String),
+      toolIds: formData.getAll('toolIds').map(String),
+      context: String(formData.get('context') || ''),
+      durationMin: Math.max(0, Number(formData.get('durationMin') || 0)),
+      instructions: String(formData.get('instructions') || '').trim(),
+      progression: String(formData.get('progression') || '').trim(),
+      notes: String(formData.get('notes') || '').trim(),
+      favorite: formData.get('favorite') === 'on',
+      createdAt: exercise?.createdAt || now,
+      updatedAt: now,
+    };
+
+    if (!record.title) return;
+
+    store.update(state => {
+      const next = normalizeMentalPayload(state.mental);
+      const index = next.exercises.findIndex(item => item.id === record.id);
+
+      if (index >= 0) {
+        next.exercises[index] = record;
+      } else {
+        next.exercises.push(record);
+      }
+
+      state.mental = next;
+    });
+
+    dialog.close();
+    mentalSection = 'esercizi';
+    renderMental(host);
+  });
+
+  dialog.addEventListener('close', () => dialog.remove());
+  dialog.showModal();
 }
 
 function renderMentalTraining(container, mental, host) {
@@ -640,7 +1057,7 @@ function renderMentalTraining(container, mental, host) {
       <div>
         <div class="eyebrow">Allenamento mentale</div>
         <h2>Sessioni e lavoro quotidiano</h2>
-        <p>Registra quale abilità e quale strumento sono stati allenati.</p>
+        <p>Le sessioni possono richiamare uno o più esercizi. Abilità e strumenti vengono ricavati automaticamente dagli esercizi selezionati.</p>
       </div>
       ${canWriteModule('mental')
         ? '<button class="button button-primary" id="mental-add-session" type="button">+ Nuova sessione</button>'
@@ -649,27 +1066,61 @@ function renderMentalTraining(container, mental, host) {
 
     <section class="panel">
       <div class="panel-body mv-table-wrap">
-        <table class="mv-table">
+        <table class="mv-table mv-mental-session-table">
           <thead>
-            <tr><th>Data</th><th>Abilità</th><th>Strumento</th><th>Durata</th><th>Note</th><th></th></tr>
+            <tr><th>Data</th><th>Esercizi</th><th>Focus</th><th>Contesto</th><th>Durata</th><th>Note</th><th></th></tr>
           </thead>
           <tbody>
             ${sessions.length
-              ? sessions.map(session => `
-                <tr>
-                  <td>${formatDate(session.date)}</td>
-                  <td>${escapeHtml(skillById(session.skillId)?.short || '—')}</td>
-                  <td>${escapeHtml(toolById(session.toolId)?.name || '—')}</td>
-                  <td>${Number(session.durationMin || 0) ? `${Number(session.durationMin)} min` : '—'}</td>
-                  <td>${escapeHtml(session.notes || '')}</td>
-                  <td>
-                    ${canWriteModule('mental')
-                      ? `<button class="resource-delete" type="button" data-delete-mental-session="${session.id}">Elimina</button>`
-                      : ''}
-                  </td>
-                </tr>
-              `).join('')
-              : `<tr><td colspan="6">${emptyCopy('Nessuna sessione registrata.')}</td></tr>`}
+              ? sessions.map(session => {
+                  const linkedExercises = (session.exerciseIds || [])
+                    .map(id => exerciseById(id, mental))
+                    .filter(Boolean);
+
+                  const skillIds = linkedExercises.length
+                    ? [...new Set(linkedExercises.flatMap(exercise => exercise.skillIds || []))]
+                    : (session.skillId ? [session.skillId] : []);
+
+                  const toolIds = linkedExercises.length
+                    ? [...new Set(linkedExercises.flatMap(exercise => exercise.toolIds || []))]
+                    : (session.toolId ? [session.toolId] : []);
+
+                  return `
+                    <tr>
+                      <td>${formatDate(session.date)}</td>
+                      <td>
+                        ${linkedExercises.length
+                          ? `<div class="mv-session-exercises">
+                              ${linkedExercises.map(exercise => `
+                                <button type="button" class="mv-link-chip" data-open-mental-exercise="${escapeAttr(exercise.id)}">
+                                  ${escapeHtml(exercise.title)}
+                                </button>
+                              `).join('')}
+                            </div>`
+                          : '<span class="mv-linked-empty">Sessione libera</span>'}
+                      </td>
+                      <td>
+                        <div class="mv-session-focus">
+                          <strong>${skillIds.length
+                            ? skillIds.map(id => escapeHtml(skillById(id)?.short || id)).join(' · ')
+                            : '—'}</strong>
+                          <span>${toolIds.length
+                            ? toolIds.map(id => escapeHtml(toolById(id)?.name || id)).join(' · ')
+                            : '—'}</span>
+                        </div>
+                      </td>
+                      <td>${escapeHtml(mentalContextLabel(session.context) || '—')}</td>
+                      <td>${Number(session.durationMin || 0) ? `${Number(session.durationMin)} min` : '—'}</td>
+                      <td>${escapeHtml(session.notes || '')}</td>
+                      <td>
+                        ${canWriteModule('mental')
+                          ? `<button class="resource-delete" type="button" data-delete-mental-session="${session.id}">Elimina</button>`
+                          : ''}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')
+              : `<tr><td colspan="7">${emptyCopy('Nessuna sessione registrata.')}</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -678,6 +1129,12 @@ function renderMentalTraining(container, mental, host) {
 
   container.querySelector('#mental-add-session')?.addEventListener('click', () => {
     openMentalSessionDialog(host);
+  });
+
+  container.querySelectorAll('[data-open-mental-exercise]').forEach(button => {
+    button.addEventListener('click', () => {
+      openMentalExercise(host, button.dataset.openMentalExercise);
+    });
   });
 
   container.querySelectorAll('[data-delete-mental-session]').forEach(button => {
@@ -703,6 +1160,14 @@ function renderMentalTraining(container, mental, host) {
 }
 
 function openMentalSessionDialog(host) {
+  const mental = normalizeMentalPayload(store.getState().mental);
+  const exercises = [...mentalExercises(mental)]
+    .sort((a, b) => {
+      const favoriteDiff = Number(Boolean(b.favorite)) - Number(Boolean(a.favorite));
+      if (favoriteDiff) return favoriteDiff;
+      return String(a.title || '').localeCompare(String(b.title || ''), 'it');
+    });
+
   const dialog = document.createElement('dialog');
   dialog.className = 'planner-dialog mv-dialog';
 
@@ -715,18 +1180,47 @@ function openMentalSessionDialog(host) {
 
       <div class="dialog-body form-grid">
         <div class="field"><label>Data</label><input type="date" name="date" value="${todayKey()}" required /></div>
-        <div class="field"><label>Durata (min)</label><input type="number" min="0" step="5" name="durationMin" /></div>
+        <div class="field"><label>Durata (min)</label><input type="number" min="0" step="1" name="durationMin" /></div>
+
+        <div class="field full">
+          <label>Contesto</label>
+          <select name="context">
+            ${MENTAL_CONTEXTS.map(item => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.label)}</option>`).join('')}
+          </select>
+        </div>
+
+        <fieldset class="mv-link-fieldset full">
+          <legend>Esercizi svolti</legend>
+          ${exercises.length
+            ? `<div class="mv-check-grid mv-session-exercise-checks">
+                ${exercises.map(exercise => `
+                  <label>
+                    <input type="checkbox" name="exerciseIds" value="${escapeAttr(exercise.id)}" />
+                    <span>
+                      <strong>${escapeHtml(exercise.title)}</strong>
+                      <small>${[
+                        mentalContextLabel(exercise.context),
+                        Number(exercise.durationMin || 0) ? `${Number(exercise.durationMin)} min` : '',
+                      ].filter(Boolean).map(escapeHtml).join(' · ')}</small>
+                    </span>
+                  </label>
+                `).join('')}
+              </div>`
+            : '<div class="mv-linked-empty">La libreria esercizi è vuota. Puoi comunque registrare una sessione libera.</div>'}
+        </fieldset>
 
         <div class="field">
-          <label>Abilità principale</label>
+          <label>Abilità principale <small>solo sessione libera</small></label>
           <select name="skillId">
+            <option value="">—</option>
             ${MENTAL_SKILLS.map(skill => `<option value="${skill.id}">${escapeHtml(skill.name)}</option>`).join('')}
           </select>
         </div>
 
         <div class="field">
-          <label>Strumento principale</label>
+          <label>Strumento principale <small>solo sessione libera</small></label>
           <select name="toolId">
+            <option value="">—</option>
             ${MENTAL_TOOLS.map(tool => `<option value="${tool.id}">${escapeHtml(tool.name)}</option>`).join('')}
           </select>
         </div>
@@ -753,17 +1247,44 @@ function openMentalSessionDialog(host) {
   dialog.querySelector('#mental-session-form').addEventListener('submit', event => {
     event.preventDefault();
 
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const formData = new FormData(event.currentTarget);
+    const exerciseIds = formData.getAll('exerciseIds').map(String);
+    const selectedExercises = exerciseIds
+      .map(id => exerciseById(id, mental))
+      .filter(Boolean);
+
+    const derivedSkillId = selectedExercises
+      .flatMap(exercise => exercise.skillIds || [])
+      .find(Boolean) || String(formData.get('skillId') || '');
+
+    const derivedToolId = selectedExercises
+      .flatMap(exercise => exercise.toolIds || [])
+      .find(Boolean) || String(formData.get('toolId') || '');
+
+    const enteredDuration = Math.max(0, Number(formData.get('durationMin') || 0));
+    const derivedDuration = selectedExercises.reduce(
+      (sum, exercise) => sum + Math.max(0, Number(exercise.durationMin || 0)),
+      0,
+    );
+
+    const selectedContexts = [...new Set(
+      selectedExercises.map(exercise => exercise.context).filter(Boolean),
+    )];
+
+    const context = String(formData.get('context') || '')
+      || (selectedContexts.length === 1 ? selectedContexts[0] : '');
 
     store.update(state => {
       const next = normalizeMentalPayload(state.mental);
       next.trainingSessions.push({
         id: uid('mental-session'),
-        date: data.date,
-        skillId: data.skillId,
-        toolId: data.toolId,
-        durationMin: Number(data.durationMin || 0),
-        notes: String(data.notes || '').trim(),
+        date: String(formData.get('date') || ''),
+        exerciseIds,
+        skillId: derivedSkillId,
+        toolId: derivedToolId,
+        context,
+        durationMin: enteredDuration || derivedDuration,
+        notes: String(formData.get('notes') || '').trim(),
       });
       state.mental = next;
     });
@@ -938,11 +1459,28 @@ function clampScore(value) {
 }
 
 function mentalSessionRow(session) {
+  const mental = normalizeMentalPayload(store.getState().mental);
+  const linkedExercises = (session.exerciseIds || [])
+    .map(id => exerciseById(id, mental))
+    .filter(Boolean);
+
+  const primary = linkedExercises.length
+    ? linkedExercises.map(exercise => exercise.title).join(' · ')
+    : (skillById(session.skillId)?.short || 'Sessione mentale');
+
+  const secondary = [
+    formatDate(session.date),
+    mentalContextLabel(session.context),
+    linkedExercises.length
+      ? `${linkedExercises.length} esercizi${linkedExercises.length === 1 ? 'o' : ''}`
+      : toolById(session.toolId)?.name,
+  ].filter(Boolean).join(' · ');
+
   return `
     <div class="mv-simple-row">
       <div>
-        <strong>${escapeHtml(skillById(session.skillId)?.short || 'Sessione mentale')}</strong>
-        <span>${formatDate(session.date)} · ${escapeHtml(toolById(session.toolId)?.name || '—')}</span>
+        <strong>${escapeHtml(primary)}</strong>
+        <span>${escapeHtml(secondary)}</span>
       </div>
       <strong>${Number(session.durationMin || 0) ? `${Number(session.durationMin)} min` : '—'}</strong>
     </div>
