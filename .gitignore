@@ -5,6 +5,10 @@
 *.zip
 __MACOSX/
 
+# Published Companion release packages must be tracked.
+!assets/downloads/
+!assets/downloads/*.zip
+
 # Temporary files
 *.tmp
 *.bak
