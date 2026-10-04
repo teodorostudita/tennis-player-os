@@ -1,0 +1,56 @@
+name: Build Footwork Library Fix 1.2.18 Patch ZIP
+
+on:
+  push:
+    branches: [ chatgpt/footwork-library-refresh-v1.2.18 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build patch zip
+        run: |
+          rm -rf patch TPOS_patch_v1.2.18_Footwork_Library_Fix.zip
+          mkdir -p patch/assets/js/components
+          mkdir -p patch/assets/js/ui
+          mkdir -p patch/assets/js
+
+          cp README-PATCH.txt patch/README-PATCH.txt
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+          cp assets/js/app.js patch/assets/js/app.js
+          cp assets/js/bootstrap.js patch/assets/js/bootstrap.js
+          cp assets/js/components/training.js patch/assets/js/components/training.js
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/versionDashboard.js patch/assets/js/ui/versionDashboard.js
+          cp assets/js/version.js patch/assets/js/version.js
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+
+          cd patch
+          zip -r ../TPOS_patch_v1.2.18_Footwork_Library_Fix.zip .
+
+      - name: Check JavaScript syntax
+        run: |
+          for file in             patch/assets/js/app.js             patch/assets/js/bootstrap.js             patch/assets/js/components/training.js             patch/assets/js/releaseLog.js             patch/assets/js/ui/versionDashboard.js             patch/assets/js/version.js             patch/sw.js
+          do
+            node --input-type=module --check < "$file"
+          done
+
+      - name: Verify patch scope
+        run: |
+          test ! -e patch/tennis-player-os-site
+          test ! -e patch/supabase
+          grep -q "force: true" patch/assets/js/components/training.js
+          grep -q "APP_VERSION = '1.2.18'" patch/assets/js/version.js
+          unzip -l TPOS_patch_v1.2.18_Footwork_Library_Fix.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.18_Footwork_Library_Fix
+          path: TPOS_patch_v1.2.18_Footwork_Library_Fix.zip
+          if-no-files-found: error
