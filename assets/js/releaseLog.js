@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.15',
+    date: '2026-10-04',
+    title: 'Owner-only heavy library uploads',
+    details: [
+      'I link e i video YouTube restano caricabili dagli utenti con permesso di scrittura sulla Libreria.',
+      'I file binari per gli account non-Owner sono limitati a 5 MB; oltre la soglia compare un messaggio Privilegi insufficienti e il file non viene accodato né caricato.',
+      'Il global Owner mantiene il limite precedente di 200 MB.',
+      'La restrizione è applicata su tre livelli: interfaccia, provider file e policy Supabase/Storage, così non dipende soltanto dal controllo UI.',
+      'I file già presenti non vengono modificati o rimossi.',
+    ],
+  },
+  {
     version: '1.2.14',
     date: '2026-10-04',
     title: 'Development library resources',
