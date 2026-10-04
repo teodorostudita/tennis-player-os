@@ -1,0 +1,87 @@
+name: Build Nutrition Overview 1.2.16 Patch ZIP
+
+on:
+  push:
+    branches: [ chatgpt/nutrition-overview-v1.2.16 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build cumulative patch zip
+        run: |
+          rm -rf patch TPOS_patch_v1.2.16_Nutrition_Overview.zip
+          mkdir -p patch/assets/css
+          mkdir -p patch/assets/js/components
+          mkdir -p patch/assets/js/data/providers
+          mkdir -p patch/assets/js/data
+          mkdir -p patch/assets/js/ui
+          mkdir -p patch/assets/js
+          mkdir -p patch/supabase/migrations
+
+          cp README-PATCH.txt patch/README-PATCH.txt
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+
+          cp assets/css/nutrition-overview.css patch/assets/css/nutrition-overview.css
+
+          cp assets/js/app.js patch/assets/js/app.js
+          cp assets/js/bootstrap.js patch/assets/js/bootstrap.js
+          cp assets/js/components/nutrition.js patch/assets/js/components/nutrition.js
+          cp assets/js/components/resourceLibrary.js patch/assets/js/components/resourceLibrary.js
+          cp assets/js/data/providers/SupabaseFileProvider.js patch/assets/js/data/providers/SupabaseFileProvider.js
+          cp assets/js/data/providers/provider.js patch/assets/js/data/providers/provider.js
+          cp assets/js/data/resourceUploadPolicy.js patch/assets/js/data/resourceUploadPolicy.js
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/recoveryConsolidationUI.js patch/assets/js/ui/recoveryConsolidationUI.js
+          cp assets/js/ui/versionDashboard.js patch/assets/js/ui/versionDashboard.js
+          cp assets/js/version.js patch/assets/js/version.js
+
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+
+          cp supabase/migrations/20261004193000_restrict_non_owner_resource_upload_size.sql patch/supabase/migrations/
+
+          cd patch
+          zip -r ../TPOS_patch_v1.2.16_Nutrition_Overview.zip .
+
+      - name: Check JavaScript syntax as ES modules
+        run: |
+          for file in \
+            patch/assets/js/app.js \
+            patch/assets/js/bootstrap.js \
+            patch/assets/js/components/nutrition.js \
+            patch/assets/js/components/resourceLibrary.js \
+            patch/assets/js/data/providers/SupabaseFileProvider.js \
+            patch/assets/js/data/providers/provider.js \
+            patch/assets/js/data/resourceUploadPolicy.js \
+            patch/assets/js/releaseLog.js \
+            patch/assets/js/ui/recoveryConsolidationUI.js \
+            patch/assets/js/ui/versionDashboard.js \
+            patch/assets/js/version.js \
+            patch/sw.js
+          do
+            node --input-type=module --check < "$file"
+          done
+
+      - name: Verify Nutrition Overview
+        run: |
+          grep -q "data-nutrition-section=.overview." patch/assets/js/components/nutrition.js
+          grep -q "Recovery balance" patch/assets/js/components/nutrition.js
+          grep -q "Planning gaps" patch/assets/js/components/nutrition.js
+          grep -q "nutrition-overview.css?v=1.2.16" patch/index.html
+          test -e patch/supabase/migrations/20261004193000_restrict_non_owner_resource_upload_size.sql
+          test ! -e patch/tennis-player-os-site
+
+      - name: Show patch contents
+        run: unzip -l TPOS_patch_v1.2.16_Nutrition_Overview.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.16_Nutrition_Overview
+          path: TPOS_patch_v1.2.16_Nutrition_Overview.zip
+          if-no-files-found: error
