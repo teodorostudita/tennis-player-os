@@ -1,0 +1,35 @@
+name: Build Mental Patch ZIP
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ chatgpt/mental-exercises-v1.2.9 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build patch zip
+        run: |
+          mkdir -p patch/assets/css patch/assets/js/cloud patch/assets/js/ui patch/assets/js
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+          cp assets/css/mental-visual.css patch/assets/css/mental-visual.css
+          cp assets/js/cloud/cloudCoverageRuntime.js patch/assets/js/cloud/cloudCoverageRuntime.js
+          cp assets/js/cloud/mentalVisualCloud.js patch/assets/js/cloud/mentalVisualCloud.js
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/mentalVisualUI.js patch/assets/js/ui/mentalVisualUI.js
+          cp assets/js/version.js patch/assets/js/version.js
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+          cd patch
+          zip -r ../TPOS_patch_v1.2.9_Mental_Exercises.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.9_Mental_Exercises
+          path: TPOS_patch_v1.2.9_Mental_Exercises.zip
+          if-no-files-found: error
