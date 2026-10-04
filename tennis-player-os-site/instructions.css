@@ -1,0 +1,97 @@
+
+.guide-body{
+  background:
+    radial-gradient(circle at 8% 0%,rgba(44,108,246,.10),transparent 34rem),
+    radial-gradient(circle at 92% 18%,rgba(215,238,92,.13),transparent 28rem),
+    #f4f7fb;
+}
+.guide-main{width:min(1180px,calc(100vw - 40px));margin:0 auto;padding-bottom:80px}
+[data-copy="en"]{display:none}
+html[lang="en"] [data-copy="it"]{display:none}
+html[lang="en"] [data-copy="en"]{display:initial}
+.guide-hero{display:grid;grid-template-columns:1.06fr .94fr;gap:42px;align-items:center;padding:88px 0 68px}
+.guide-hero h1{margin:12px 0 18px;font-size:clamp(3rem,6vw,5.5rem);line-height:.92;letter-spacing:-.065em;color:#10284d}
+.guide-hero h1 em{font-style:normal;color:#1c63f2}
+.guide-hero-copy>p{max-width:720px;margin:0;color:#5a6c87;font-size:1.2rem;line-height:1.6}
+.guide-hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px}
+.guide-overview{display:grid;gap:14px;padding:24px;border-radius:34px;background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid #dbe6f1;box-shadow:0 22px 60px rgba(11,35,69,.10)}
+.guide-overview-card{display:grid;grid-template-columns:52px 1fr;gap:14px;align-items:center;padding:18px;border:1px solid #e0e8f2;border-radius:22px;background:#fff}
+.guide-overview-card.primary{background:linear-gradient(135deg,#eef4ff,#f7fbff);border-color:#cbdafa}
+.guide-overview-num,.guide-step-label{display:grid;place-items:center;width:52px;height:52px;border-radius:17px;background:linear-gradient(135deg,#17386b,#0d2345);color:#fff;font-weight:900;letter-spacing:.08em;box-shadow:0 12px 22px rgba(13,35,69,.16)}
+.guide-overview-card strong{display:block;color:#17365f;font-size:1.05rem}
+.guide-overview-card p{margin:3px 0 0;color:#6a7c94;font-size:.9rem}
+.guide-status{display:flex;align-items:center;gap:9px;padding:13px 14px;border-radius:16px;background:#fff9e9;color:#6f5a1f;font-size:.83rem;font-weight:750}
+.guide-status>span:first-child,.status-pill>span:first-child{width:9px;height:9px;border-radius:50%;background:#e7aa28;box-shadow:0 0 0 5px rgba(231,170,40,.12);flex:0 0 auto}
+.guide-section{padding:74px 0;border-top:1px solid rgba(17,40,75,.08)}
+.guide-section-head{display:grid;grid-template-columns:58px minmax(0,1fr);gap:20px;align-items:start;margin-bottom:32px}
+.guide-section-head.compact{margin-bottom:26px}
+.guide-section-head h2{margin:9px 0 10px;font-size:clamp(2.2rem,4.6vw,4rem);line-height:.98;letter-spacing:-.05em;color:#10284d}
+.guide-section-head p{max-width:850px;margin:0;color:#5c6f89;font-size:1.06rem;line-height:1.65}
+.guide-step-label.muted{background:linear-gradient(135deg,#7589a5,#49627f)}
+.guide-callout,.companion-banner{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:22px 24px;border-radius:26px;background:#fff;border:1px solid #dbe6f1;box-shadow:0 16px 38px rgba(13,35,69,.06);margin-bottom:24px}
+.guide-callout-mark{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;background:linear-gradient(135deg,#17386b,#0d2345);color:#fff;font-size:.82rem;font-weight:900;letter-spacing:.08em}
+.guide-callout strong{display:block;color:#17365f;font-size:1.04rem}
+.guide-callout p,.companion-banner p{margin:4px 0 0;color:#6b7d94}
+.device-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.device-card,.instruction-card{position:relative;padding:26px;border-radius:28px;background:linear-gradient(180deg,#fff,#f9fbfe);border:1px solid #dce6f1;box-shadow:0 16px 36px rgba(13,35,69,.06)}
+.device-card.ios{border-top:4px solid #7992b1}.device-card.android{border-top:4px solid #65b96c}.device-card.desktop{border-top:4px solid #517fe0}
+.device-icon,.instruction-icon{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:#edf3fc;color:#173b6d;font-size:1.35rem;font-weight:900}
+.device-tag{display:inline-flex;margin-top:16px;padding:6px 9px;border-radius:999px;background:#f0f4f9;color:#63758e;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.device-card h3,.instruction-card h3{margin:9px 0 16px;color:#17365f;font-size:1.45rem;letter-spacing:-.03em}
+.device-copy{color:#5f718a;line-height:1.65}
+.guide-steps{display:grid;gap:10px;margin:0;padding:0;list-style:none;counter-reset:guide-step}
+.guide-steps li{position:relative;min-height:50px;padding:12px 12px 12px 48px;border-radius:15px;background:#f7f9fc;border:1px solid #e2e9f1;color:#405571;line-height:1.5;counter-increment:guide-step}
+.guide-steps li::before{content:counter(guide-step);position:absolute;left:12px;top:11px;width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:#fff;border:1px solid #d9e3ee;color:#173b6d;font-size:.74rem;font-weight:900}
+.guide-steps.big li{min-height:56px;padding-top:14px;padding-bottom:14px}
+.device-result{margin-top:16px;padding:12px 13px;border-radius:14px;background:#edf8ef;color:#2f7141;font-size:.85rem;font-weight:800}
+.device-result.neutral{background:#edf3fc;color:#3c5f8f}
+.companion-section{position:relative}
+.companion-banner{background:linear-gradient(135deg,#102a50,#071f3d);border-color:#102a50;color:#fff}
+.companion-banner h3{margin:10px 0 6px;font-size:1.5rem;line-height:1.15}
+.companion-banner p{color:#cbd8e8}
+.status-pill{display:inline-flex;align-items:center;gap:9px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.10);color:#f5e6af;font-size:.76rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.companion-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.instruction-icon{background:#eaf2ff;color:#1e5bc2}
+.privacy-note{margin-top:18px;padding:16px 17px;border-radius:16px;background:#eef7f1;border:1px solid #d3e8d8}
+.privacy-note strong{color:#2c6840}
+.privacy-note p{margin:5px 0 0;color:#597261;font-size:.87rem;line-height:1.55}
+.troubleshooting{margin-top:18px;border:1px solid #dbe6f1;border-radius:20px;background:#fff;overflow:hidden}
+.troubleshooting summary{cursor:pointer;padding:18px 20px;color:#17365f;font-weight:850}
+.troubleshooting>div{padding:0 20px 18px}
+.troubleshooting p{margin:0;color:#60738a;line-height:1.6}
+.manual-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.manual-card{min-height:120px;padding:18px;border-radius:22px;background:#fff;border:1px solid #dce6f1;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 10px 24px rgba(13,35,69,.04)}
+.manual-card>span{color:#8b9bb0;font-size:.75rem;font-weight:900;letter-spacing:.12em}
+.manual-card strong{color:#17365f;font-size:1.05rem}
+.manual-card small{color:#7a8ba0}
+.manual-card.ready{background:linear-gradient(135deg,#eef4ff,#f9fbff);border-color:#c6d8f4}
+.manual-card.ready small{color:#1c63f2;font-weight:800}
+.guide-final{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-top:24px;padding:34px 36px;border-radius:30px;background:linear-gradient(135deg,#102a50,#071f3d);color:#fff;box-shadow:0 24px 56px rgba(7,25,48,.20)}
+.guide-final h2{margin:8px 0 0;font-size:clamp(2rem,4vw,3.2rem);line-height:1;letter-spacing:-.045em}
+.guide-final-actions{display:flex;gap:12px;flex-wrap:wrap}
+.dark-ghost{background:rgba(255,255,255,.08)!important;color:#fff!important;border-color:rgba(255,255,255,.25)!important}
+.guide-footer{padding:32px max(20px,calc((100vw - 1180px)/2)) 42px;border-top:1px solid rgba(17,40,75,.08);display:grid;grid-template-columns:1fr 1fr auto;gap:18px;align-items:center;color:#64748a;font-size:12px}
+.guide-footer>div:last-of-type{display:flex;gap:18px}.guide-footer small{grid-column:1/-1;color:#98a4b4}
+@media(max-width:1000px){
+  .guide-hero,.companion-grid{grid-template-columns:1fr}
+  .device-grid{grid-template-columns:1fr 1fr}
+  .manual-grid{grid-template-columns:repeat(3,1fr)}
+  .guide-header nav{display:none}
+}
+@media(max-width:720px){
+  .guide-main{width:min(100% - 28px,1180px)}
+  .guide-hero{padding:58px 0 48px}
+  .guide-section{padding:54px 0}
+  .guide-section-head{grid-template-columns:1fr}
+  .guide-step-label{width:46px;height:46px}
+  .guide-callout,.companion-banner{grid-template-columns:1fr}
+  .device-grid{grid-template-columns:1fr}
+  .manual-grid{grid-template-columns:1fr 1fr}
+  .guide-final{grid-template-columns:1fr;padding:28px 24px}
+  .guide-footer{grid-template-columns:1fr}
+  .guide-header .signin{display:none}
+}
+@media(max-width:470px){
+  .manual-grid{grid-template-columns:1fr}
+  .guide-hero h1{font-size:3rem}
+}
