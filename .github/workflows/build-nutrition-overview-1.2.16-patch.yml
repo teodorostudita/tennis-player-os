@@ -70,7 +70,7 @@ jobs:
 
       - name: Verify Nutrition Overview
         run: |
-          grep -q "data-nutrition-section=.overview." patch/assets/js/components/nutrition.js
+          grep -q "sectionButton('overview', 'Overview')" patch/assets/js/components/nutrition.js
           grep -q "Recovery balance" patch/assets/js/components/nutrition.js
           grep -q "Planning gaps" patch/assets/js/components/nutrition.js
           grep -q "nutrition-overview.css?v=1.2.16" patch/index.html
