@@ -38,21 +38,29 @@ const VISUAL_DOMAINS = [
     id: 'funzione-visiva',
     name: 'Funzione visiva',
     description: 'Acuità statica e dinamica, contrasto, motilità oculare, accomodazione, vergenza, profondità, periferica e figura-sfondo.',
+    color: '#4f7fce',
+    icon: '◉',
   },
   {
     id: 'percezione-anticipazione',
     name: 'Percezione e anticipazione',
     description: 'Lettura di profondità, traiettoria, lungo/corto, alto/basso, spin, attenzione visiva e anticipazione tennis-specifica.',
+    color: '#8a63c7',
+    icon: '↗',
   },
   {
     id: 'neurocognitivo',
     name: 'Neurocognitivo',
     description: 'Velocità di elaborazione, flessibilità mentale, inibizione reattiva e risposta a stimoli semplici o complessi.',
+    color: '#d3833b',
+    icon: '⚡',
   },
   {
     id: 'sensomotorio',
     name: 'Sensomotorio',
     description: 'Coordinazione occhio-mano, propriocezione, equilibrio, coordinazione bilaterale e integrazione tra percezione e movimento.',
+    color: '#3e9b82',
+    icon: '◎',
   },
 ];
 
@@ -329,6 +337,19 @@ function domainById(id) {
   return VISUAL_DOMAINS.find(item => item.id === id);
 }
 
+
+function visualDomainColor(id) {
+  return domainById(id)?.color || '#637aa0';
+}
+
+function visualProtocolColor(protocol) {
+  return visualDomainColor(protocol?.domains?.[0] || '');
+}
+
+function visualProtocolIcon(protocol) {
+  return domainById(protocol?.domains?.[0] || '')?.icon || '◌';
+}
+
 function applyModuleMetadata() {
   const mental = modules.find(item => item.id === 'mental');
   const visual = modules.find(item => item.id === 'visual');
@@ -486,7 +507,7 @@ function renderMental(host) {
   const mental = normalizeMentalPayload(store.getState().mental);
 
   host.innerHTML = `
-    <section class="mv-module-head">
+    <section class="mv-module-head mv-visual-module-head">
       <div>
         <div class="eyebrow">Mental</div>
         <h2>Prestazione mentale</h2>
@@ -2331,10 +2352,13 @@ function renderVisualOverview(container, visual) {
         ).length;
 
         return `
-          <article class="panel mv-domain-card">
+          <article class="panel mv-domain-card mv-visual-domain-card" style="--mv-visual-color:${domain.color}">
             <div class="panel-body">
               <div class="mv-domain-card-top">
-                <h3>${escapeHtml(domain.name)}</h3>
+                <div class="mv-visual-domain-title">
+                  <span class="mv-visual-domain-icon" aria-hidden="true">${escapeHtml(domain.icon)}</span>
+                  <h3>${escapeHtml(domain.name)}</h3>
+                </div>
                 <span>${count} ${count === 1 ? 'protocollo' : 'protocolli'}</span>
               </div>
               <p>${escapeHtml(domain.description)}</p>
@@ -2345,7 +2369,7 @@ function renderVisualOverview(container, visual) {
     </section>
 
     ${activeMeasuredProtocols.length ? `
-      <section class="panel mv-measured-overview">
+      <section class="panel mv-measured-overview mv-visual-measured-overview">
         <div class="panel-header">
           <h3>Misurazioni attive</h3>
           <p>Compaiono qui soltanto i protocolli che hanno metriche definite e almeno un valore registrato.</p>
@@ -2357,7 +2381,7 @@ function renderVisualOverview(container, visual) {
       </section>
     ` : ''}
 
-    <section class="panel">
+    <section class="panel mv-visual-recent-panel">
       <div class="panel-header">
         <h3>Allenamento recente</h3>
         <p>Ultime sessioni visive, neurocognitive e sensomotorie.</p>
@@ -2385,7 +2409,7 @@ function measuredProtocolOverview(protocol, visual) {
   if (!metricRows.length) return '';
 
   return `
-    <article class="mv-measured-protocol">
+    <article class="mv-measured-protocol mv-visual-measured-protocol" style="--mv-visual-color:${visualProtocolColor(protocol)}">
       <div class="mv-measured-protocol-head">
         <div>
           <strong>${escapeHtml(protocol.name)}</strong>
@@ -2411,7 +2435,7 @@ function renderVisualTraining(container, visual, host) {
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
   container.innerHTML = `
-    <section class="mv-subhead">
+    <section class="mv-subhead mv-visual-subhead">
       <div>
         <div class="eyebrow">Allenamento</div>
         <h2>Sessioni percettive e neuro</h2>
@@ -2574,7 +2598,7 @@ function renderVisualMeasurements(container, visual, host) {
   const metricProtocols = protocolsWithMetrics(visual);
 
   container.innerHTML = `
-    <section class="mv-subhead">
+    <section class="mv-subhead mv-visual-subhead">
       <div>
         <div class="eyebrow">Misurazioni</div>
         <h2>Serie longitudinali</h2>
@@ -2687,7 +2711,7 @@ function genericMetricCard(protocol, metric, rows) {
   const summary = metricSummary(rows);
 
   return `
-    <article class="panel mv-measure-card">
+    <article class="panel mv-measure-card mv-visual-measure-card" style="--mv-visual-color:${visualProtocolColor(protocol)}">
       <div class="panel-body">
         <div class="mv-measure-head">
           <div>
@@ -3166,7 +3190,7 @@ function openGenericMeasurementDialog(
 
 function renderVisualProtocols(container, visual, host) {
   container.innerHTML = `
-    <section class="mv-subhead">
+    <section class="mv-subhead mv-visual-subhead">
       <div>
         <div class="eyebrow">Protocolli</div>
         <h2>Libreria operativa</h2>
@@ -3240,16 +3264,19 @@ function protocolCard(protocol, visual) {
   const measurementCount = protocolMeasurementCount(protocol, visual);
 
   return `
-    <article class="panel mv-protocol-card">
+    <article class="panel mv-protocol-card mv-visual-protocol-card" style="--mv-visual-color:${visualProtocolColor(protocol)}">
       <div class="panel-body">
         <div class="mv-protocol-card-head">
-          <div>
-            <h3>${escapeHtml(protocol.name)}</h3>
-            <span>
-              ${protocol.metrics.length
-                ? `${protocol.metrics.length} ${protocol.metrics.length === 1 ? 'misurazione' : 'misurazioni'}`
-                : 'Nessuna misurazione'}
-            </span>
+          <div class="mv-visual-protocol-identity">
+            <span class="mv-visual-protocol-icon" aria-hidden="true">${escapeHtml(visualProtocolIcon(protocol))}</span>
+            <div>
+              <h3>${escapeHtml(protocol.name)}</h3>
+              <span>
+                ${protocol.metrics.length
+                  ? `${protocol.metrics.length} ${protocol.metrics.length === 1 ? 'misurazione' : 'misurazioni'}`
+                  : 'Nessuna misurazione'}
+              </span>
+            </div>
           </div>
 
           ${canWriteModule('visual')
@@ -3261,7 +3288,7 @@ function protocolCard(protocol, visual) {
 
         <div class="mv-tags">
           ${protocol.domains.length
-            ? protocol.domains.map(id => `<span>${escapeHtml(domainById(id)?.name || id)}</span>`).join('')
+            ? protocol.domains.map(id => `<span style="--mv-domain-chip:${visualDomainColor(id)}">${escapeHtml(domainById(id)?.name || id)}</span>`).join('')
             : '<span>Nessun dominio</span>'}
         </div>
 
