@@ -1,17 +1,17 @@
-Tennis Player OS v1.2.14 — Development library resources
+Tennis Player OS v1.2.15 — Owner-only heavy library uploads
 
 Patch SOLO TPOS. Non contiene e non modifica tennis-player-os-site/.
 
-Novità:
-- i temi tecnici/tattici Development possono collegare risorse oltre ai drills;
-- risorse selezionabili dalla Libreria Development e dalla Libreria Drills;
-- risorse raggruppate per provenienza nel dettaglio del tema;
-- apertura diretta della risorsa, anche cross-module verso Drills -> Libreria;
-- collegamenti salvati come moduleId + resourceId;
-- collegamenti non disponibili conservati in modo non distruttivo;
-- payload Development schema JSON v3.
+Regola Librerie:
+- link / YouTube: invariati per chi ha permesso di scrittura;
+- file per account non-Owner: massimo 5 MB;
+- file per global Owner: massimo 200 MB;
+- oltre 5 MB un non-Owner riceve "Privilegi insufficienti";
+- controllo applicato in UI, provider e policy Supabase Storage / metadata;
+- nessun file esistente viene cancellato o modificato.
 
-Nessuna migration Supabase.
+Supabase:
+- applicare la nuova migration che restringe gli upload file pesanti al global Owner.
 
 Applicazione:
-Applica Patch.command -> Pubblica Tennis Player OS.command.
+Applica Patch.command -> Pubblica Tennis Player OS.command -> Sì alla nuova migration Supabase.
