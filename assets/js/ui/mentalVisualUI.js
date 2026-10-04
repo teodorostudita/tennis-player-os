@@ -9,6 +9,7 @@ import {
   getCurrentAccess,
 } from '../cloud/access.js?v=1.2.6';
 import {
+  DEFAULT_MENTAL_SKILLS,
   REFLEXION_PRESET,
   VISUAL_STARTER_PROTOCOLS,
   loadStructuredPerformanceModule,
@@ -20,57 +21,6 @@ import {
   showInAppAlert,
   showInAppConfirm,
 } from './inAppMessages.js?v=1.2.6';
-
-const MENTAL_SKILLS = [
-  {
-    id: 'motivazione',
-    name: 'Motivazione e coinvolgimento',
-    short: 'Motivazione',
-    description: 'Motivazione intrinseca ed estrinseca, piacere nel giocare, perseveranza e orientamento verso obiettivi controllabili.',
-    indicators: ['piacere', 'impegno', 'sacrificio', 'intensità', 'voglia di competere'],
-    color: '#2d9d78',
-  },
-  {
-    id: 'fiducia',
-    name: 'Fiducia',
-    short: 'Fiducia',
-    description: 'Costruire fiducia attraverso risultati reali, memoria selettiva, richiamo dei successi e dialogo interno positivo.',
-    indicators: ['sicurezza', 'linguaggio del corpo', 'memoria dei successi'],
-    color: '#3b82f6',
-  },
-  {
-    id: 'concentrazione',
-    name: 'Concentrazione e controllo attentivo',
-    short: 'Concentrazione',
-    description: 'Creare, mantenere e ritrovare il focus, restare nel presente e usare ancoraggi sensoriali o parole chiave.',
-    indicators: ['presente', 'bolla attentiva', 'parola chiave', 'recupero del focus'],
-    color: '#7657c8',
-  },
-  {
-    id: 'regolazione',
-    name: 'Regolazione emotiva e dell’attivazione',
-    short: 'Regolazione',
-    description: 'Riconoscere e regolare ansia, intensità e attivazione con respirazione, linguaggio del corpo e consapevolezza.',
-    indicators: ['ansia', 'intensità', 'respirazione', 'linguaggio del corpo'],
-    color: '#e09f3e',
-  },
-  {
-    id: 'resilienza',
-    name: 'Mental resilience e Mental toughness',
-    short: 'Mental resilience',
-    description: 'Prevenire, gestire e recuperare dalla frustrazione, mantenere efficacia sotto pressione e sviluppare mental toughness.',
-    indicators: ['reset', 'frustrazione', 'tenuta mentale', 'mental toughness'],
-    color: '#d65c5c',
-  },
-  {
-    id: 'immaginazione',
-    name: 'Mental Imagery',
-    short: 'Mental Imagery',
-    description: 'Rappresentazione multisensoriale ed emotiva del gesto, della prestazione e delle situazioni competitive.',
-    indicators: ['gesto perfetto', 'successo', 'sensi', 'emozioni'],
-    color: '#2d8f9f',
-  },
-];
 
 const MENTAL_CONTEXTS = [
   { id: '', label: 'Non specificato' },
@@ -169,8 +119,16 @@ function formatDate(value) {
   }).format(new Date(year, month - 1, day));
 }
 
-function skillById(id) {
-  return MENTAL_SKILLS.find(item => item.id === id);
+function mentalSkills(mental = normalizeMentalPayload(store.getState().mental)) {
+  return Array.isArray(mental.skillDefinitions) ? mental.skillDefinitions : [];
+}
+
+function skillById(id, mental = normalizeMentalPayload(store.getState().mental)) {
+  return mentalSkills(mental).find(item => item.id === id);
+}
+
+function isDefaultMentalSkill(id) {
+  return DEFAULT_MENTAL_SKILLS.some(item => item.id === id);
 }
 
 function mentalTools(mental = normalizeMentalPayload(store.getState().mental)) {
@@ -426,7 +384,7 @@ function renderMental(host) {
     ${readOnlyNote('mental')}
 
     ${internalTabs(mentalSection, [
-      { id: 'panoramica', label: 'Panoramica' },
+      { id: 'panoramica', label: 'Overview' },
       { id: 'abilita', label: 'Abilità' },
       { id: 'strumenti', label: 'Strumenti' },
       { id: 'esercizi', label: 'Esercizi' },
