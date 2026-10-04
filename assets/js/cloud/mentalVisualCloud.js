@@ -14,19 +14,19 @@ const MENTAL_SKILL_IDS = [
   'immaginazione',
 ];
 
-const MENTAL_TOOL_IDS = [
-  'visualizzazione',
-  'dialogo-interno',
-  'respirazione-521',
-  'linguaggio-corpo',
-  'affermazioni',
-  'consapevolezza-lampo',
-  'memoria-selettiva',
-  'richiamo-successi',
-  'definizione-obiettivi',
-  'meditazione',
-  'routine-reset',
-  'ancoraggio-sensoriale',
+export const DEFAULT_MENTAL_TOOLS = [
+  { id: 'visualizzazione', name: 'Visualizzazione', skillIds: ['immaginazione', 'fiducia', 'concentrazione'], description: '' },
+  { id: 'dialogo-interno', name: 'Dialogo interno', skillIds: ['fiducia', 'concentrazione', 'resilienza'], description: '' },
+  { id: 'respirazione-521', name: 'Respirazione 5-2-1', skillIds: ['regolazione', 'resilienza', 'concentrazione'], description: '' },
+  { id: 'linguaggio-corpo', name: 'Linguaggio del corpo', skillIds: ['fiducia', 'regolazione', 'resilienza'], description: '' },
+  { id: 'affermazioni', name: 'Affermazioni', skillIds: ['fiducia', 'resilienza'], description: '' },
+  { id: 'consapevolezza-lampo', name: 'Consapevolezza lampo', skillIds: ['concentrazione', 'regolazione', 'resilienza'], description: '' },
+  { id: 'memoria-selettiva', name: 'Memoria selettiva', skillIds: ['fiducia', 'resilienza'], description: '' },
+  { id: 'richiamo-successi', name: 'Richiamo dei successi', skillIds: ['fiducia', 'motivazione'], description: '' },
+  { id: 'definizione-obiettivi', name: 'Definizione degli obiettivi', skillIds: ['motivazione', 'concentrazione'], description: '' },
+  { id: 'meditazione', name: 'Meditazione pre-partita', skillIds: ['concentrazione', 'regolazione'], description: '' },
+  { id: 'routine-reset', name: 'Routine di reset', skillIds: ['resilienza', 'concentrazione', 'regolazione'], description: '' },
+  { id: 'ancoraggio-sensoriale', name: 'Ancoraggio sensoriale', skillIds: ['concentrazione', 'regolazione'], description: '' },
 ];
 
 export const VISUAL_STARTER_PROTOCOLS = [
@@ -140,10 +140,33 @@ function makeMetricId(name, index = 0) {
 }
 
 function defaultMentalSkill() {
-  return { level: 3, notes: '' };
+  return { scorePct: 60, level: 3, notes: '' };
 }
 
-function normalizeMentalExercise(exercise, index = 0) {
+function normalizeMentalTool(tool, index = 0) {
+  const source = tool && typeof tool === 'object' && !Array.isArray(tool)
+    ? tool
+    : {};
+
+  const name = String(source.name || '').trim();
+  const skillIds = Array.isArray(source.skillIds)
+    ? source.skillIds
+    : Array.isArray(source.skills)
+      ? source.skills
+      : [];
+
+  return {
+    id: String(source.id || `mental-tool-${Date.now()}-${index}`),
+    name,
+    skillIds: [...new Set(skillIds.map(String))]
+      .filter(id => MENTAL_SKILL_IDS.includes(id)),
+    description: String(source.description || '').trim(),
+    createdAt: String(source.createdAt || ''),
+    updatedAt: String(source.updatedAt || ''),
+  };
+}
+
+function normalizeMentalExercise(exercise, validToolIds = [], index = 0) {
   const source = exercise && typeof exercise === 'object' && !Array.isArray(exercise)
     ? exercise
     : {};
@@ -160,7 +183,10 @@ function normalizeMentalExercise(exercise, index = 0) {
       : [],
     toolIds: Array.isArray(source.toolIds)
       ? [...new Set(source.toolIds.map(String))]
-          .filter(id => MENTAL_TOOL_IDS.includes(id))
+          .filter(id => validToolIds.includes(id))
+      : [],
+    resourceIds: Array.isArray(source.resourceIds)
+      ? [...new Set(source.resourceIds.map(String))].filter(Boolean)
       : [],
     context: String(source.context || '').trim(),
     durationMin: Math.max(0, Number(source.durationMin || 0)),
@@ -188,14 +214,29 @@ export function normalizeMentalPayload(payload = {}) {
       ? sourceSkills[id]
       : defaultMentalSkill();
 
+    const legacyLevel = Math.max(1, Math.min(5, Number(skill.level || 3)));
+    const scorePct = Number.isFinite(Number(skill.scorePct))
+      ? Math.max(0, Math.min(100, Number(skill.scorePct)))
+      : legacyLevel * 20;
+
     skills[id] = {
-      level: Math.max(1, Math.min(5, Number(skill.level || 3))),
+      scorePct,
+      level: scorePct / 20,
       notes: String(skill.notes || ''),
     };
   }
 
+  const tools = (Array.isArray(source.tools)
+    ? source.tools
+    : DEFAULT_MENTAL_TOOLS)
+      .map(normalizeMentalTool)
+      .filter(tool => tool.name);
+
+  const validToolIds = tools.map(tool => tool.id);
+
   return {
     skills,
+    tools,
     goals: {
       bronze: String(source.goals?.bronze || ''),
       silver: String(source.goals?.silver || ''),
@@ -203,7 +244,7 @@ export function normalizeMentalPayload(payload = {}) {
     },
     exercises: Array.isArray(source.exercises)
       ? source.exercises
-          .map(normalizeMentalExercise)
+          .map((exercise, index) => normalizeMentalExercise(exercise, validToolIds, index))
           .filter(exercise => exercise.title)
       : [],
     trainingSessions: Array.isArray(source.trainingSessions)
@@ -460,7 +501,7 @@ export function startStructuredPerformanceSync({
         schemaVersion: moduleKey === 'visual'
           ? 2
           : moduleKey === 'mental'
-            ? 2
+            ? 3
             : 1,
       });
 
