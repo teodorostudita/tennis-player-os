@@ -982,6 +982,9 @@ function renderMentalExercises(container, mental, host) {
       ? `<div class="mv-exercise-grid">
           ${exercises.map(exercise => {
             const context = mentalContextLabel(exercise.context);
+            const linkedResources = (exercise.resourceIds || [])
+              .map(mentalResourceById)
+              .filter(Boolean);
 
             return `
               <article class="panel mv-exercise-card" data-mental-exercise-card="${escapeAttr(exercise.id)}">
@@ -1025,11 +1028,24 @@ function renderMentalExercises(container, mental, host) {
                       <strong>Strumenti</strong>
                       <div class="mv-tags">
                         ${exercise.toolIds.length
-                          ? exercise.toolIds.map(id => `<span>${escapeHtml(toolById(id)?.name || id)}</span>`).join('')
+                          ? exercise.toolIds.map(id => `<span>${escapeHtml(toolById(id, mental)?.name || id)}</span>`).join('')
                           : '<span>Non assegnato</span>'}
                       </div>
                     </div>
                   </div>
+
+                  ${linkedResources.length ? `
+                    <div class="mv-exercise-section mv-exercise-resources">
+                      <strong>Risorse di libreria</strong>
+                      <div class="mv-linked-list">
+                        ${linkedResources.map(resource => `
+                          <button class="mv-link-chip mv-resource-chip" type="button" data-open-mental-resource="${escapeAttr(resource.id)}">
+                            ↗ ${escapeHtml(resource.title || resource.fileName || 'Risorsa')}
+                          </button>
+                        `).join('')}
+                      </div>
+                    </div>
+                  ` : ''}
 
                   ${exercise.instructions ? `
                     <div class="mv-exercise-section">
@@ -1066,7 +1082,7 @@ function renderMentalExercises(container, mental, host) {
         </section>`}
   `;
 
-  const add = () => openMentalExerciseDialog(host);
+  const add = () => { void openMentalExerciseDialog(host); };
 
   container.querySelector('#mental-add-exercise')?.addEventListener('click', add);
   container.querySelector('#mental-add-exercise-empty')?.addEventListener('click', add);
@@ -1077,7 +1093,13 @@ function renderMentalExercises(container, mental, host) {
         button.dataset.editMentalExercise,
         normalizeMentalPayload(store.getState().mental),
       );
-      if (exercise) openMentalExerciseDialog(host, exercise);
+      if (exercise) void openMentalExerciseDialog(host, exercise);
+    });
+  });
+
+  container.querySelectorAll('[data-open-mental-resource]').forEach(button => {
+    button.addEventListener('click', () => {
+      openMentalResource(button.dataset.openMentalResource);
     });
   });
 
