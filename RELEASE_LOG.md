@@ -1,5 +1,17 @@
 # Tennis Player OS — Release Log
 
+## v1.2.17 — Perception & Neuro color polish
+- Restyling cosmetico del modulo **Perception & Neuro**, senza modifiche al modello dati.
+- I quattro domini hanno ora una codifica cromatica coerente e un simbolo dedicato:
+  - Funzione visiva;
+  - Percezione e anticipazione;
+  - Neurocognitivo;
+  - Sensomotorio.
+- Le card dei protocolli ereditano il colore del dominio principale.
+- Le card delle misurazioni e i relativi grafici longitudinali usano lo stesso codice colore.
+- Overview, misurazioni attive e allenamento recente ricevono gradienti e accenti cromatici più leggibili.
+- Nessuna migration Supabase e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.16 — Nutrition Overview + planning gaps
 - Nuova linguetta **Overview** come apertura predefinita di Nutrition & Recovery.
 - La dashboard usa soprattutto i dati già presenti in **Recovery**: qualità e ore di sonno, stanchezza, indolenzimento, umore, voglia di allenarsi, concentrazione e training checkout.
