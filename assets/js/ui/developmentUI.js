@@ -7,8 +7,9 @@ import {
   loadDevelopmentIntoLocalStore,
   normalizeDevelopmentPayload,
   startDevelopmentCloudSync,
-} from '../cloud/developmentCloud.js?v=1.2.4';
+} from '../cloud/developmentCloud.js?v=1.2.14';
 import { store } from '../data/store.js?v=1.2.4';
+import { fileProvider } from '../data/providers/provider.js?v=1.2.6';
 import {
   showInAppAlert,
   showInAppConfirm,
@@ -83,6 +84,9 @@ const ui = {
 
 let cloudReady = false;
 let cloudSyncStarted = false;
+let developmentResourceCache = [];
+let developmentResourcesLoaded = false;
+let developmentResourceLoadPromise = null;
 
 function route() {
   return location.hash.replace(/^#\/?/, '') || 'dashboard';
@@ -161,6 +165,62 @@ function drillLibrary() {
   return Array.isArray(library) ? library : [];
 }
 
+
+function developmentResources() {
+  return Array.isArray(developmentResourceCache)
+    ? developmentResourceCache
+    : [];
+}
+
+function developmentResourceById(id) {
+  return developmentResources().find(resource => resource.id === id) || null;
+}
+
+function developmentResourceType(resource = {}) {
+  if (resource.linkType === 'youtube') return 'YouTube';
+  if (resource.kind === 'file') return resource.fileName || 'File';
+  if (resource.kind === 'link') return 'Link';
+  return 'Risorsa';
+}
+
+async function refreshDevelopmentResources({ force = false } = {}) {
+  if (developmentResourceLoadPromise) return developmentResourceLoadPromise;
+  if (developmentResourcesLoaded && !force) return developmentResourceCache;
+
+  developmentResourceLoadPromise = fileProvider.listResources('development')
+    .then(resources => {
+      developmentResourceCache = Array.isArray(resources) ? resources : [];
+      developmentResourcesLoaded = true;
+      return developmentResourceCache;
+    })
+    .catch(error => {
+      console.warn('Development resource library unavailable.', error);
+      developmentResourceCache = [];
+      developmentResourcesLoaded = true;
+      return developmentResourceCache;
+    })
+    .finally(() => {
+      developmentResourceLoadPromise = null;
+    });
+
+  return developmentResourceLoadPromise;
+}
+
+function openDevelopmentLibrary(resourceId = '') {
+  if (resourceId) {
+    try {
+      sessionStorage.setItem(
+        'tpos.resource-library.focus.v1',
+        JSON.stringify({ moduleId: 'development', resourceId }),
+      );
+    } catch {}
+  }
+
+  document
+    .querySelector('.module-workspace-button[data-module-workspace="library"]')
+    ?.click();
+}
+
 function itemMeasurements(itemId) {
   return developmentState().measurementRecords
     .filter(record => record.itemId === itemId)
@@ -192,6 +252,7 @@ function defaultItem(type = ui.type) {
     roadmapOrder: nextRoadmapOrder(type),
     dueDate: '',
     linkedDrillIds: [],
+    resourceIds: [],
     metrics: [],
     assessments: [],
     notes: '',
