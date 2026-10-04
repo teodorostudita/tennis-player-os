@@ -3132,6 +3132,7 @@ async function enhanceCurrentRoute() {
   }
 
   if (current === 'mental') {
+    await refreshMentalResourceCache();
     renderMental(host);
   } else {
     renderVisual(host);
