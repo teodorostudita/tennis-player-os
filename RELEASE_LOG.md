@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.2.11 — Mental Overview + custom work areas
+- **Panoramica** diventa **Overview**.
+- Il pannello **Stati di prestazione** viene sostituito da una sintesi quantitativa degli **ultimi 30 giorni**: tempo totale, numero di sessioni, ultima sessione, distribuzione del focus per tempo stimato e ultime sessioni.
+- Le **Aree di lavoro** Mental diventano personalizzabili: aggiunta, modifica ed eliminazione di nome, etichetta breve, descrizione, indicatori e colore della barra.
+- Le sei aree predefinite restano il baseline. **Ripristina aree predefinite** usa una logica merge: riaggiunge solo i default mancanti e conserva aree custom, personalizzazioni esistenti, esercizi, strumenti, punteggi e storico.
+- Eliminando un’area predefinita, i collegamenti vengono conservati in background e tornano disponibili quando l’area viene ripristinata. Eliminando un’area custom, i riferimenti attivi vengono puliti e lo storico mantiene il nome tramite snapshot.
+- **Gestione della frustrazione** viene spostata da Strumenti ad Abilità come framework applicativo di **Mental resilience & Mental toughness**.
+- Lo slider della valutazione percentuale è ora neutro; il colore specifico dell’area resta sulla barra visuale del punteggio.
+- Payload Mental aggiornato allo **schema JSON v4**; nessuna migration SQL e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.10 — Mental profile + toolbox + library links
 - La valutazione delle sei **abilità mentali** passa da scala 1–5 a **0–100%**, con barre orizzontali colorate e slider percentuale. I dati legacy 1–5 vengono convertiti automaticamente in 20/40/60/80/100.
 - **Mental Imagery** sostituisce “Immaginazione mentale e prova mentale”.
