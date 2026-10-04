@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.11',
+    date: '2026-10-04',
+    title: 'Mental Overview + custom work areas',
+    details: [
+      'Panoramica rinominata Overview e sostituito il pannello Stati di prestazione con una sintesi quantitativa degli ultimi 30 giorni: tempo totale, numero sessioni, ultima sessione, distribuzione del focus e sessioni recenti.',
+      'Le aree di lavoro Mental sono ora personalizzabili: aggiunta, modifica ed eliminazione con colore, descrizione e indicatori.',
+      'Le sei aree predefinite restano il baseline e possono essere ripristinate con logica merge: vengono riaggiunti solo i default mancanti senza toccare aree custom, modifiche esistenti, esercizi o strumenti.',
+      'Gestione della frustrazione spostata dalla Cassetta degli attrezzi ad Abilità come framework di Mental resilience e Mental toughness.',
+      'Lo slider percentuale usa ora una resa neutra; il colore dell’area resta soltanto sulla barra visuale del valore.',
+      'Payload Mental aggiornato allo schema JSON v4; nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.10',
     date: '2026-10-04',
     title: 'Mental profile + toolbox + library links',
