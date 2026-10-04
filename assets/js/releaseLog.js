@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.10',
+    date: '2026-10-04',
+    title: 'Mental profile + toolbox + library links',
+    details: [
+      'Le abilità Mental usano ora una valutazione percentuale 0–100 con barre orizzontali colorate; i vecchi valori 1–5 vengono migrati automaticamente a multipli di 20 senza perdita di dati.',
+      'Rinominati Immaginazione mentale e prova mentale in Mental Imagery e Resilienza e gestione delle avversità in Mental resilience e Mental toughness.',
+      'La Cassetta degli attrezzi è ora completamente personalizzabile: aggiunta, modifica ed eliminazione degli strumenti con collegamento alle abilità.',
+      'Gli esercizi Mental possono collegare una o più risorse della Libreria Mental e aprirle direttamente dalla scheda esercizio.',
+      'Il payload Mental passa allo schema JSON v3; nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.9',
     date: '2026-10-04',
     title: 'Mental exercise library',
