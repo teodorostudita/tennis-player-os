@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.2.14 — Development library resources
+- I temi **Tecnica** e **Tattica** possono ora collegare una o più **risorse di libreria**, oltre ai drills.
+- Il picker unifica due sorgenti mantenendole distinte: **Libreria Development** e **Libreria Drills**.
+- Le risorse collegate sono mostrate nel dettaglio del tema, raggruppate per provenienza, con apertura diretta della risorsa.
+- Il deep-link è cross-module: una risorsa Drills apre automaticamente **Drills → Libreria** e la relativa anteprima.
+- I riferimenti vengono salvati come coppie `moduleId + resourceId`, evitando collisioni tra librerie.
+- Un collegamento a una risorsa non più leggibile/disponibile viene conservato durante le modifiche, invece di essere eliminato implicitamente.
+- Payload Development aggiornato allo **schema JSON v3**; nessuna migration SQL e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.13 — Athletics Footwork Patterns
 - Nuova linguetta **Footwork Patterns** dentro Athletics.
 - Riferimento metodologico Bailey: **5 R** e famiglie **Attacking / Rallying / Defensive**, senza precaricare un catalogo fisso di pattern.

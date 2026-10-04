@@ -7,8 +7,9 @@ import {
   loadDevelopmentIntoLocalStore,
   normalizeDevelopmentPayload,
   startDevelopmentCloudSync,
-} from '../cloud/developmentCloud.js?v=1.2.4';
+} from '../cloud/developmentCloud.js?v=1.2.14';
 import { store } from '../data/store.js?v=1.2.4';
+import { fileProvider } from '../data/providers/provider.js?v=1.2.6';
 import {
   showInAppAlert,
   showInAppConfirm,
@@ -47,7 +48,7 @@ const TYPE_COPY = {
     singular: 'tema tecnico',
     title: 'Sviluppo tecnico',
     eyebrow: 'Costruzione dei colpi',
-    description: 'Costruisci e consolida i singoli colpi, misurandone la progressione fino al trasferimento in partita.',
+    description: 'Costruisci e consolida i singoli colpi, collegando drills e risorse di riferimento e misurandone la progressione fino al trasferimento in partita.',
     itemLabel: 'Colpo / competenza',
     areaLabel: 'Area tecnica',
     examples: 'Es. Kick serve, dritto su palla alta, risposta aggressiva sulla seconda',
@@ -57,7 +58,7 @@ const TYPE_COPY = {
     singular: 'tema tattico',
     title: 'Sviluppo tattico',
     eyebrow: 'Decisione e comportamento di gioco',
-    description: 'Definisci temi tattici liberamente, collegali ai drills e misura se le decisioni stanno entrando nel tennis reale.',
+    description: 'Definisci temi tattici liberamente, collegali a drills e risorse di riferimento e misura se le decisioni stanno entrando nel tennis reale.',
     itemLabel: 'Tema tattico',
     areaLabel: 'Contesto / tag',
     examples: 'Es. Decision making sulla verticalizzazione, gestione della palla corta',
@@ -83,6 +84,18 @@ const ui = {
 
 let cloudReady = false;
 let cloudSyncStarted = false;
+
+const LINKED_RESOURCE_MODULES = [
+  { id: 'development', label: 'Development' },
+  { id: 'drills', label: 'Drills' },
+];
+
+const RESOURCE_FOCUS_KEY = 'tpos.resource-library.focus.v1';
+const MODULE_WORKSPACE_REQUEST_KEY = 'tpos.module-workspace.request.v1';
+
+let linkedResourceCache = new Map();
+let linkedResourceCacheReady = false;
+let linkedResourceLoadPromise = null;
 
 function route() {
   return location.hash.replace(/^#\/?/, '') || 'dashboard';
@@ -161,6 +174,213 @@ function drillLibrary() {
   return Array.isArray(library) ? library : [];
 }
 
+
+function resourceRefKey(moduleId, resourceId) {
+  return `${String(moduleId || '')}::${String(resourceId || '')}`;
+}
+
+function parseResourceRefKey(value) {
+  const raw = String(value || '');
+  const separator = raw.indexOf('::');
+  if (separator < 1) return null;
+
+  const moduleId = raw.slice(0, separator);
+  const resourceId = raw.slice(separator + 2);
+
+  if (!['development', 'drills'].includes(moduleId) || !resourceId) return null;
+  return { moduleId, resourceId };
+}
+
+function resourceModuleLabel(moduleId) {
+  return LINKED_RESOURCE_MODULES.find(module => module.id === moduleId)?.label
+    || moduleId
+    || 'Libreria';
+}
+
+function resourceTypeLabel(resource = {}) {
+  if (resource.linkType === 'youtube') return 'YouTube';
+  if (resource.kind === 'file') return resource.fileName || 'File';
+  if (resource.kind === 'link') return 'Link';
+  return 'Risorsa';
+}
+
+function linkedResource(moduleId, resourceId) {
+  return (linkedResourceCache.get(moduleId) || [])
+    .find(resource => resource.id === resourceId) || null;
+}
+
+async function ensureLinkedResourceCache({ force = false } = {}) {
+  if (linkedResourceLoadPromise) return linkedResourceLoadPromise;
+  if (linkedResourceCacheReady && !force) return linkedResourceCache;
+
+  linkedResourceCacheReady = false;
+
+  linkedResourceLoadPromise = Promise.all(
+    LINKED_RESOURCE_MODULES.map(async module => {
+      try {
+        const resources = await fileProvider.listResources(module.id);
+        return [module.id, Array.isArray(resources) ? resources : []];
+      } catch (error) {
+        console.warn(`Development resource library unavailable: ${module.id}`, error);
+        return [module.id, []];
+      }
+    }),
+  ).then(entries => {
+    linkedResourceCache = new Map(entries);
+    linkedResourceCacheReady = true;
+    return linkedResourceCache;
+  }).finally(() => {
+    linkedResourceLoadPromise = null;
+  });
+
+  return linkedResourceLoadPromise;
+}
+
+function openLinkedResource(moduleId, resourceId) {
+  const safeModuleId = ['development', 'drills'].includes(moduleId)
+    ? moduleId
+    : 'development';
+
+  try {
+    sessionStorage.setItem(
+      RESOURCE_FOCUS_KEY,
+      JSON.stringify({ moduleId: safeModuleId, resourceId }),
+    );
+    sessionStorage.setItem(
+      MODULE_WORKSPACE_REQUEST_KEY,
+      JSON.stringify({ moduleId: safeModuleId, view: 'library' }),
+    );
+  } catch (_) {}
+
+  if (route() === safeModuleId) {
+    document
+      .querySelector('.module-workspace-button[data-module-workspace="library"]')
+      ?.click();
+    return;
+  }
+
+  location.hash = `#/${safeModuleId}`;
+}
+
+function linkedResourcesForItem(item) {
+  return Array.isArray(item?.linkedResources) ? item.linkedResources : [];
+}
+
+function linkedResourcesMarkup(item) {
+  const refs = linkedResourcesForItem(item);
+
+  if (!linkedResourceCacheReady) {
+    return '<div class="dev-inline-empty">Caricamento risorse collegate…</div>';
+  }
+  if (!refs.length) {
+    return '<div class="dev-inline-empty">Nessuna risorsa collegata.</div>';
+  }
+
+  const groups = LINKED_RESOURCE_MODULES.map(module => {
+    const moduleRefs = refs.filter(ref => ref.moduleId === module.id);
+    if (!moduleRefs.length) return '';
+
+    const resolved = moduleRefs
+      .map(ref => ({
+        ref,
+        resource: linkedResource(ref.moduleId, ref.resourceId),
+      }));
+
+    return `
+      <div class="dev-resource-group">
+        <div class="dev-resource-group-head">
+          <strong>Libreria ${escapeHtml(module.label)}</strong>
+          <span>${moduleRefs.length}</span>
+        </div>
+        <div class="dev-resource-links">
+          ${resolved.map(({ ref, resource }) => resource ? `
+            <button
+              class="dev-resource-link ${resource.linkType === 'youtube' ? 'youtube' : ''}"
+              type="button"
+              data-open-development-resource
+              data-resource-module="${escapeAttr(ref.moduleId)}"
+              data-resource-id="${escapeAttr(ref.resourceId)}"
+            >
+              <span class="dev-resource-link-icon">${resource.linkType === 'youtube' ? '▶' : resource.kind === 'file' ? '▤' : '↗'}</span>
+              <span>
+                <strong>${escapeHtml(resource.title || resource.fileName || 'Risorsa')}</strong>
+                <small>${escapeHtml(resourceTypeLabel(resource))}</small>
+              </span>
+            </button>
+          ` : `
+            <div class="dev-resource-link missing">
+              <span class="dev-resource-link-icon">?</span>
+              <span>
+                <strong>Risorsa non disponibile</strong>
+                <small>Il collegamento è conservato.</small>
+              </span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).filter(Boolean).join('');
+
+  return groups || '<div class="dev-inline-empty">Nessuna risorsa disponibile.</div>';
+}
+
+function resourceChecklist(selectedRefs = []) {
+  const selected = new Set(
+    (selectedRefs || []).map(ref => resourceRefKey(ref.moduleId, ref.resourceId)),
+  );
+
+  return `
+    <div class="dev-resource-picker-groups">
+      ${LINKED_RESOURCE_MODULES.map(module => {
+        const resources = [...(linkedResourceCache.get(module.id) || [])]
+          .sort((a, b) => {
+            const youtubeDiff = Number(b.linkType === 'youtube') - Number(a.linkType === 'youtube');
+            if (youtubeDiff) return youtubeDiff;
+            return String(a.title || a.fileName || '').localeCompare(
+              String(b.title || b.fileName || ''),
+              'it',
+              { sensitivity: 'base' },
+            );
+          });
+
+        return `
+          <section class="dev-resource-picker-group">
+            <div class="dev-resource-picker-head">
+              <div>
+                <strong>Libreria ${escapeHtml(module.label)}</strong>
+                <span>${resources.length} ${resources.length === 1 ? 'risorsa' : 'risorse'}</span>
+              </div>
+            </div>
+            ${resources.length ? `
+              <div class="dev-resource-picker">
+                ${resources.map(resource => {
+                  const key = resourceRefKey(module.id, resource.id);
+                  return `
+                    <label class="${resource.linkType === 'youtube' ? 'is-youtube' : ''}">
+                      <input
+                        type="checkbox"
+                        name="linkedResources"
+                        value="${escapeAttr(key)}"
+                        ${selected.has(key) ? 'checked' : ''}
+                      />
+                      <span>
+                        <strong>${resource.linkType === 'youtube' ? '▶ ' : ''}${escapeHtml(resource.title || resource.fileName || 'Risorsa')}</strong>
+                        <small>${escapeHtml(resourceTypeLabel(resource))}</small>
+                      </span>
+                    </label>
+                  `;
+                }).join('')}
+              </div>
+            ` : `
+              <div class="dev-inline-empty">Questa libreria è vuota.</div>
+            `}
+          </section>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
 function itemMeasurements(itemId) {
   return developmentState().measurementRecords
     .filter(record => record.itemId === itemId)
@@ -192,6 +412,7 @@ function defaultItem(type = ui.type) {
     roadmapOrder: nextRoadmapOrder(type),
     dueDate: '',
     linkedDrillIds: [],
+    linkedResources: [],
     metrics: [],
     assessments: [],
     notes: '',
@@ -357,6 +578,7 @@ function cardFocus(item) {
 function roadmapCard(item) {
   const records = itemMeasurements(item.id);
   const linkedCount = (item.linkedDrillIds || []).length;
+  const resourceCount = linkedResourcesForItem(item).length;
   const stage = stageById(item.stage);
 
   return `
@@ -377,6 +599,7 @@ function roadmapCard(item) {
           <span><strong>${escapeHtml(stage.short)}</strong></span>
           <span>${item.dueDate ? `Entro ${formatDate(item.dueDate)}` : 'Nessuna scadenza'}</span>
           <span>${linkedCount} drill</span>
+          <span>${resourceCount} risors${resourceCount === 1 ? 'a' : 'e'}</span>
           <span>${records.length} rilevaz.</span>
         </div>
       </button>
@@ -671,6 +894,22 @@ function renderItemDetail(item) {
         </div>
       </section>
 
+      <section class="panel dev-resources-panel">
+        <div class="panel-header dev-panel-header-row">
+          <div>
+            <h3>Risorse collegate</h3>
+            <p>Materiale di riferimento pescato dalle Librerie Development e Drills.</p>
+          </div>
+          <div class="dev-inline-actions">
+            <button class="button button-ghost dev-small-button" type="button" data-open-resource-library="development">Libreria Development</button>
+            <button class="button button-ghost dev-small-button" type="button" data-open-resource-library="drills">Libreria Drills</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          ${linkedResourcesMarkup(item)}
+        </div>
+      </section>
+
       <section class="panel dev-measurement-panel">
         <div class="panel-header dev-panel-header-row">
           <div>
@@ -713,6 +952,14 @@ function renderDevelopment() {
   const host = developmentContentHost();
   if (!host) return;
 
+  if (!linkedResourceCacheReady && !linkedResourceLoadPromise) {
+    void ensureLinkedResourceCache().then(() => {
+      if (route() === 'development' && developmentContentHost()) {
+        renderDevelopment();
+      }
+    });
+  }
+
   const state = developmentState();
   const selected = ui.selectedItemId
     ? state.items.find(item => item.id === ui.selectedItemId)
@@ -727,7 +974,7 @@ function renderDevelopment() {
             <h2>Development</h2>
             <p>
               Una roadmap di ciò che stiamo costruendo: ordine di lavoro, stadio attuale,
-              drills collegati, misurazioni e trasferimento in partita.
+              drills e risorse collegate, misurazioni e trasferimento in partita.
             </p>
           </div>
         </section>
@@ -769,11 +1016,11 @@ function bindRoadmapEvents() {
   });
 
   document.querySelector('#dev-add-item')?.addEventListener('click', () => {
-    openItemDialog(null, ui.type);
+    void openItemDialog(null, ui.type);
   });
 
   document.querySelector('#dev-empty-add')?.addEventListener('click', () => {
-    openItemDialog(null, ui.type);
+    void openItemDialog(null, ui.type);
   });
 
   document.querySelectorAll('[data-open-development-item]').forEach(button => {
@@ -793,7 +1040,7 @@ function bindDetailEvents(item) {
   });
 
   document.querySelector('#dev-edit-item')?.addEventListener('click', () => {
-    openItemDialog(item, item.type);
+    void openItemDialog(item, item.type);
   });
 
   const assess = () => openAssessmentDialog(item);
@@ -811,6 +1058,21 @@ function bindDetailEvents(item) {
   document.querySelectorAll('[data-go-drills]').forEach(button => {
     button.addEventListener('click', () => {
       location.hash = '#/drills';
+    });
+  });
+
+  document.querySelectorAll('[data-open-development-resource]').forEach(button => {
+    button.addEventListener('click', () => {
+      openLinkedResource(
+        button.dataset.resourceModule,
+        button.dataset.resourceId,
+      );
+    });
+  });
+
+  document.querySelectorAll('[data-open-resource-library]').forEach(button => {
+    button.addEventListener('click', () => {
+      openLinkedResource(button.dataset.openResourceLibrary, '');
     });
   });
 
@@ -932,11 +1194,21 @@ function drillChecklist(selectedIds = []) {
   `;
 }
 
-function openItemDialog(item = null, type = ui.type) {
+async function openItemDialog(item = null, type = ui.type) {
   if (!canWrite()) return;
+
+  await ensureLinkedResourceCache({ force: true });
 
   const value = item ? clone(item) : defaultItem(type);
   const copy = TYPE_COPY[value.type] || TYPE_COPY.technique;
+  const selectableResourceKeys = new Set(
+    LINKED_RESOURCE_MODULES.flatMap(module =>
+      (linkedResourceCache.get(module.id) || [])
+        .map(resource => resourceRefKey(module.id, resource.id)),
+    ),
+  );
+  const preservedResourceRefs = linkedResourcesForItem(value)
+    .filter(ref => !selectableResourceKeys.has(resourceRefKey(ref.moduleId, ref.resourceId)));
 
   const dialog = openDialog(`
     <form method="dialog" id="dev-item-form">
@@ -1018,6 +1290,21 @@ function openItemDialog(item = null, type = ui.type) {
           ${drillChecklist(value.linkedDrillIds)}
         </div>
 
+        <div class="dev-form-section dev-resource-form-section">
+          <div class="dev-form-section-head">
+            <div>
+              <h4>Risorse collegate</h4>
+              <p>Puoi pescare contemporaneamente dalla Libreria Development e dalla Libreria Drills.</p>
+            </div>
+          </div>
+          ${resourceChecklist(value.linkedResources)}
+          ${preservedResourceRefs.length ? `
+            <div class="dev-form-hint">
+              ${preservedResourceRefs.length} collegament${preservedResourceRefs.length === 1 ? 'o' : 'i'} a risors${preservedResourceRefs.length === 1 ? 'a' : 'e'} non più disponibili verr${preservedResourceRefs.length === 1 ? 'à' : 'anno'} conservat${preservedResourceRefs.length === 1 ? 'o' : 'i'}.
+            </div>
+          ` : ''}
+        </div>
+
         <div class="dev-form-section">
           <h4>Note</h4>
           <div class="field">
@@ -1049,6 +1336,18 @@ function openItemDialog(item = null, type = ui.type) {
     const isNew = !item;
     const stage = isNew ? String(data.get('stage') || 'learn') : value.stage;
 
+    const selectedResourceRefs = [
+      ...data.getAll('linkedResources')
+        .map(parseResourceRefKey)
+        .filter(Boolean),
+      ...preservedResourceRefs,
+    ].filter((ref, index, all) => (
+      all.findIndex(item => (
+        item.moduleId === ref.moduleId
+        && item.resourceId === ref.resourceId
+      )) === index
+    ));
+
     const record = {
       ...value,
       title: String(data.get('title') || '').trim(),
@@ -1061,6 +1360,7 @@ function openItemDialog(item = null, type = ui.type) {
       roadmapOrder: Math.max(1, Number(data.get('roadmapOrder') || 1)),
       dueDate: String(data.get('dueDate') || ''),
       linkedDrillIds: data.getAll('linkedDrills').map(String),
+      linkedResources: selectedResourceRefs,
       notes: String(data.get('notes') || '').trim(),
       updatedAt: now,
     };
