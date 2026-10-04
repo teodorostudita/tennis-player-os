@@ -1125,6 +1125,9 @@ function renderMentalTools(container, mental, host) {
       ? `<div class="mv-tool-grid">
           ${tools.map(tool => {
             const linked = exercisesForTool(mental, tool.id);
+            const linkedSkills = (tool.skillIds || [])
+              .map(id => skillById(id, mental))
+              .filter(Boolean);
 
             return `
               <article class="panel mv-tool-card">
@@ -1143,8 +1146,8 @@ function renderMentalTools(container, mental, host) {
                   </div>
 
                   <div class="mv-tags">
-                    ${(tool.skillIds || []).length
-                      ? tool.skillIds.map(id => `<span>${escapeHtml(skillById(id)?.short || id)}</span>`).join('')
+                    ${linkedSkills.length
+                      ? linkedSkills.map(skill => `<span>${escapeHtml(skill.short || skill.name)}</span>`).join('')
                       : '<span>Nessuna abilità collegata</span>'}
                   </div>
 
@@ -1177,26 +1180,6 @@ function renderMentalTools(container, mental, host) {
           </div>
         </section>`}
 
-    <section class="panel mv-frustration-panel">
-      <div class="panel-header">
-        <h3>Gestione della frustrazione</h3>
-        <p>Il lavoro viene organizzato in tre momenti distinti.</p>
-      </div>
-      <div class="panel-body mv-three-columns">
-        <div>
-          <strong>Prevenzione</strong>
-          <span>Preparazione, obiettivi realistici e controllabili, memoria selettiva, aumento della soglia di tolleranza.</span>
-        </div>
-        <div>
-          <strong>Gestione</strong>
-          <span>Autodiagnosi, respirazione, linguaggio del corpo, dialogo interno, reset e consapevolezza breve.</span>
-        </div>
-        <div>
-          <strong>Recupero</strong>
-          <span>Capire senza giudicare, individuare la correzione, lasciare andare l’errore e tornare al punto successivo.</span>
-        </div>
-      </div>
-    </section>
   `;
 
   const add = () => openMentalToolDialog(host);
@@ -1254,6 +1237,9 @@ function renderMentalTools(container, mental, host) {
 }
 
 function openMentalToolDialog(host, tool = null) {
+  const currentMental = normalizeMentalPayload(store.getState().mental);
+  const skills = mentalSkills(currentMental);
+
   const current = tool || {
     name: '',
     skillIds: [],
@@ -1287,7 +1273,7 @@ function openMentalToolDialog(host, tool = null) {
         <fieldset class="mv-link-fieldset full">
           <legend>Abilità collegate</legend>
           <div class="mv-check-grid">
-            ${MENTAL_SKILLS.map(skill => `
+            ${skills.map(skill => `
               <label>
                 <input type="checkbox" name="skillIds" value="${escapeAttr(skill.id)}" ${(current.skillIds || []).includes(skill.id) ? 'checked' : ''} />
                 <span>${escapeHtml(skill.name)}</span>
