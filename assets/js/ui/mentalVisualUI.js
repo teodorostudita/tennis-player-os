@@ -33,21 +33,6 @@ const MENTAL_CONTEXTS = [
   { id: 'match-simulation', label: 'Match simulation' },
 ];
 
-const PEAK_STATES = [
-  {
-    name: 'Zona',
-    description: 'Prestazione automatica con interferenza cosciente minima e attenzione pienamente immersa nel compito.',
-  },
-  {
-    name: 'Flusso',
-    description: 'Assorbimento completo nell’azione, continuità attentiva e percezione di controllo durante la prestazione.',
-  },
-  {
-    name: 'Prestazione decisiva',
-    description: 'Capacità di concentrare l’attenzione e produrre una risposta efficace nei momenti ad alta pressione.',
-  },
-];
-
 const VISUAL_DOMAINS = [
   {
     id: 'funzione-visiva',
@@ -1304,10 +1289,16 @@ function openMentalToolDialog(host, tool = null) {
     const formData = new FormData(event.currentTarget);
     const now = new Date().toISOString();
 
+    const visibleSkillIds = new Set(skills.map(skill => skill.id));
+    const hiddenSkillIds = (current.skillIds || []).filter(id => !visibleSkillIds.has(id));
+
     const record = {
       id: tool?.id || uid('mental-tool'),
       name: String(formData.get('name') || '').trim(),
-      skillIds: formData.getAll('skillIds').map(String),
+      skillIds: [...new Set([
+        ...formData.getAll('skillIds').map(String),
+        ...hiddenSkillIds,
+      ])],
       description: String(formData.get('description') || '').trim(),
       createdAt: tool?.createdAt || now,
       updatedAt: now,
@@ -1651,11 +1642,17 @@ async function openMentalExerciseDialog(host, exercise = null) {
     const formData = new FormData(event.currentTarget);
     const now = new Date().toISOString();
 
+    const visibleSkillIds = new Set(skills.map(skill => skill.id));
+    const hiddenSkillIds = (current.skillIds || []).filter(id => !visibleSkillIds.has(id));
+
     const record = {
       id: exercise?.id || uid('mental-exercise'),
       title: String(formData.get('title') || '').trim(),
       objective: String(formData.get('objective') || '').trim(),
-      skillIds: formData.getAll('skillIds').map(String),
+      skillIds: [...new Set([
+        ...formData.getAll('skillIds').map(String),
+        ...hiddenSkillIds,
+      ])],
       toolIds: formData.getAll('toolIds').map(String),
       resourceIds: formData.getAll('resourceIds').map(String),
       context: String(formData.get('context') || ''),
