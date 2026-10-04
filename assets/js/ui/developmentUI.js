@@ -179,6 +179,18 @@ function resourceRefKey(moduleId, resourceId) {
   return `${String(moduleId || '')}::${String(resourceId || '')}`;
 }
 
+function parseResourceRefKey(value) {
+  const raw = String(value || '');
+  const separator = raw.indexOf('::');
+  if (separator < 1) return null;
+
+  const moduleId = raw.slice(0, separator);
+  const resourceId = raw.slice(separator + 2);
+
+  if (!['development', 'drills'].includes(moduleId) || !resourceId) return null;
+  return { moduleId, resourceId };
+}
+
 function resourceModuleLabel(moduleId) {
   return LINKED_RESOURCE_MODULES.find(module => module.id === moduleId)?.label
     || moduleId
@@ -960,7 +972,7 @@ function renderDevelopment() {
             <h2>Development</h2>
             <p>
               Una roadmap di ciò che stiamo costruendo: ordine di lavoro, stadio attuale,
-              drills collegati, misurazioni e trasferimento in partita.
+              drills e risorse collegate, misurazioni e trasferimento in partita.
             </p>
           </div>
         </section>
@@ -1180,11 +1192,21 @@ function drillChecklist(selectedIds = []) {
   `;
 }
 
-function openItemDialog(item = null, type = ui.type) {
+async function openItemDialog(item = null, type = ui.type) {
   if (!canWrite()) return;
+
+  await ensureLinkedResourceCache();
 
   const value = item ? clone(item) : defaultItem(type);
   const copy = TYPE_COPY[value.type] || TYPE_COPY.technique;
+  const selectableResourceKeys = new Set(
+    LINKED_RESOURCE_MODULES.flatMap(module =>
+      (linkedResourceCache.get(module.id) || [])
+        .map(resource => resourceRefKey(module.id, resource.id)),
+    ),
+  );
+  const preservedResourceRefs = linkedResourcesForItem(value)
+    .filter(ref => !selectableResourceKeys.has(resourceRefKey(ref.moduleId, ref.resourceId)));
 
   const dialog = openDialog(`
     <form method="dialog" id="dev-item-form">
@@ -1266,6 +1288,21 @@ function openItemDialog(item = null, type = ui.type) {
           ${drillChecklist(value.linkedDrillIds)}
         </div>
 
+        <div class="dev-form-section dev-resource-form-section">
+          <div class="dev-form-section-head">
+            <div>
+              <h4>Risorse collegate</h4>
+              <p>Puoi pescare contemporaneamente dalla Libreria Development e dalla Libreria Drills.</p>
+            </div>
+          </div>
+          ${resourceChecklist(value.linkedResources)}
+          ${preservedResourceRefs.length ? `
+            <div class="dev-form-hint">
+              ${preservedResourceRefs.length} collegament${preservedResourceRefs.length === 1 ? 'o' : 'i'} a risors${preservedResourceRefs.length === 1 ? 'a' : 'e'} non più disponibili verr${preservedResourceRefs.length === 1 ? 'à' : 'anno'} conservat${preservedResourceRefs.length === 1 ? 'o' : 'i'}.
+            </div>
+          ` : ''}
+        </div>
+
         <div class="dev-form-section">
           <h4>Note</h4>
           <div class="field">
@@ -1297,6 +1334,18 @@ function openItemDialog(item = null, type = ui.type) {
     const isNew = !item;
     const stage = isNew ? String(data.get('stage') || 'learn') : value.stage;
 
+    const selectedResourceRefs = [
+      ...data.getAll('linkedResources')
+        .map(parseResourceRefKey)
+        .filter(Boolean),
+      ...preservedResourceRefs,
+    ].filter((ref, index, all) => (
+      all.findIndex(item => (
+        item.moduleId === ref.moduleId
+        && item.resourceId === ref.resourceId
+      )) === index
+    ));
+
     const record = {
       ...value,
       title: String(data.get('title') || '').trim(),
@@ -1309,6 +1358,7 @@ function openItemDialog(item = null, type = ui.type) {
       roadmapOrder: Math.max(1, Number(data.get('roadmapOrder') || 1)),
       dueDate: String(data.get('dueDate') || ''),
       linkedDrillIds: data.getAll('linkedDrills').map(String),
+      linkedResources: selectedResourceRefs,
       notes: String(data.get('notes') || '').trim(),
       updatedAt: now,
     };
