@@ -1,0 +1,58 @@
+name: Build Development Library Links 1.2.14 Patch ZIP
+
+on:
+  push:
+    branches: [ chatgpt/development-library-links-v1.2.14 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build patch zip
+        run: |
+          rm -rf patch TPOS_patch_v1.2.14_Development_Library_Links.zip
+          mkdir -p patch/assets/css
+          mkdir -p patch/assets/js/cloud
+          mkdir -p patch/assets/js/ui
+          mkdir -p patch/assets/js
+
+          cp README-PATCH.txt patch/README-PATCH.txt
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+          cp assets/css/development.css patch/assets/css/development.css
+          cp assets/js/app.js patch/assets/js/app.js
+          cp assets/js/bootstrap.js patch/assets/js/bootstrap.js
+          cp assets/js/cloud/developmentCloud.js patch/assets/js/cloud/developmentCloud.js
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/developmentUI.js patch/assets/js/ui/developmentUI.js
+          cp assets/js/ui/developmentWorklistUI.js patch/assets/js/ui/developmentWorklistUI.js
+          cp assets/js/ui/versionDashboard.js patch/assets/js/ui/versionDashboard.js
+          cp assets/js/version.js patch/assets/js/version.js
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+
+          cd patch
+          zip -r ../TPOS_patch_v1.2.14_Development_Library_Links.zip .
+
+      - name: Check JavaScript syntax as ES modules
+        run: |
+          for file in             patch/assets/js/app.js             patch/assets/js/bootstrap.js             patch/assets/js/cloud/developmentCloud.js             patch/assets/js/releaseLog.js             patch/assets/js/ui/developmentUI.js             patch/assets/js/ui/developmentWorklistUI.js             patch/assets/js/ui/versionDashboard.js             patch/assets/js/version.js             patch/sw.js
+          do
+            node --input-type=module --check < "$file"
+          done
+
+      - name: Verify patch scope
+        run: |
+          test ! -e patch/tennis-player-os-site
+          test ! -e patch/supabase
+          unzip -l TPOS_patch_v1.2.14_Development_Library_Links.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.14_Development_Library_Links
+          path: TPOS_patch_v1.2.14_Development_Library_Links.zip
+          if-no-files-found: error
