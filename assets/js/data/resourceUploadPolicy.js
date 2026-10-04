@@ -1,4 +1,4 @@
-import { isAppOwner } from '../cloud/accountAccess.js?v=1.2.15';
+import { isAppOwner } from '../cloud/accountAccess.js?v=1.2.6';
 
 export const OWNER_RESOURCE_FILE_LIMIT_BYTES = 200 * 1024 * 1024;
 export const NON_OWNER_RESOURCE_FILE_LIMIT_BYTES = 5 * 1024 * 1024;
