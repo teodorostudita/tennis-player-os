@@ -1,13 +1,16 @@
-Tennis Player OS v1.2.7 — Calendar dialog null-safety
+Tennis Player OS v1.2.10 — Mental profile + toolbox + library links
 
 Patch SOLO TPOS. Non contiene e non modifica tennis-player-os-site/.
 
-Correzioni:
-- + Nuova attività non va più in crash su companionMode quando non esiste ancora un evento;
-- apertura/modifica attività resa difensiva rispetto a record DOM stale;
-- nessuna migration Supabase.
+Novità:
+- valutazione abilità Mental in percentuale con barre colorate;
+- Mental Imagery;
+- Mental resilience e Mental toughness;
+- toolbox Mental personalizzabile con aggiunta/modifica/eliminazione;
+- collegamento Esercizi -> risorse della Libreria Mental;
+- apertura diretta della risorsa collegata dalla scheda esercizio;
+- payload Mental schema JSON v3 con migrazione automatica dei vecchi punteggi 1–5.
 
-Nota: il warning Nutrition `mergeRows is not defined` è un bug cloud separato e non è incluso in questa hotfix Calendar.
+Nessuna migration Supabase.
 
 Applicazione: Applica Patch.command -> Pubblica Tennis Player OS.command.
-Alla domanda sulle migration Supabase: questa patch non ne contiene.
