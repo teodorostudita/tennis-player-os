@@ -520,20 +520,29 @@ function renderMental(host) {
 }
 
 function renderMentalOverview(container, mental, host) {
+  const skills = mentalSkills(mental);
   const sessions = [...mental.trainingSessions]
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
   const reviews = [...mental.matchReviews]
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
-  const levelAverage = MENTAL_SKILLS.reduce(
-    (sum, skill) => sum + Number(mental.skills[skill.id]?.scorePct ?? 60),
-    0,
-  ) / MENTAL_SKILLS.length;
+  const levelAverage = skills.length
+    ? skills.reduce(
+        (sum, skill) => sum + Number(mental.skills[skill.id]?.scorePct ?? 60),
+        0,
+      ) / skills.length
+    : 0;
+
+  const activity = summarizeMentalSessions(mental, 30);
+  const maxFocusMinutes = Math.max(
+    1,
+    ...activity.focus.map(item => item.minutes),
+  );
 
   container.innerHTML = `
     <section class="mv-kpis">
-      <article class="mv-kpi"><span>Abilità mappate</span><strong>${MENTAL_SKILLS.length}</strong></article>
+      <article class="mv-kpi"><span>Aree di lavoro</span><strong>${skills.length}</strong></article>
       <article class="mv-kpi"><span>Valutazione media</span><strong>${Math.round(levelAverage)}%</strong></article>
       <article class="mv-kpi"><span>Sessioni registrate</span><strong>${mental.trainingSessions.length}</strong></article>
       <article class="mv-kpi"><span>Review partita</span><strong>${mental.matchReviews.length}</strong></article>
@@ -563,18 +572,59 @@ function renderMentalOverview(container, mental, host) {
         </div>
       </article>
 
-      <article class="panel">
+      <article class="panel mv-mental-window-panel">
         <div class="panel-header">
-          <h3>Stati di prestazione</h3>
-          <p>Non sono abilità isolate: emergono dalla combinazione di più capacità.</p>
+          <h3>Allenamento mentale · ultimi 30 giorni</h3>
+          <p>Quanto, quando e su quali aree è stato distribuito il lavoro.</p>
         </div>
-        <div class="panel-body mv-peak-list">
-          ${PEAK_STATES.map(state => `
-            <div class="mv-peak-row">
-              <strong>${escapeHtml(state.name)}</strong>
-              <span>${escapeHtml(state.description)}</span>
+        <div class="panel-body">
+          <div class="mv-window-kpis">
+            <div>
+              <span>Tempo totale</span>
+              <strong>${formatMentalDuration(activity.totalMinutes)}</strong>
             </div>
-          `).join('')}
+            <div>
+              <span>Sessioni</span>
+              <strong>${activity.sessions.length}</strong>
+            </div>
+            <div>
+              <span>Ultima</span>
+              <strong>${activity.lastSession ? formatDate(activity.lastSession.date) : '—'}</strong>
+            </div>
+          </div>
+
+          ${activity.focus.length ? `
+            <div class="mv-focus-summary">
+              <div class="mv-summary-label">Focus per tempo stimato</div>
+              ${activity.focus.slice(0, 6).map(item => {
+                const width = Math.max(4, Math.round((item.minutes / maxFocusMinutes) * 100));
+                return `
+                  <div class="mv-focus-row" style="--mv-focus-color:${item.skill.color}">
+                    <div class="mv-focus-row-head">
+                      <span>${escapeHtml(item.skill.short || item.skill.name)}</span>
+                      <strong>${formatMentalDuration(item.minutes)}</strong>
+                    </div>
+                    <div class="mv-focus-track">
+                      <div class="mv-focus-fill" style="width:${width}%"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : '<div class="mv-window-empty">Nessun focus quantificabile negli ultimi 30 giorni.</div>'}
+
+          ${activity.sessions.length ? `
+            <div class="mv-window-recent">
+              <div class="mv-summary-label">Sessioni più recenti</div>
+              ${activity.sessions.slice(0, 4).map(session => `
+                <div class="mv-window-session-row">
+                  <span>${formatDate(session.date)}</span>
+                  <strong>${escapeHtml(mentalSessionTopic(session, mental))}</strong>
+                  <em>${formatMentalDuration(session.durationMin)}</em>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
         </div>
       </article>
     </section>
