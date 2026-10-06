@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.19',
+    date: '2026-10-06',
+    title: 'No companion by default',
+    details: [
+      'Calendar interpreta ora un accompagnatore non valorizzato come Nessun accompagnatore, invece di lasciarlo in stato Da assegnare.',
+      'Nuove attività, tornei e recuperi partono con Nessun accompagnatore selezionato di default.',
+      'Gli eventi e i tornei legacy senza accompagnatore vengono normalizzati automaticamente senza modifica manuale.',
+      'La rimozione di una persona dagli accompagnatori converte gli incarichi collegati in Nessun accompagnatore.',
+      'Il KPI settimanale Da assegnare diventa Senza accompagnatore e la stampa mostra Nessun accompagnatore quando il campo è vuoto.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.18',
     date: '2026-10-04',
     title: 'Footwork library refresh fix',
