@@ -40,12 +40,59 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeCalendarEventCompanion(event = {}) {
+  const source = event && typeof event === 'object' ? event : {};
+  const companionId = source.companionMode === 'none'
+    ? ''
+    : (
+        source.companionId
+        || source.responsibilities?.stay
+        || source.responsibilities?.dropoff
+        || source.responsibilities?.pickup
+        || ''
+      );
+
+  return {
+    ...source,
+    companionId,
+    companionMode: companionId ? 'person' : 'none',
+    responsibilities: {
+      ...(source.responsibilities && typeof source.responsibilities === 'object'
+        ? source.responsibilities
+        : {}),
+      stay: companionId,
+    },
+  };
+}
+
+function normalizeTournamentSupport(tournament = {}) {
+  const source = tournament && typeof tournament === 'object' ? tournament : {};
+  const supportPersonId = source.supportPersonMode === 'none'
+    ? ''
+    : String(source.supportPersonId || '');
+
+  return {
+    ...source,
+    supportPersonId,
+    supportPersonMode: supportPersonId ? 'person' : 'none',
+  };
+}
+
 function normalizePlanner(planner = {}) {
   return {
     people: Array.isArray(planner.people) ? planner.people : [],
-    events: Array.isArray(planner.events) ? planner.events : [],
-    tournaments: Array.isArray(planner.tournaments) ? planner.tournaments : [],
-    recurringSeries: Array.isArray(planner.recurringSeries) ? planner.recurringSeries : [],
+    events: Array.isArray(planner.events)
+      ? planner.events.map(normalizeCalendarEventCompanion)
+      : [],
+    tournaments: Array.isArray(planner.tournaments)
+      ? planner.tournaments.map(normalizeTournamentSupport)
+      : [],
+    recurringSeries: Array.isArray(planner.recurringSeries)
+      ? planner.recurringSeries.map(series => ({
+          ...series,
+          template: normalizeCalendarEventCompanion(series?.template || {}),
+        }))
+      : [],
     locationDefaults:
       planner.locationDefaults && typeof planner.locationDefaults === 'object'
         ? planner.locationDefaults
@@ -503,10 +550,10 @@ async function loadSettings(athleteId) {
 
 function eventFromRow(row) {
   if (row?.extra && typeof row.extra === 'object' && row.extra.id) {
-    return row.extra;
+    return normalizeCalendarEventCompanion(row.extra);
   }
 
-  return {
+  return normalizeCalendarEventCompanion({
     id: row.id,
     seriesId: row.series_id || '',
     title: row.title || '',
@@ -521,15 +568,15 @@ function eventFromRow(row) {
     nutritionTemplateId: row.nutrition_template_id || '',
     mealType: row.meal_type || '',
     mealDetails: row.meal_details || '',
-  };
+  });
 }
 
 function tournamentFromRow(row) {
   if (row?.extra && typeof row.extra === 'object' && row.extra.id) {
-    return row.extra;
+    return normalizeTournamentSupport(row.extra);
   }
 
-  return {
+  return normalizeTournamentSupport({
     id: row.id,
     name: row.name || '',
     circuit: row.circuit || '',
@@ -543,7 +590,7 @@ function tournamentFromRow(row) {
     registrationDeadline: row.registration_deadline || '',
     supportPersonId: row.support_person_id || '',
     notes: row.notes || '',
-  };
+  });
 }
 
 async function loadCompactCalendarFromCloud(athleteId) {

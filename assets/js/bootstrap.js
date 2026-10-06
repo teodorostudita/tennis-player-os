@@ -25,7 +25,7 @@ import {
   loadCalendarIntoLocalStore,
   startCalendarCloudSync,
   verifyLocalCalendarAgainstCloud,
-} from './cloud/calendarCloud.js?v=1.2.6';
+} from './cloud/calendarCloud.js?v=1.2.19';
 import {
   loadTrainingIntoLocalStore,
   startTrainingCloudSync,
@@ -365,7 +365,7 @@ if (session) {
           });
         }
 
-        await import('./app.js?v=1.2.18');
+        await import('./app.js?v=1.2.19');
         mountAuthControls(session.user);
         mountAthleteControls({
           currentAthlete: cloudAthlete,

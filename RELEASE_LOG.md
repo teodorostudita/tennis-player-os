@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.2.19 — No companion by default
+- Nel **Calendar**, un campo accompagnatore non valorizzato equivale ora a **Nessun accompagnatore**.
+- **Nuove attività**, **tornei** e **recuperi** partono già con questa scelta selezionata.
+- Gli eventi e i tornei legacy con campo vuoto vengono interpretati automaticamente nello stesso modo.
+- Se una persona viene rimossa dall’elenco degli accompagnatori, gli eventi/serie/tornei collegati passano a **Nessun accompagnatore**.
+- Il KPI settimanale **Da assegnare** diventa **Senza accompagnatore**.
+- Nelle viste logistiche e in stampa non compare più uno stato ambiguo vuoto: viene mostrato **Nessun accompagnatore**.
+- Nessuna migration Supabase e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.18 — Footwork library refresh fix
 - Corretto il collegamento tra **Athletics → Footwork Patterns** e la **Libreria Athletics**.
 - Il problema era una cache interna: Footwork poteva continuare a vedere una libreria vuota anche dopo l’aggiunta di nuovi link.

@@ -1,12 +1,14 @@
-Tennis Player OS v1.2.18 — Footwork library refresh fix
+Tennis Player OS v1.2.19 — No companion by default
 
 Patch SOLO TPOS. Non contiene e non modifica tennis-player-os-site/.
 
-Fix:
-- Athletics → Footwork Patterns rilegge la Libreria Athletics prima di aprire il picker risorse;
-- la cache viene invalidata quando si entra nella Libreria;
-- i link appena aggiunti compaiono subito in Nuovo/Modifica pattern;
-- nessuna modifica ai dati salvati.
+Calendar:
+- campo accompagnatore vuoto = Nessun accompagnatore;
+- nuove attività, tornei e recuperi impostati di default su Nessun accompagnatore;
+- vecchi eventi/tornei senza valore normalizzati automaticamente;
+- rimozione di una persona -> incarichi collegati convertiti a Nessun accompagnatore;
+- KPI settimanale "Da assegnare" sostituito da "Senza accompagnatore";
+- stampa coerente con il nuovo default.
 
 Nessuna migration Supabase.
 

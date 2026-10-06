@@ -1,5 +1,5 @@
-import { APP_VERSION } from '../version.js?v=1.2.18';
-import { RELEASE_LOG } from '../releaseLog.js?v=1.2.18';
+import { APP_VERSION } from '../version.js?v=1.2.19';
+import { RELEASE_LOG } from '../releaseLog.js?v=1.2.19';
 import { isAppOwner } from '../cloud/accountAccess.js?v=1.2.4';
 
 const DASHBOARD_ROUTE = /^(#\/?dashboard)?$/;
