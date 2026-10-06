@@ -145,10 +145,11 @@ function renderWeeklyPlanner(planner, nutritionTemplates = []) {
   const assignments = weekEvents.filter(event => getCompanionId(event)).length
     + weekTournaments.filter(tournament => tournament.supportPersonId).length;
 
-  const unassigned = weekEvents.filter(event => {
+  const withoutCompanion = weekEvents.filter(event => {
     if (event.category === 'school' || event.category === 'recovery' || event.category === 'personal' || event.category === 'nutrition' || event.category === 'mental') return false;
-    return !getCompanionId(event) && !hasExplicitNoCompanion(event);
-  }).length;
+    return hasExplicitNoCompanion(event);
+  }).length
+    + weekTournaments.filter(hasNoTournamentSupport).length;
   const scheduledMinutes = weekEvents.reduce((sum, event) => sum + durationMinutes(event), 0);
   const openMakeups = planner.makeups.filter(item => ['pending', 'planned'].includes(item.status));
 
@@ -170,7 +171,7 @@ function renderWeeklyPlanner(planner, nutritionTemplates = []) {
       <div class="planner-kpi"><span>Attività</span><strong>${weekEvents.length}</strong></div>
       <div class="planner-kpi"><span>Ore pianificate</span><strong>${formatDuration(scheduledMinutes)}</strong></div>
       <div class="planner-kpi"><span>Tornei</span><strong>${weekTournaments.length}</strong></div>
-      <div class="planner-kpi ${unassigned ? 'attention' : ''}"><span>Da assegnare</span><strong>${unassigned}</strong></div>
+      <div class="planner-kpi"><span>Senza accompagnatore</span><strong>${withoutCompanion}</strong></div>
     </section>
 
     <section class="planner-toolbar panel">
@@ -405,7 +406,9 @@ function renderPrintTimelineEvent(event, people, bounds, totalMinutes, lane = 0,
         </div>
         <strong>${escapeHtml(event.title || 'Attività')}</strong>
         ${duration >= 45 && event.location ? `<span class="planner-print-meta">${escapeHtml(event.location)}</span>` : ''}
-        ${duration >= 75 && companion ? `<span class="planner-print-companion">${escapeHtml(companion.name)}</span>` : ''}
+        ${duration >= 75
+          ? `<span class="planner-print-companion">${companion ? escapeHtml(companion.name) : 'Nessun accompagnatore'}</span>`
+          : ''}
       `}
     </article>`;
 }
