@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.20',
+    date: '2026-10-07',
+    title: 'Mobile Calendar stacking fix',
+    details: [
+      'Corretto un bug grafico del Calendar su dispositivi touch: un evento selezionato non può più montare sopra la topbar sticky.',
+      'Su mobile/touch gli eventi in hover/focus restano sopra agli altri eventi della timeline ma sotto all’intestazione dell’app.',
+      'Drag/resize desktop e menu laterale restano invariati.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.19',
     date: '2026-10-06',
     title: 'No companion by default',
