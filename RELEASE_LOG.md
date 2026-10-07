@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.2.20 — Mobile Calendar stacking fix
+- Corretto un bug grafico del **Calendar su mobile/touch**: un evento selezionato non può più sovrapporsi alla **topbar sticky**.
+- Gli eventi in focus mantengono una priorità visiva superiore agli altri eventi della timeline, ma inferiore all’intestazione dell’app.
+- Nessuna modifica a drag/resize desktop.
+- Nessuna migration Supabase e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.19 — No companion by default
 - Nel **Calendar**, un campo accompagnatore non valorizzato equivale ora a **Nessun accompagnatore**.
 - **Nuove attività**, **tornei** e **recuperi** partono già con questa scelta selezionata.
