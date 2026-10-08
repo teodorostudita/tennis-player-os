@@ -275,6 +275,8 @@ function renderWeeklyPlanner(planner, nutritionTemplates = []) {
       </div>
     </section>
 
+    ${renderLogisticsLegend(planner.people, weekEvents, weekTournaments)}
+
     ${openMakeups.length ? `
       <section class="planner-makeup-banner">
         <div>
