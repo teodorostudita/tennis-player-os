@@ -537,6 +537,7 @@ function renderTimelineEvent(event, people, bounds, lane = 0, laneCount = 1) {
       : '';
   const sizeClass = duration < 25 ? 'tiny' : duration < 55 ? 'compact' : '';
   const logisticsOnly = plannerView === 'logistics';
+  const logisticsStyle = logisticsOnly ? logisticsColorStyle(companion) : '';
   const missed = event.attendanceStatus === 'missed';
   const makeup = Boolean(event.isMakeup || event.makeupId);
   const titleText = `${event.startTime || ''}–${event.endTime || ''} · ${event.title || ''}${event.location ? ` · ${event.location}` : ''}`;
@@ -545,7 +546,7 @@ function renderTimelineEvent(event, people, bounds, lane = 0, laneCount = 1) {
     <button class="planner-event planner-timeline-event category-${escapeAttr(event.category)} ${sizeClass} ${logisticsOnly ? 'logistics-focus' : ''} ${missed ? 'event-missed' : ''} ${makeup ? 'event-makeup' : ''}"
       type="button" data-event-id="${escapeAttr(event.id)}"
       title="${escapeAttr(titleText)}"
-      style="top:${top}px; height:${height}px; left:calc(${left}% + 2px); width:calc(${width}% - 4px);">
+      style="top:${top}px; height:${height}px; left:calc(${left}% + 2px); width:calc(${width}% - 4px);${logisticsStyle ? ` ${logisticsStyle};` : ''}">
       <span class="event-time">${escapeHtml(event.startTime || '—')}–${escapeHtml(event.endTime || '—')}</span>
       ${missed ? '<span class="event-state-chip missed">Saltata</span>' : ''}
       ${makeup ? '<span class="event-state-chip makeup">↺ Recupero</span>' : ''}
@@ -614,10 +615,11 @@ function renderEvent(event, people) {
       : '';
 
   const logisticsOnly = plannerView === 'logistics';
+  const logisticsStyle = logisticsOnly ? logisticsColorStyle(companion) : '';
   const missed = event.attendanceStatus === 'missed';
   const makeup = Boolean(event.isMakeup || event.makeupId);
   return `
-    <button class="planner-event category-${escapeAttr(event.category)} ${logisticsOnly ? 'logistics-focus' : ''} ${missed ? 'event-missed' : ''} ${makeup ? 'event-makeup' : ''}" type="button" data-event-id="${escapeAttr(event.id)}">
+    <button class="planner-event category-${escapeAttr(event.category)} ${logisticsOnly ? 'logistics-focus' : ''} ${missed ? 'event-missed' : ''} ${makeup ? 'event-makeup' : ''}" type="button" data-event-id="${escapeAttr(event.id)}" ${logisticsStyle ? `style="${logisticsStyle}"` : ''}>
       <span class="event-time">${escapeHtml(event.startTime || '—')}–${escapeHtml(event.endTime || '—')}</span>
       ${missed ? '<span class="event-state-chip missed">Saltata</span>' : ''}
       ${makeup ? '<span class="event-state-chip makeup">↺ Recupero</span>' : ''}
@@ -634,9 +636,11 @@ function renderEvent(event, people) {
 function renderTournamentWeekEvent(tournament, currentDate, people) {
   const support = people.find(person => person.id === tournament.supportPersonId);
   const explicitNoSupport = hasNoTournamentSupport(tournament);
+  const logisticsOnly = plannerView === 'logistics';
+  const logisticsStyle = logisticsOnly ? logisticsColorStyle(support) : '';
   const dayInfo = tournamentDayInfo(tournament, currentDate);
   return `
-    <button class="planner-event planner-tournament-event" type="button" data-week-tournament-id="${escapeAttr(tournament.id)}">
+    <button class="planner-event planner-tournament-event ${logisticsOnly ? 'logistics-focus' : ''}" type="button" data-week-tournament-id="${escapeAttr(tournament.id)}" ${logisticsStyle ? `style="${logisticsStyle}"` : ''}>
       <span class="event-time tournament-mini-meta">🏆 ${escapeHtml(tournament.circuit || 'Torneo')} ${dayInfo ? `· ${dayInfo}` : ''}</span>
       <strong>${escapeHtml(tournament.name || 'Torneo')}</strong>
       ${tournament.location ? `<span class="event-location">${escapeHtml(tournament.location)}</span>` : ''}
