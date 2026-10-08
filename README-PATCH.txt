@@ -1,14 +1,11 @@
-Tennis Player OS v1.2.19 — No companion by default
+Tennis Player OS v1.2.20 — Mobile Calendar stacking fix
 
 Patch SOLO TPOS. Non contiene e non modifica tennis-player-os-site/.
 
-Calendar:
-- campo accompagnatore vuoto = Nessun accompagnatore;
-- nuove attività, tornei e recuperi impostati di default su Nessun accompagnatore;
-- vecchi eventi/tornei senza valore normalizzati automaticamente;
-- rimozione di una persona -> incarichi collegati convertiti a Nessun accompagnatore;
-- KPI settimanale "Da assegnare" sostituito da "Senza accompagnatore";
-- stampa coerente con il nuovo default.
+Fix:
+- su mobile/touch gli eventi selezionati del Calendar non possono più sovrapporsi alla topbar sticky;
+- gli eventi focalizzati restano sopra agli altri eventi della timeline;
+- drag/resize desktop invariati.
 
 Nessuna migration Supabase.
 

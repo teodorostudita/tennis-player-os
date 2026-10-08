@@ -41,3 +41,12 @@
     outline-offset: -2px;
   }
 }
+
+
+/* v1.2.20 · keep focused timeline events below sticky app header */
+@media (max-width: 900px) and (pointer: coarse) {
+  .planner-timeline-event:hover,
+  .planner-timeline-event:focus-visible {
+    z-index: 8;
+  }
+}
