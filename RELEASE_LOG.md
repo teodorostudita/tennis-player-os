@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.2.21 — Calendar logistics companion colors
+- In **Calendar → Logistica** le attività sono colorate in base all’**accompagnatore** anziché alla categoria.
+- Ogni persona riceve automaticamente un **colore stabile** derivato dal proprio ID.
+- **Nessun accompagnatore** usa un colore neutro grigio.
+- Aggiunta una **legenda** degli accompagnatori presenti nella settimana.
+- Anche i **tornei** adottano lo stesso codice colore nella vista Logistica.
+- Le viste **Atleta** e **Combinato** mantengono invariati i colori per categoria.
+- Nessuna migration Supabase e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.20 — Mobile Calendar stacking fix
 - Corretto un bug grafico del **Calendar su mobile/touch**: un evento selezionato non può più sovrapporsi alla **topbar sticky**.
 - Gli eventi in focus mantengono una priorità visiva superiore agli altri eventi della timeline, ma inferiore all’intestazione dell’app.
