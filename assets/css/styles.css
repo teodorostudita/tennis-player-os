@@ -2108,3 +2108,88 @@ button { cursor: pointer; }
   .resource-library-grid { grid-template-columns:1fr; }
   .resource-local-note { white-space:normal; }
 }
+
+
+/* v1.2.21 · Calendar logistics companion colors */
+.planner-event.logistics-focus {
+  background:var(--logistics-bg,#f2f4f7) !important;
+  border-left-color:var(--logistics-accent,#98a3b1) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb,var(--logistics-accent,#98a3b1) 13%,transparent),
+    0 1px 3px rgba(11,31,58,.05);
+}
+.planner-event.logistics-focus:hover,
+.planner-event.logistics-focus:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb,var(--logistics-accent,#98a3b1) 22%,transparent),
+    0 6px 16px rgba(11,31,58,.13);
+}
+.planner-event.logistics-focus > strong {
+  color:color-mix(in srgb,var(--logistics-text,#667383) 88%,#152238);
+}
+.planner-event.logistics-focus .event-time {
+  color:var(--logistics-text,#667383);
+}
+.planner-event.logistics-focus .responsibility-chip {
+  color:var(--logistics-text,#667383);
+  border-color:color-mix(in srgb,var(--logistics-accent,#98a3b1) 25%,#e3e8ee);
+  background:rgba(255,255,255,.72);
+}
+.planner-event.logistics-focus .responsibility-chip b {
+  color:var(--logistics-text,#667383);
+}
+
+.planner-logistics-legend {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:-2px 0 12px;
+  padding:9px 11px;
+  border:1px solid #e0e5eb;
+  border-radius:12px;
+  background:#fafbfd;
+}
+.planner-logistics-legend-label {
+  flex:0 0 auto;
+  color:#788598;
+  font-size:.61rem;
+  font-weight:900;
+  letter-spacing:.045em;
+  text-transform:uppercase;
+}
+.planner-logistics-legend-items {
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.planner-logistics-legend-item {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:26px;
+  padding:4px 8px;
+  border:1px solid color-mix(in srgb,var(--legend-accent) 22%,#e2e7ed);
+  border-radius:999px;
+  background:var(--legend-bg);
+  color:var(--legend-text);
+  font-size:.62rem;
+  font-weight:850;
+}
+.planner-logistics-legend-item i {
+  width:8px;
+  height:8px;
+  flex:0 0 8px;
+  border-radius:50%;
+  background:var(--legend-accent);
+}
+.planner-logistics-legend-item.is-none {
+  font-weight:750;
+}
+
+@media (max-width:760px) {
+  .planner-logistics-legend {
+    align-items:flex-start;
+    flex-direction:column;
+    gap:7px;
+  }
+}
