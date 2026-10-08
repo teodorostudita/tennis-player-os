@@ -1,5 +1,19 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.21',
+    date: '2026-10-08',
+    title: 'Calendar logistics companion colors',
+    details: [
+      'Nella vista Calendar → Logistica il colore delle attività dipende ora dall’accompagnatore, non dalla categoria dell’attività.',
+      'Ogni persona riceve automaticamente un colore stabile derivato dal proprio identificativo; il colore resta quindi coerente nel tempo e non cambia riordinando l’elenco.',
+      'Nessun accompagnatore usa una resa neutra grigia.',
+      'Aggiunta una legenda compatta degli accompagnatori effettivamente presenti nella settimana.',
+      'Le viste Atleta e Combinato continuano a usare i colori originali per categoria.',
+      'Anche i tornei settimanali rispettano il colore dell’accompagnatore nella vista Logistica.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.20',
     date: '2026-10-07',
     title: 'Mobile Calendar stacking fix',
