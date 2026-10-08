@@ -72,6 +72,94 @@ let tournamentStatusFilter = 'all';
 let calendarClipboard = null;
 let suppressTimelineEventClickUntil = 0;
 
+const LOGISTICS_COMPANION_PALETTE = [
+  { accent: '#4f7fc7', bg: '#eef4fd', text: '#385f95' },
+  { accent: '#7b63c7', bg: '#f3f0fc', text: '#5b4899' },
+  { accent: '#3f9a7e', bg: '#edf8f4', text: '#2e735f' },
+  { accent: '#d28a3e', bg: '#fff5e8', text: '#985f24' },
+  { accent: '#c65f83', bg: '#fff0f5', text: '#95405f' },
+  { accent: '#4a99a8', bg: '#eef9fb', text: '#34717b' },
+  { accent: '#8a6b50', bg: '#f8f3ee', text: '#68503d' },
+  { accent: '#788b45', bg: '#f4f8e9', text: '#596a32' },
+];
+
+const LOGISTICS_NO_COMPANION_COLOR = {
+  accent: '#98a3b1',
+  bg: '#f2f4f7',
+  text: '#667383',
+};
+
+function stableCompanionPaletteIndex(person = {}) {
+  const seed = String(person.id || person.name || 'companion');
+  let hash = 0;
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(index)) | 0;
+  }
+
+  return Math.abs(hash) % LOGISTICS_COMPANION_PALETTE.length;
+}
+
+function logisticsCompanionColor(person) {
+  return person
+    ? LOGISTICS_COMPANION_PALETTE[stableCompanionPaletteIndex(person)]
+    : LOGISTICS_NO_COMPANION_COLOR;
+}
+
+function logisticsColorStyle(person) {
+  const color = logisticsCompanionColor(person);
+  return [
+    `--logistics-accent:${color.accent}`,
+    `--logistics-bg:${color.bg}`,
+    `--logistics-text:${color.text}`,
+  ].join(';');
+}
+
+function renderLogisticsLegend(people, events, tournaments) {
+  if (plannerView !== 'logistics') return '';
+
+  const usedPersonIds = new Set(events.map(getCompanionId).filter(Boolean));
+  tournaments
+    .map(tournament => tournament.supportPersonId)
+    .filter(Boolean)
+    .forEach(id => usedPersonIds.add(id));
+
+  const visiblePeople = people.filter(person => usedPersonIds.has(person.id));
+  const hasNoCompanion = events.some(hasExplicitNoCompanion)
+    || tournaments.some(hasNoTournamentSupport);
+
+  if (!visiblePeople.length && !hasNoCompanion) return '';
+
+  return `
+    <section class="planner-logistics-legend" aria-label="Colori accompagnatori">
+      <span class="planner-logistics-legend-label">Accompagnatori</span>
+      <div class="planner-logistics-legend-items">
+        ${visiblePeople.map(person => {
+          const color = logisticsCompanionColor(person);
+          return `
+            <span
+              class="planner-logistics-legend-item"
+              style="--legend-accent:${color.accent};--legend-bg:${color.bg};--legend-text:${color.text}"
+            >
+              <i aria-hidden="true"></i>
+              ${escapeHtml(person.name)}
+            </span>
+          `;
+        }).join('')}
+        ${hasNoCompanion ? `
+          <span
+            class="planner-logistics-legend-item is-none"
+            style="--legend-accent:${LOGISTICS_NO_COMPANION_COLOR.accent};--legend-bg:${LOGISTICS_NO_COMPANION_COLOR.bg};--legend-text:${LOGISTICS_NO_COMPANION_COLOR.text}"
+          >
+            <i aria-hidden="true"></i>
+            Nessun accompagnatore
+          </span>
+        ` : ''}
+      </div>
+    </section>
+  `;
+}
+
 function consumeRequestedCalendarSection() {
   try {
     const requested = sessionStorage.getItem('tpos.calendar.section');
