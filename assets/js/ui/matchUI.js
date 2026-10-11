@@ -82,6 +82,7 @@ const MATCH_TYPES = {
 
 let section = 'overview';
 let selectedMatchId = '';
+let editingDebriefMatchId = '';
 let filters = {
   result: '',
   surface: '',
@@ -765,6 +766,168 @@ function renderRatingsGroup(title, fields, prefix, values = {}) {
   `;
 }
 
+
+function reviewAdherenceLabel(value) {
+  return {
+    yes: 'Sì',
+    partial: 'In parte',
+    no: 'No',
+  }[value] || '';
+}
+
+function reviewTextSection(title, entries = []) {
+  const visible = entries
+    .map(([label, value]) => [label, clean(value)])
+    .filter(([, value]) => value);
+
+  if (!visible.length) return '';
+
+  return `
+    <section class="match-debrief-summary-section">
+      <h4>${escapeHtml(title)}</h4>
+      <div class="match-debrief-summary-text-grid">
+        ${visible.map(([label, value]) => `
+          <div class="match-debrief-summary-field">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function reviewRatingsSection(title, fields, values = {}) {
+  const visible = fields
+    .map(([key, label]) => [label, Number(values?.[key])])
+    .filter(([, value]) => Number.isFinite(value) && value >= 1 && value <= 5);
+
+  if (!visible.length) return '';
+
+  return `
+    <section class="match-debrief-summary-section">
+      <h4>${escapeHtml(title)}</h4>
+      <div class="match-debrief-summary-ratings">
+        ${visible.map(([label, value]) => `
+          <div class="match-debrief-summary-rating">
+            <span>${escapeHtml(label)}</span>
+            <strong>${value}/5</strong>
+            <div><i style="width:${Math.round((value / 5) * 100)}%"></i></div>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderDebriefMatchList(matches) {
+  return `
+    <aside class="panel match-debrief-index">
+      <div class="panel-header">
+        <h3>Match</h3>
+        <p>Apri i dettagli oppure il post-match debrief.</p>
+      </div>
+      <div class="panel-body match-debrief-list">
+        ${matches.map(match => `
+          <article class="match-debrief-list-item ${match.id === selectedMatchId ? 'active' : ''}">
+            <div class="match-debrief-list-main">
+              <span class="match-result-badge ${resultClass(match)}">${escapeHtml(match.result || '—')}</span>
+              <span>
+                <strong>${escapeHtml(matchTitle(match))}</strong>
+                <small>${escapeHtml(formatDate(match.date))} · ${escapeHtml(match.score || 'score n/d')}</small>
+              </span>
+              <span class="match-debrief-status ${isReviewed(match) ? 'done' : 'pending'}">
+                ${isReviewed(match) ? 'Debrief ✓' : 'Da compilare'}
+              </span>
+            </div>
+            <div class="match-debrief-list-actions">
+              <button class="button button-ghost match-small-button" type="button" data-open-match-details="${escapeAttr(match.id)}">
+                Dettagli Match
+              </button>
+              <button class="button ${match.id === selectedMatchId ? 'button-primary' : 'button-ghost'} match-small-button" type="button" data-select-debrief="${escapeAttr(match.id)}">
+                Debrief
+              </button>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    </aside>
+  `;
+}
+
+function renderDebriefSummary(match) {
+  const review = match.review || {};
+  const scoreValue = overallReviewScore(match);
+  const reviewedAt = review.reviewedAt
+    ? new Date(review.reviewedAt).toLocaleString('it-IT')
+    : '';
+
+  const sections = [
+    reviewTextSection('Match story', [
+      ['Riassunto', review.story?.summary],
+      ['Cosa ha funzionato', review.story?.worked],
+      ['Cosa non ha funzionato', review.story?.notWorked],
+      ['Momento chiave', review.story?.keyMoment],
+      ['Perché ho vinto / perso?', review.story?.why],
+    ]),
+    reviewTextSection('Piano tattico', [
+      ['Piano rispettato?', reviewAdherenceLabel(review.plan?.adherence)],
+      ['Cosa ha funzionato del piano', review.plan?.worked],
+      ['Cosa non era corretto / applicabile', review.plan?.wrong],
+      ['Prossima volta', review.plan?.nextTime],
+    ]),
+    reviewRatingsSection('Tecnico-tattico', TECHNICAL_FIELDS, review.technical),
+    reviewRatingsSection('Mental', MENTAL_FIELDS, review.mental),
+    reviewRatingsSection('Fisico', PHYSICAL_FIELDS, review.physical),
+    reviewTextSection('Takeaways', [
+      ['Da confermare', review.takeaways?.confirm],
+      ['Da migliorare', review.takeaways?.improve],
+      ['Priorità prossima settimana', review.takeaways?.nextPriority],
+      ['Note fisiche', review.physical?.notes],
+    ]),
+  ].filter(Boolean);
+
+  return `
+    <section class="match-review-hero panel match-debrief-summary-hero">
+      <div class="match-review-summary">
+        <span class="match-result-badge large ${resultClass(match)}">${escapeHtml(match.result || '—')}</span>
+        <div>
+          <div class="eyebrow">${escapeHtml(formatDate(match.date))}</div>
+          <h3>${escapeHtml(matchTitle(match))}</h3>
+          <p>${escapeHtml([match.tournament, match.round, match.surface].filter(Boolean).join(' · ') || 'Dettagli da completare')}</p>
+        </div>
+      </div>
+      <div class="match-review-score">
+        <span>Score</span>
+        <strong>${escapeHtml(match.score || '—')}</strong>
+        ${scoreValue !== null ? `<small>Review ${scoreValue.toFixed(1)}/5</small>` : ''}
+      </div>
+      <div class="match-debrief-summary-actions">
+        <button class="button button-ghost" type="button" data-open-match-details="${escapeAttr(match.id)}">Dettagli Match</button>
+        ${canWrite()
+          ? `<button class="button button-primary" type="button" data-edit-debrief="${escapeAttr(match.id)}">Modifica</button>`
+          : ''}
+      </div>
+    </section>
+
+    <section class="panel match-debrief-summary-card">
+      <div class="panel-header match-debrief-summary-head">
+        <div>
+          <div class="eyebrow">Post-match debrief</div>
+          <h3>Sintesi</h3>
+          <p>Vengono mostrate soltanto le informazioni effettivamente registrate.</p>
+        </div>
+        ${reviewedAt ? `<time>Salvato ${escapeHtml(reviewedAt)}</time>` : ''}
+      </div>
+      <div class="panel-body match-debrief-summary-body">
+        ${sections.length
+          ? sections.join('')
+          : '<div class="match-empty compact"><span>Il debrief è stato salvato senza contenuti descrittivi o rating.</span></div>'}
+      </div>
+    </section>
+  `;
+}
+
 function renderDebrief(host, state) {
   const matches = activeMatches(state);
   if (!selectedMatchId || !matches.some(match => match.id === selectedMatchId)) {
@@ -772,27 +935,35 @@ function renderDebrief(host, state) {
   }
 
   const match = matches.find(item => item.id === selectedMatchId);
+  const editing = Boolean(
+    match
+    && (
+      !isReviewed(match)
+      || editingDebriefMatchId === match.id
+    )
+  );
 
   host.innerHTML = `
     <section class="match-subhead">
       <div>
         <div class="eyebrow">Debrief</div>
         <h2>Post-match review</h2>
-        <p>Un debrief strutturato ma abbastanza leggero da essere usato dopo ogni partita.</p>
+        <p>Dopo il salvataggio il debrief diventa una sintesi leggibile; il formulario ricompare soltanto in modifica.</p>
       </div>
-
-      ${matches.length ? `
-        <select id="match-debrief-select" class="match-debrief-select">
-          ${matches.map(item => `
-            <option value="${escapeAttr(item.id)}" ${item.id === selectedMatchId ? 'selected' : ''}>
-              ${escapeHtml(`${formatDate(item.date)} · ${item.opponentName || 'Avversario'} · ${item.score || ''}`)}
-            </option>
-          `).join('')}
-        </select>
-      ` : ''}
     </section>
 
-    ${match ? renderDebriefForm(match) : `
+    ${matches.length ? `
+      <section class="match-debrief-workspace">
+        ${renderDebriefMatchList(matches)}
+        <div class="match-debrief-content">
+          ${match
+            ? (editing
+              ? renderDebriefForm(match, { allowCancel: isReviewed(match) })
+              : renderDebriefSummary(match))
+            : ''}
+        </div>
+      </section>
+    ` : `
       <section class="panel match-empty-panel">
         <div class="match-empty">
           <strong>Nessun match da rivedere</strong>
@@ -802,8 +973,27 @@ function renderDebrief(host, state) {
     `}
   `;
 
-  host.querySelector('#match-debrief-select')?.addEventListener('change', event => {
-    selectedMatchId = event.target.value;
+  host.querySelectorAll('[data-select-debrief]').forEach(button => {
+    button.addEventListener('click', () => {
+      selectedMatchId = button.dataset.selectDebrief;
+      editingDebriefMatchId = '';
+      renderDebrief(host, competitionState());
+    });
+  });
+
+  host.querySelectorAll('[data-open-match-details]').forEach(button => {
+    button.addEventListener('click', () => {
+      openMatchDialog(button.dataset.openMatchDetails);
+    });
+  });
+
+  host.querySelector('[data-edit-debrief]')?.addEventListener('click', event => {
+    editingDebriefMatchId = event.currentTarget.dataset.editDebrief;
+    renderDebrief(host, competitionState());
+  });
+
+  host.querySelector('[data-cancel-debrief-edit]')?.addEventListener('click', () => {
+    editingDebriefMatchId = '';
     renderDebrief(host, competitionState());
   });
 
@@ -812,6 +1002,7 @@ function renderDebrief(host, state) {
   host.querySelector('#match-debrief-form')?.addEventListener('submit', event => {
     event.preventDefault();
     saveDebrief(match.id, event.currentTarget);
+    editingDebriefMatchId = '';
     renderDebrief(host, competitionState());
   });
 
@@ -820,7 +1011,7 @@ function renderDebrief(host, state) {
   });
 }
 
-function renderDebriefForm(match) {
+function renderDebriefForm(match, { allowCancel = false } = {}) {
   const review = match.review || {};
   const profile = findOpponentProfile(match);
   const scoreValue = overallReviewScore(match);
@@ -841,7 +1032,7 @@ function renderDebriefForm(match) {
         ${scoreValue !== null ? `<small>Review ${scoreValue.toFixed(1)}/5</small>` : '<small>Review non valutata</small>'}
       </div>
       ${canWrite()
-        ? '<button class="button button-ghost" type="button" data-edit-selected-match>Dettagli match</button>'
+        ? '<button class="button button-ghost" type="button" data-edit-selected-match>Dettagli Match</button>'
         : ''}
     </section>
 
@@ -923,7 +1114,10 @@ function renderDebriefForm(match) {
         ? `
           <div class="match-review-savebar">
             <span>${review.reviewedAt ? `Ultimo debrief: ${escapeHtml(new Date(review.reviewedAt).toLocaleString('it-IT'))}` : 'Debrief non ancora completato'}</span>
-            <button class="button button-primary" type="submit">Salva debrief</button>
+            <div class="match-review-save-actions">
+              ${allowCancel ? '<button class="button button-ghost" type="button" data-cancel-debrief-edit>Annulla</button>' : ''}
+              <button class="button button-primary" type="submit">Salva debrief</button>
+            </div>
           </div>
         `
         : ''}

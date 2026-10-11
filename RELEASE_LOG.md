@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.2.22 — Concise post-match debrief view
+- La sezione **Debrief** sostituisce il selettore a tendina con un **elenco dei match**.
+- Ogni match espone due azioni distinte: **Dettagli Match** e **Debrief**.
+- Dopo il salvataggio, il Post Match Debrief viene mostrato come **sintesi in sola lettura**.
+- La sintesi mostra esclusivamente i campi realmente compilati: Match story, Piano tattico, rating Tecnico-tattici, Mental, Fisico e Takeaways.
+- Il pulsante **Modifica** è l’unico che riapre le griglie originali di input.
+- Dopo il nuovo salvataggio si torna automaticamente alla sintesi; durante la modifica di un debrief esistente è disponibile **Annulla**.
+- I match ancora senza debrief aprono direttamente il formulario di compilazione.
+- Nessuna migration Supabase e nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.21 — Calendar logistics companion colors
 - In **Calendar → Logistica** le attività sono colorate in base all’**accompagnatore** anziché alla categoria.
 - Ogni persona riceve automaticamente un **colore stabile** derivato dal proprio ID.
