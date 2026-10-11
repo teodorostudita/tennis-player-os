@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.23',
+    date: '2026-10-11',
+    title: 'Mobile Match debrief navigation fix',
+    details: [
+      'Corretto il comportamento della sezione Debrief nell’app/mobile: il pulsante Debrief porta ora automaticamente al contenuto selezionato.',
+      'Su schermi stretti l’elenco dei match ha altezza limitata e scroll interno, evitando che sintesi e formulario finiscano molto più in basso nella pagina.',
+      'Premendo Modifica si viene portati direttamente alle griglie del debrief; Annulla riporta alla sintesi nello stesso punto.',
+      'La logica desktop resta invariata.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.22',
     date: '2026-10-11',
     title: 'Concise post-match debrief view',

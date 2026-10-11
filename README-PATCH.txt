@@ -1,16 +1,13 @@
-Tennis Player OS v1.2.22 — Concise post-match debrief view
+Tennis Player OS v1.2.23 — Mobile Match debrief navigation fix
 
 Patch SOLO TPOS. Non contiene e non modifica tennis-player-os-site/.
 
-Match → Debrief:
-- elenco dei match al posto del menu a tendina;
-- azioni separate Dettagli Match / Debrief;
-- debrief salvato mostrato come sintesi sola lettura;
-- vengono mostrati soltanto i campi realmente compilati;
-- Modifica riapre il formulario originale;
-- dopo Salva si torna alla sintesi;
-- Annulla disponibile durante la modifica;
-- match senza debrief -> formulario diretto.
+Fix mobile/app:
+- Debrief porta automaticamente al contenuto selezionato;
+- lista match limitata in altezza e scrollabile;
+- Modifica porta direttamente alle griglie;
+- Annulla riporta alla sintesi;
+- desktop invariato.
 
 Nessuna migration Supabase.
 
