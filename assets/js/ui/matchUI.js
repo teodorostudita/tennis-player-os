@@ -928,6 +928,18 @@ function renderDebriefSummary(match) {
   `;
 }
 
+function focusDebriefContent(host) {
+  const content = host?.querySelector('.match-debrief-content');
+  if (!content || !window.matchMedia('(max-width: 820px)').matches) return;
+
+  window.requestAnimationFrame(() => {
+    content.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  });
+}
+
 function renderDebrief(host, state) {
   const matches = activeMatches(state);
   if (!selectedMatchId || !matches.some(match => match.id === selectedMatchId)) {
@@ -978,6 +990,7 @@ function renderDebrief(host, state) {
       selectedMatchId = button.dataset.selectDebrief;
       editingDebriefMatchId = '';
       renderDebrief(host, competitionState());
+      focusDebriefContent(host);
     });
   });
 
@@ -990,11 +1003,13 @@ function renderDebrief(host, state) {
   host.querySelector('[data-edit-debrief]')?.addEventListener('click', event => {
     editingDebriefMatchId = event.currentTarget.dataset.editDebrief;
     renderDebrief(host, competitionState());
+    focusDebriefContent(host);
   });
 
   host.querySelector('[data-cancel-debrief-edit]')?.addEventListener('click', () => {
     editingDebriefMatchId = '';
     renderDebrief(host, competitionState());
+    focusDebriefContent(host);
   });
 
   if (!match) return;
