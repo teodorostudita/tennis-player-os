@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.22',
+    date: '2026-10-11',
+    title: 'Concise post-match debrief view',
+    details: [
+      'La sezione Debrief non usa più il menu a tendina dei match: viene mostrato un elenco con accesso separato a Dettagli Match e Debrief.',
+      'Un debrief già salvato viene mostrato in modalità sintetica e sola lettura, includendo soltanto testi e rating effettivamente compilati.',
+      'Le griglie originali di input compaiono soltanto premendo Modifica; dopo il salvataggio si torna automaticamente alla sintesi.',
+      'I match senza debrief aprono direttamente il formulario di compilazione.',
+      'Aggiunto Annulla durante la modifica di un debrief già esistente.',
+      'Nessuna migration SQL e nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.21',
     date: '2026-10-08',
     title: 'Calendar logistics companion colors',
