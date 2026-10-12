@@ -1,5 +1,19 @@
 # Tennis Player OS — Release Log
 
+## v1.2.24 — Athlete creation quotas & per-athlete access
+- In **Utenti & Accessi** la creazione di atleti è ora un’autorizzazione globale dell’account con quattro opzioni:
+  - **NO** — nessuna creazione;
+  - **1** — massimo un atleta;
+  - **Definisci numero** — quota personalizzata;
+  - **SÌ — illimitati**.
+- La quota è indipendente dal ruolo sui singoli atleti: essere **Admin** di un atleta non concede automaticamente il diritto di crearne altri.
+- Per ogni atleta assegnato restano modificabili separatamente ruolo e privilegi modulo per modulo.
+- Il **Founding Beta** propone ancora **1 atleta** come default, ma l’Owner globale può cambiare esplicitamente la quota.
+- Supportati account con diritto di creazione ma senza atleti già assegnati.
+- Il backend applica la quota anche lato Supabase.
+- Richiede migration Supabase e redeploy della Edge Function `create-user`.
+- Nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.23 — Mobile Match debrief navigation fix
 - Corretto il comportamento di **Match → Debrief** nell’app/mobile.
 - Toccando **Debrief**, il contenuto selezionato viene ora portato automaticamente a vista.
