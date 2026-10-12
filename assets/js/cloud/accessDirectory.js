@@ -95,10 +95,6 @@ export async function replaceOwnerUserAccess({
       : [],
   }));
 
-  if (!payload.length) {
-    throw new Error('Seleziona almeno un atleta.');
-  }
-
   const { data, error } = await supabase.rpc('replace_owner_user_access', {
     p_user_id: normalizedUserId,
     p_assignments: payload,
