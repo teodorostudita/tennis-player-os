@@ -1036,6 +1036,7 @@ async function saveEditor(gate) {
         isBetaOwner,
         userType,
         athleteCreationLimit,
+        updateQuota: !state.draft.hasOwnerRole,
       });
     }
 
