@@ -374,3 +374,45 @@
   background: #f5f7fa;
   color: #536276;
 }
+
+
+/* v1.2.24 · account athlete creation quotas */
+.access-athlete-creation {
+  margin-top:2px;
+  padding:13px;
+  border:1px solid #dbe4ee;
+  border-radius:13px;
+  background:linear-gradient(135deg,#f8fbff,#fbfcfe);
+}
+
+.access-athlete-creation[hidden] {
+  display:none !important;
+}
+
+.access-athlete-creation .access-permissions-head {
+  margin-bottom:2px;
+}
+
+.access-athlete-creation .access-field {
+  margin:0;
+}
+
+.access-athlete-creation select,
+.access-athlete-creation input[type="number"] {
+  width:100%;
+}
+
+.access-athlete-creation-custom {
+  padding-top:2px;
+}
+
+.access-athlete-creation-info {
+  margin-top:2px;
+  background:#fff;
+}
+
+@media (max-width:560px) {
+  .access-athlete-creation {
+    padding:11px;
+  }
+}
