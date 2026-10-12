@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.24',
+    date: '2026-10-12',
+    title: 'Account athlete creation quotas',
+    details: [
+      'Utenti & Accessi: creazione atleti configurabile per account con NO, 1, numero personalizzato o SÌ illimitati.',
+      'La quota globale è indipendente dal ruolo Admin/Member e dai privilegi per singolo atleta.',
+      'Ogni atleta assegnato mantiene un ruolo e i permessi modulo personalizzabili separatamente.',
+      'Supportata la creazione e la gestione di account senza atleti assegnati.',
+      'Founding Beta parte da una quota predefinita di 1, successivamente personalizzabile.',
+      'Richiede migration Supabase e aggiornamento della Edge Function create-user; sito marketing invariato.',
+    ],
+  },
+  {
     version: '1.2.23',
     date: '2026-10-11',
     title: 'Mobile Match debrief navigation fix',

@@ -1,10 +1,6 @@
--- Tennis Player OS v0.28.1
--- Workspace-level owner access management.
---
--- The user-management panel must not depend on the athlete currently selected
--- in the app. These RPCs expose, and atomically replace, the assignments that
--- the current owner is allowed to manage across all athletes they own.
-
+-- TPOS v1.2.24 — account quotas independent from per-athlete privileges.
+-- Migration is intentionally non-destructive. Existing quotas are preserved.
+-- Use order: migration -> Edge Function create-user -> app bundle.
 create or replace function public.get_owner_access_workspace()
 returns jsonb
 language plpgsql
@@ -14,6 +10,7 @@ set search_path = ''
 as $$
 declare
   result jsonb;
+  v_is_app_owner boolean := false;
 begin
   if (select auth.uid()) is null then
     raise exception 'Authenticated account required.'
@@ -30,6 +27,8 @@ begin
     raise exception 'Owner access required.'
       using errcode = '42501';
   end if;
+
+  v_is_app_owner := public.is_app_owner();
 
   with owned_athletes as (
     select
@@ -55,6 +54,17 @@ begin
   user_rows as (
     select distinct sm.user_id
     from scoped_memberships sm
+    union
+    select ba.user_id
+    from public.beta_accounts ba
+    where v_is_app_owner
+      and ba.program_code = 'founding_beta'
+      and ba.status = 'active'
+    union
+    -- Global Owner can also manage accounts with no athlete memberships.
+    select aa.user_id
+    from public.account_access aa
+    where v_is_app_owner
   )
   select jsonb_build_object(
     'athletes', coalesce((
@@ -75,8 +85,13 @@ begin
         jsonb_build_object(
           'userId', ur.user_id,
           'email', coalesce(u.email::text, ''),
+          'contactEmail', coalesce(nullif(p.contact_email, ''), u.email::text, ''),
           'displayName', coalesce(p.display_name, ''),
+          'userType', coalesce(nullif(p.user_type, ''), 'custom'),
           'accountRole', coalesce(aa.role, 'member'),
+          'canCreateAthletes', coalesce(aa.can_create_athletes, false),
+          'athleteCreationLimit', aa.athlete_creation_limit,
+          'isBetaOwner', coalesce(ba.status = 'active', false),
           'hasOwnerRole', exists (
             select 1
             from scoped_memberships owner_membership
@@ -91,6 +106,7 @@ begin
                 and x.role = 'owner'
                 and x.status = 'active'
             ) then 'owner'
+            when coalesce(ba.status = 'active', false) or aa.role = 'admin' then 'admin'
             when exists (
               select 1 from scoped_memberships x
               where x.user_id = ur.user_id
@@ -99,11 +115,11 @@ begin
             ) then 'admin'
             else 'member'
           end,
-          'firstCreatedAt', (
+          'firstCreatedAt', coalesce((
             select min(x.created_at)
             from scoped_memberships x
             where x.user_id = ur.user_id
-          ),
+          ), ba.created_at, u.created_at),
           'assignments', coalesce((
             select jsonb_agg(
               jsonb_build_object(
@@ -141,37 +157,28 @@ begin
                 and x.role = 'owner'
                 and x.status = 'active'
             ) then 1
-            when exists (
-              select 1 from scoped_memberships x
-              where x.user_id = ur.user_id
-                and x.role = 'admin'
-                and x.status = 'active'
-            ) then 2
-            else 3
+            when coalesce(ba.status = 'active', false) then 2
+            when aa.role = 'admin' then 3
+            else 4
           end,
           coalesce(p.display_name, split_part(u.email, '@', 1)),
           ur.user_id
       )
       from user_rows ur
-      join auth.users u
-        on u.id = ur.user_id
-      left join public.profiles p
-        on p.id = ur.user_id
-      left join public.account_access aa
-        on aa.user_id = ur.user_id
-    ), '[]'::jsonb)
+      join auth.users u on u.id = ur.user_id
+      left join public.profiles p on p.id = ur.user_id
+      left join public.account_access aa on aa.user_id = ur.user_id
+      left join public.beta_accounts ba
+        on ba.user_id = ur.user_id
+       and ba.program_code = 'founding_beta'
+       and ba.status = 'active'
+    ), '[]'::jsonb),
+    'beta', public.get_founding_beta_status()
   ) into result;
 
   return result;
 end;
 $$;
-
-revoke all on function public.get_owner_access_workspace()
-  from public, anon;
-
-grant execute on function public.get_owner_access_workspace()
-  to authenticated;
-
 
 create or replace function public.replace_owner_user_access(
   p_user_id uuid,
@@ -212,10 +219,6 @@ begin
 
   if p_assignments is null or jsonb_typeof(p_assignments) <> 'array' then
     raise exception 'Assignments must be a JSON array.';
-  end if;
-
-  if jsonb_array_length(p_assignments) = 0 then
-    raise exception 'Assign at least one athlete.';
   end if;
 
   if not exists (
@@ -426,15 +429,12 @@ begin
       and am.role in ('admin', 'owner')
   ) into v_has_admin_access;
 
-  insert into public.account_access (
-    user_id,
-    role,
-    can_create_athletes
-  )
+  -- Athlete roles and account creation quota are independent.
+  -- Do not rewrite can_create_athletes or athlete_creation_limit here.
+  insert into public.account_access (user_id, role)
   values (
     p_user_id,
-    case when v_has_admin_access then 'admin' else 'member' end,
-    v_has_admin_access
+    case when v_has_admin_access then 'admin' else 'member' end
   )
   on conflict (user_id)
   do update set
@@ -442,10 +442,6 @@ begin
       when account_access.role = 'owner' then 'owner'
       when v_has_admin_access then 'admin'
       else 'member'
-    end,
-    can_create_athletes = case
-      when account_access.role = 'owner' then true
-      else v_has_admin_access
     end,
     updated_at = now();
 
@@ -459,8 +455,346 @@ begin
 end;
 $$;
 
-revoke all on function public.replace_owner_user_access(uuid, jsonb, boolean)
-  from public, anon;
+create or replace function public.set_owner_user_account_options(
+  p_user_id uuid,
+  p_contact_email text default null,
+  p_is_beta_owner boolean default false
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_auth_email text;
+  v_contact_email text;
+  v_target_role text;
+  v_display_name text;
+  v_capacity integer := 30;
+  v_program_status text := 'active';
+  v_active integer := 0;
+  v_existing_beta boolean := false;
+  v_has_admin_access boolean := false;
+begin
+  if (select auth.uid()) is null then
+    raise exception 'Authenticated account required.' using errcode = '42501';
+  end if;
 
-grant execute on function public.replace_owner_user_access(uuid, jsonb, boolean)
+  if not public.is_app_owner() then
+    raise exception 'Only the global Owner can change Founding Beta account settings.'
+      using errcode = '42501';
+  end if;
+
+  select lower(trim(u.email::text)), coalesce(p.display_name, '')
+    into v_auth_email, v_display_name
+  from auth.users u
+  left join public.profiles p on p.id = u.id
+  where u.id = p_user_id;
+
+  if v_auth_email is null then
+    raise exception 'User account not found.' using errcode = 'P0002';
+  end if;
+
+  v_contact_email := lower(trim(coalesce(nullif(p_contact_email, ''), v_auth_email)));
+  if position('@' in v_contact_email) < 2 then
+    raise exception 'Invalid contact email.';
+  end if;
+
+  update public.profiles
+  set contact_email = v_contact_email,
+      updated_at = now()
+  where id = p_user_id;
+
+  select aa.role
+    into v_target_role
+  from public.account_access aa
+  where aa.user_id = p_user_id;
+
+  if v_target_role = 'owner' then
+    if p_is_beta_owner then
+      raise exception 'The global Owner cannot be a Founding Beta Owner.';
+    end if;
+
+    delete from public.beta_accounts ba
+    where ba.user_id = p_user_id
+      and ba.program_code = 'founding_beta';
+
+    update public.account_access
+    set can_create_athletes = true,
+        athlete_creation_limit = null,
+        updated_at = now()
+    where user_id = p_user_id;
+
+    return jsonb_build_object(
+      'ok', true,
+      'userId', p_user_id,
+      'contactEmail', v_contact_email,
+      'isBetaOwner', false,
+      'beta', public.get_founding_beta_status()
+    );
+  end if;
+
+  if p_is_beta_owner then
+    select exists (
+      select 1
+      from public.beta_accounts ba
+      where ba.user_id = p_user_id
+        and ba.program_code = 'founding_beta'
+        and ba.status = 'active'
+    ) into v_existing_beta;
+
+    select bp.capacity, bp.status
+      into v_capacity, v_program_status
+    from public.beta_programs bp
+    where bp.code = 'founding_beta'
+    for update;
+
+    if v_capacity is null then
+      raise exception 'Founding Beta program not configured.';
+    end if;
+
+    if v_program_status <> 'active' then
+      raise exception 'The Founding Beta is not active.';
+    end if;
+
+    if not v_existing_beta then
+      select count(*)::integer
+        into v_active
+      from public.beta_accounts ba
+      where ba.program_code = 'founding_beta'
+        and ba.status = 'active';
+
+      if v_active >= v_capacity then
+        raise exception 'All Founding Beta places have already been assigned.';
+      end if;
+    end if;
+
+    insert into public.beta_accounts (
+      user_id,
+      program_code,
+      email,
+      display_name,
+      status,
+      created_by
+    )
+    values (
+      p_user_id,
+      'founding_beta',
+      v_contact_email,
+      nullif(trim(v_display_name), ''),
+      'active',
+      (select auth.uid())
+    )
+    on conflict (user_id) do update
+    set program_code = 'founding_beta',
+        email = excluded.email,
+        display_name = excluded.display_name,
+        status = 'active',
+        created_by = excluded.created_by,
+        updated_at = now();
+
+    insert into public.account_access (
+      user_id,
+      role,
+      can_create_athletes,
+      athlete_creation_limit
+    )
+    values (
+      p_user_id,
+      'admin',
+      true,
+      1
+    )
+    on conflict (user_id) do update
+    set role = 'admin',
+        -- Default to 1 only upon initial admission, not on every edit.
+        can_create_athletes = case
+          when v_existing_beta then account_access.can_create_athletes
+          else true
+        end,
+        athlete_creation_limit = case
+          when v_existing_beta then account_access.athlete_creation_limit
+          else 1
+        end,
+        updated_at = now();
+  else
+    delete from public.beta_accounts ba
+    where ba.user_id = p_user_id
+      and ba.program_code = 'founding_beta';
+
+    select exists (
+      select 1
+      from public.athlete_members am
+      where am.user_id = p_user_id
+        and am.status = 'active'
+        and am.role in ('admin', 'owner')
+    ) into v_has_admin_access;
+
+    -- Removing Beta status must never alter the explicit creation quota.
+    insert into public.account_access (user_id, role)
+    values (
+      p_user_id,
+      case when v_has_admin_access then 'admin' else 'member' end
+    )
+    on conflict (user_id) do update
+    set role = case when v_has_admin_access then 'admin' else 'member' end,
+        updated_at = now();
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'userId', p_user_id,
+    'contactEmail', v_contact_email,
+    'isBetaOwner', p_is_beta_owner,
+    'athleteCreationLimit', (select aa.athlete_creation_limit from public.account_access aa where aa.user_id = p_user_id),
+    'beta', public.get_founding_beta_status()
+  );
+end;
+$$;
+
+create or replace function public.add_athlete_owner()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  creator_account_role text;
+  creator_athlete_role text;
+  creator_allowed boolean;
+begin
+  if new.created_by is null then
+    raise exception 'Athlete creator is required.';
+  end if;
+
+  select aa.role, aa.can_create_athletes
+    into creator_account_role, creator_allowed
+  from public.account_access aa
+  where aa.user_id = new.created_by;
+
+  -- Insertion RLS and the quota trigger provide the remaining checks.
+  -- A Member with an explicit quota must be allowed to create their athlete.
+  if not coalesce(creator_allowed, false) then
+    raise exception 'This account is not allowed to create athletes.'
+      using errcode = '42501';
+  end if;
+
+  creator_athlete_role :=
+    case
+      when creator_account_role = 'owner' then 'owner'
+      else 'admin'
+    end;
+
+  insert into public.athlete_members (
+    athlete_id,
+    user_id,
+    role,
+    status,
+    created_by
+  )
+  values (
+    new.id,
+    new.created_by,
+    creator_athlete_role,
+    'active',
+    new.created_by
+  )
+  on conflict (athlete_id, user_id)
+  do update set
+    role = excluded.role,
+    status = 'active',
+    updated_at = now();
+
+  -- Every global owner retains control of every athlete created in this
+  -- workspace. For an owner-created athlete this simply preserves owner.
+  insert into public.athlete_members (
+    athlete_id,
+    user_id,
+    role,
+    status,
+    created_by
+  )
+  select
+    new.id,
+    aa.user_id,
+    'owner',
+    'active',
+    new.created_by
+  from public.account_access aa
+  where aa.role = 'owner'
+  on conflict (athlete_id, user_id)
+  do update set
+    role = 'owner',
+    status = 'active',
+    updated_at = now();
+
+  return new;
+end;
+$$;
+
+
+-- Dedicated global Owner-only API. A null quota means unlimited; 0 means NO.
+create or replace function public.set_owner_user_creation_quota(
+  p_user_id uuid,
+  p_limit integer
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_role text;
+  v_create boolean;
+begin
+  if (select auth.uid()) is null or not public.is_app_owner() then
+    raise exception 'Only the global Owner can set athlete creation quotas.'
+      using errcode = '42501';
+  end if;
+
+  if p_user_id is null or p_limit is not null and (p_limit < 0 or p_limit > 1000000) then
+    raise exception 'Invalid athlete creation quota.';
+  end if;
+
+  select role into v_role
+  from public.account_access
+  where user_id = p_user_id
+  for update;
+
+  if not found then
+    raise exception 'User account not found.';
+  end if;
+  if v_role = 'owner' then
+    raise exception 'The global Owner always has unlimited athlete creation.';
+  end if;
+
+  v_create := p_limit is null or p_limit > 0;
+  update public.account_access
+     set can_create_athletes = v_create,
+         athlete_creation_limit = p_limit,
+         updated_at = now()
+   where user_id = p_user_id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'userId', p_user_id,
+    'canCreateAthletes', v_create,
+    'athleteCreationLimit', p_limit
+  );
+end;
+$$;
+
+revoke all on function public.set_owner_user_creation_quota(uuid, integer)
+  from public, anon;
+grant execute on function public.set_owner_user_creation_quota(uuid, integer)
   to authenticated;
+
+
+-- Tighten public EXECUTE visibility after replacing privileged routines.
+revoke all on function public.get_owner_access_workspace() from public, anon;
+grant execute on function public.get_owner_access_workspace() to authenticated;
+revoke all on function public.replace_owner_user_access(uuid, jsonb, boolean) from public, anon;
+grant execute on function public.replace_owner_user_access(uuid, jsonb, boolean) to authenticated;
+revoke all on function public.set_owner_user_account_options(uuid, text, boolean) from public, anon;
+grant execute on function public.set_owner_user_account_options(uuid, text, boolean) to authenticated;
+revoke all on function public.add_athlete_owner() from public, anon, authenticated;

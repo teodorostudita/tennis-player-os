@@ -1,9 +1,9 @@
 import { requireAuthenticatedSession, mountAuthControls } from './cloud/auth.js?v=1.2.6';
-import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js?v=1.2.6';
+import { canReadModule, canWriteModule, getCurrentAccess, loadCurrentAccess } from './cloud/access.js?v=1.2.24';
 import { canCreateAthletes, getCurrentUserType, loadCurrentAccountAccess } from './cloud/accountAccess.js?v=1.2.6';
 import { enforceInitialPasswordChange } from './cloud/initialPassword.js?v=1.2.6';
 import { startPermissionGuard } from './cloud/permissionGuard.js?v=1.2.6';
-import { mountAccessManagementControl } from './components/accessManagement.js?v=1.2.6';
+import { mountAccessManagementControl } from './components/accessManagement.js?v=1.2.24';
 import {
   loadAccessibleAthletes,
   mountAthleteControls,

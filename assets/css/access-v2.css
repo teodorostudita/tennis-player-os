@@ -374,3 +374,20 @@
   background: #f5f7fa;
   color: #536276;
 }
+
+/* v1.2.24 — Account-level athlete creation quota */
+.access-creation-section {
+  display: grid;
+  gap: 10px;
+}
+.access-creation-section .access-field {
+  margin-bottom: 0;
+}
+.access-creation-hint {
+  color: #63758c;
+  font-size: .83rem;
+  line-height: 1.45;
+}
+.access-creation-section [hidden] {
+  display: none !important;
+}
