@@ -11,12 +11,12 @@ import {
   deleteManagedAccount,
   getCurrentAccess,
   removeAthleteUser,
-} from '../cloud/access.js?v=1.2.4';
+} from '../cloud/access.js?v=1.2.24';
 import {
   loadOwnerAccessWorkspace,
   replaceOwnerUserAccess,
   saveOwnerUserAccountOptions,
-} from '../cloud/accessDirectory.js?v=1.2.4';
+} from '../cloud/accessDirectory.js?v=1.2.24';
 import { isAppOwner } from '../cloud/accountAccess.js?v=1.2.4';
 import { emailFromLogin, loginFromEmail, normalizeUsername } from '../cloud/loginIdentity.js?v=1.2.4';
 import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
