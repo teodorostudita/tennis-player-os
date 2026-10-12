@@ -986,17 +986,29 @@ async function saveEditor(gate) {
   const contactEmail = String(form.elements.contactEmail?.value || '').trim();
   const userType = normalizeUserType(form.elements.userType?.value);
   const isBetaOwner = Boolean(form.elements.isBetaOwner?.checked) && isAppOwner();
-  const originalUser = state.draft?.userId
-    ? workspace(gate).users.find(user => user.userId === state.draft.userId)
-    : null;
+  let creationSetting = {
+    canCreateAthletes: Boolean(state.draft.canCreateAthletes),
+    athleteCreationLimit: state.draft.athleteCreationLimit,
+  };
 
-  if (!assignments.length && !isBetaOwner) {
-    setMessage(gate, 'Seleziona almeno un atleta oppure abilita Founding Beta Owner.', 'error');
-    return;
+  if (isAppOwner()) {
+    try {
+      creationSetting = readAthleteCreationSetting(form);
+    } catch (error) {
+      setMessage(gate, error?.message || 'Limite creazione atleti non valido.', 'error');
+      return;
+    }
+
+    state.draft.canCreateAthletes = creationSetting.canCreateAthletes;
+    state.draft.athleteCreationLimit = creationSetting.athleteCreationLimit;
   }
 
-  if (!assignments.length && !isNew && (originalUser?.assignments || []).length) {
-    setMessage(gate, 'Non rimuovere qui l’ultimo atleta assegnato: mantienilo oppure elimina l’account.', 'error');
+  if (!assignments.length && !creationSetting.canCreateAthletes) {
+    setMessage(
+      gate,
+      'Seleziona almeno un atleta oppure abilita la creazione di nuovi atleti per questo account.',
+      'error',
+    );
     return;
   }
 
@@ -1053,6 +1065,8 @@ async function saveEditor(gate) {
         login,
         contactEmail,
         isBetaOwner,
+        canCreateAthletes: creationSetting.canCreateAthletes,
+        athleteCreationLimit: creationSetting.athleteCreationLimit,
         userType,
         temporaryPassword: String(form.elements.temporaryPassword?.value || ''),
         role: 'member',
@@ -1067,7 +1081,7 @@ async function saveEditor(gate) {
       }
     }
 
-    if (assignments.length && !state.draft.hasOwnerRole) {
+    if (!state.draft.hasOwnerRole && (!isNew || assignments.length)) {
       await replaceOwnerUserAccess({
         userId,
         assignments,
@@ -1083,6 +1097,8 @@ async function saveEditor(gate) {
         userId,
         contactEmail,
         isBetaOwner,
+        canCreateAthletes: creationSetting.canCreateAthletes,
+        athleteCreationLimit: creationSetting.athleteCreationLimit,
         userType,
       });
     }
@@ -1099,12 +1115,19 @@ async function saveEditor(gate) {
     setMessage(
       gate,
       isNew
-        ? isBetaOwner
-          ? `Founding Beta Owner creato con profilo ${userTypeLabel(userType)}. Potrà creare un solo atleta; i privilegi restano personalizzabili.`
-          : accountCreated
-            ? 'Utente creato. Atleti, email e privilegi sono stati salvati.'
-            : 'Account esistente trovato: assegnazioni, email e privilegi sono stati salvati.'
-        : 'Configurazione utente aggiornata.',
+        ? accountCreated
+          ? `Utente creato. Creazione atleti: ${athleteCreationLabel(
+              creationSetting.canCreateAthletes,
+              creationSetting.athleteCreationLimit,
+            )}. Privilegi per atleta salvati.`
+          : `Account esistente trovato. Creazione atleti: ${athleteCreationLabel(
+              creationSetting.canCreateAthletes,
+              creationSetting.athleteCreationLimit,
+            )}. Privilegi aggiornati.`
+        : `Configurazione aggiornata. Creazione atleti: ${athleteCreationLabel(
+            creationSetting.canCreateAthletes,
+            creationSetting.athleteCreationLimit,
+          )}.`,
       'success',
     );
   } catch (error) {
