@@ -1287,9 +1287,51 @@ function bindStaticEvents(gate) {
       state.draft.activeAthleteId = '';
     }
 
+    // Founding Beta keeps its historical default of one athlete, but the
+    // global Owner can explicitly change the quota afterwards.
+    if (state.draft.isBetaOwner && !state.draft.canCreateAthletes) {
+      state.draft.canCreateAthletes = true;
+      state.draft.athleteCreationLimit = 1;
+    }
+
     renderAthleteChoices(gate);
     renderAssignmentTabs(gate);
     setFormMode(gate);
+  });
+
+  gate.querySelector('#access-form')?.elements.athleteCreationMode?.addEventListener('change', event => {
+    const state = editorState(gate);
+    const form = gate.querySelector('#access-form');
+    if (!state || !form || !isEditableMode(gate) || !isAppOwner() || state.draft.hasOwnerRole) return;
+
+    const mode = String(event.target.value || 'none');
+    if (mode === 'unlimited') {
+      state.draft.canCreateAthletes = true;
+      state.draft.athleteCreationLimit = null;
+    } else if (mode === 'one') {
+      state.draft.canCreateAthletes = true;
+      state.draft.athleteCreationLimit = 1;
+    } else if (mode === 'custom') {
+      state.draft.canCreateAthletes = true;
+      const current = Number(state.draft.athleteCreationLimit);
+      state.draft.athleteCreationLimit = Number.isInteger(current) && current >= 2 ? current : 2;
+    } else {
+      state.draft.canCreateAthletes = false;
+      state.draft.athleteCreationLimit = 0;
+    }
+
+    setFormMode(gate);
+  });
+
+  gate.querySelector('#access-form')?.elements.athleteCreationCustom?.addEventListener('input', event => {
+    const state = editorState(gate);
+    if (!state || !isEditableMode(gate) || !isAppOwner() || state.draft.hasOwnerRole) return;
+
+    const value = Number(event.target.value);
+    if (Number.isInteger(value) && value >= 2) {
+      state.draft.canCreateAthletes = true;
+      state.draft.athleteCreationLimit = value;
+    }
   });
 
   gate.querySelector('#access-cancel')?.addEventListener('click', () => {
