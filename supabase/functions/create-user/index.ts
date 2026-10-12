@@ -250,7 +250,7 @@ Deno.serve(async req => {
     const allowUnassigned = Boolean(body.allowUnassigned);
     const athleteIds = normalizeIdList(
       body.athleteIds,
-      isBetaOwner ? '' : sourceAthleteId,
+      (isBetaOwner || allowUnassigned) ? '' : sourceAthleteId,
       'atleta',
     );
     const managedAthleteIds = normalizeIdList(
