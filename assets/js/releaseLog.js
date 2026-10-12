@@ -1,5 +1,21 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.24',
+    date: '2026-10-12',
+    title: 'Athlete creation quotas & per-athlete access',
+    details: [
+      'Il pannello Utenti & Accessi espone ora una autorizzazione separata per la creazione di atleti: NO, 1, quota personalizzata oppure SÌ illimitati.',
+      'La possibilità di creare atleti è indipendente dal ruolo e dai privilegi assegnati sui singoli atleti.',
+      'Essere Admin di un atleta non abilita più automaticamente la creazione di nuovi atleti.',
+      'Ogni atleta assegnato mantiene un proprio ruolo e un proprio set di privilegi modulo per modulo, modificabili separatamente.',
+      'Il Founding Beta mantiene come default la quota di 1 atleta, ma l’Owner globale può modificarla esplicitamente.',
+      'Sono supportati anche account autorizzati a creare atleti senza assegnazioni preesistenti.',
+      'Aggiunta enforcement server-side della quota e aggiornato il workspace Owner.',
+      'Richiede migration Supabase e redeploy della Edge Function create-user.',
+      'Nessuna modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.23',
     date: '2026-10-11',
     title: 'Mobile Match debrief navigation fix',
