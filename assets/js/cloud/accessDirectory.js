@@ -114,6 +114,7 @@ export async function saveOwnerUserAccountOptions({
   isBetaOwner = false,
   userType = 'custom',
   athleteCreationLimit = 0,
+  updateQuota = true,
 } = {}) {
   const normalizedUserId = String(userId || '').trim();
   if (!normalizedUserId) {
@@ -133,16 +134,20 @@ export async function saveOwnerUserAccountOptions({
     throw new Error(`Impossibile salvare email/Founding Beta: ${accountError.message}`);
   }
 
-  if (athleteCreationLimit !== null && (!Number.isSafeInteger(athleteCreationLimit) || athleteCreationLimit < 0)) {
-    throw new Error('La quota deve essere un numero intero non negativo.');
-  }
+  let quotaData = null;
+  if (updateQuota) {
+    if (athleteCreationLimit !== null && (!Number.isSafeInteger(athleteCreationLimit) || athleteCreationLimit < 0)) {
+      throw new Error('La quota deve essere un numero intero non negativo.');
+    }
 
-  const { data: quotaData, error: quotaError } = await supabase.rpc(
-    'set_owner_user_creation_quota',
-    { p_user_id: normalizedUserId, p_limit: athleteCreationLimit },
-  );
-  if (quotaError) {
-    throw new Error(`Impossibile salvare la quota di creazione: ${quotaError.message}`);
+    const { data, error } = await supabase.rpc(
+      'set_owner_user_creation_quota',
+      { p_user_id: normalizedUserId, p_limit: athleteCreationLimit },
+    );
+    if (error) {
+      throw new Error(`Impossibile salvare la quota di creazione: ${error.message}`);
+    }
+    quotaData = data;
   }
 
   const { data: profileData, error: profileError } = await supabase.rpc(
