@@ -200,7 +200,8 @@ async function findUserByEmail(
     if (error) throw error;
 
     const match = data.users.find(
-      user => String(user.email ?? '').trim().toLowerCase() === email,
+      (user: { email?: string | null }) =>
+        String(user.email ?? '').trim().toLowerCase() === email,
     );
 
     if (match) return match;
