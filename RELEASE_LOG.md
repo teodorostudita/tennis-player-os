@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.2.24 — Account athlete creation quotas
+- In **Utenti & Accessi** ogni account dispone di una quota autonoma di creazione atleti: **NO (0)**, **1**, **Definisci numero (N)**, **SÌ (illimitati)**.
+- La quota non viene alterata passando da **Member** ad **Admin** su un atleta, né cambiando i privilegi dei moduli.
+- Ogni atleta continua ad avere un set distinto di permessi.
+- È possibile gestire account senza atleti assegnati, inclusa la loro eliminazione da parte dell'Owner globale.
+- Gli account **Founding Beta** partono da 1 atleta, con possibilità di modificare successivamente la quota.
+- Richiede la migration `20261012220000_account_athlete_creation_quotas.sql` e l'aggiornamento della Edge Function `create-user`.
+- Nessuna modifica a `tennis-player-os-site/` o al gestionale P-Med.
+
+
 ## v1.2.23 — Mobile Match debrief navigation fix
 - Corretto il comportamento di **Match → Debrief** nell’app/mobile.
 - Toccando **Debrief**, il contenuto selezionato viene ora portato automaticamente a vista.

@@ -11,12 +11,12 @@ import {
   deleteManagedAccount,
   getCurrentAccess,
   removeAthleteUser,
-} from '../cloud/access.js?v=1.2.4';
+} from '../cloud/access.js?v=1.2.24';
 import {
   loadOwnerAccessWorkspace,
   replaceOwnerUserAccess,
   saveOwnerUserAccountOptions,
-} from '../cloud/accessDirectory.js?v=1.2.4';
+} from '../cloud/accessDirectory.js?v=1.2.24';
 import { isAppOwner } from '../cloud/accountAccess.js?v=1.2.4';
 import { emailFromLogin, loginFromEmail, normalizeUsername } from '../cloud/loginIdentity.js?v=1.2.4';
 import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
@@ -140,6 +140,36 @@ function assignmentDraft(assignment = {}) {
   };
 }
 
+function quotaChoice(draft = {}) {
+  if (draft.creationChoice) return draft.creationChoice;
+  if (!draft.canCreateAthletes) return 'none';
+  if (draft.athleteCreationLimit == null) return 'unlimited';
+  return draft.athleteCreationLimit === 1 ? 'one' : 'custom';
+}
+
+function quotaDescription(draft = {}) {
+  const choice = quotaChoice(draft);
+  if (choice === 'none') return 'Creazione disabilitata';
+  if (choice === 'unlimited') return 'Creazione illimitata';
+  const limit = choice === 'one' ? 1 : Number(draft.athleteCreationLimit || 0);
+  return `Fino a ${limit} atlet${limit === 1 ? 'a' : 'i'}`;
+}
+
+function renderQuotaControl(gate) {
+  const state = editorState(gate);
+  const form = gate.querySelector('#access-form');
+  const custom = gate.querySelector('#access-creation-custom');
+  if (!state?.draft || !form) return;
+  const choice = quotaChoice(state.draft);
+  form.elements.creationQuota.value = choice;
+  if (custom) custom.hidden = choice !== 'custom';
+  form.elements.creationQuotaCount.value = choice === 'custom'
+    ? String(state.draft.athleteCreationLimit ?? 2) : '';
+  const readonly = !isAppOwner() || !isEditableMode(gate) || state.draft.hasOwnerRole;
+  setControlDisabled(form.elements.creationQuota, readonly);
+  setControlDisabled(form.elements.creationQuotaCount, readonly);
+}
+
 function userLogin(user = {}) {
   return loginFromEmail(user.email || '') || user.displayName || 'utente';
 }
@@ -254,6 +284,23 @@ function renderShell(gate) {
                 </span>
               </label>
 
+              <section class="access-editor-section access-creation-section">
+                <label class="access-field">
+                  <span>Creazione nuovi atleti</span>
+                  <select name="creationQuota">
+                    <option value="none">NO — non può creare atleti</option>
+                    <option value="one">1 — può creare un atleta</option>
+                    <option value="custom">Definisci numero…</option>
+                    <option value="unlimited">SÌ — illimitati</option>
+                  </select>
+                </label>
+                <label class="access-field" id="access-creation-custom" hidden>
+                  <span>Numero massimo di atleti creabili</span>
+                  <input type="number" name="creationQuotaCount" min="1" max="1000000" step="1" inputmode="numeric" />
+                </label>
+                <small class="access-creation-hint">Questa quota è indipendente dai ruoli e dai privilegi sugli atleti già assegnati.</small>
+              </section>
+
               <div id="access-password-block">
                 <label class="access-field">
                   <span>Password temporanea</span>
@@ -317,7 +364,7 @@ function renderShell(gate) {
                   </label>
 
                   <div id="access-admin-note" class="access-info" hidden>
-                    Un Admin può leggere e modificare tutti i moduli di questo atleta e può creare nuovi atleti.
+                    Un Admin può leggere e modificare tutti i moduli di questo atleta. La creazione di nuovi atleti dipende soltanto dalla quota dell’account.
                   </div>
 
                   <div id="access-owner-note" class="access-info" hidden>
@@ -447,6 +494,7 @@ function memberCards(gate) {
             ${user.isBetaOwner ? '<span class="access-role-badge role-beta">Beta</span>' : ''}
           </span>
           <span class="access-member-summary">${escapeHtml(memberSummary(gate, user))}</span>
+          <span class="access-member-summary">${escapeHtml(quotaDescription(user))}</span>
         </span>
         <span class="access-user-chevron" aria-hidden="true">›</span>
       </button>
@@ -497,6 +545,7 @@ function userToDraft(user) {
     userType: normalizeUserType(user.userType),
     isBetaOwner: Boolean(user.isBetaOwner),
     athleteCreationLimit: user.athleteCreationLimit == null ? null : Number(user.athleteCreationLimit),
+    canCreateAthletes: Boolean(user.canCreateAthletes),
     hasOwnerRole: Boolean(user.hasOwnerRole),
     assignments,
     activeAthleteId: assignmentIds({ assignments })[0] || '',
@@ -519,7 +568,10 @@ function newDraft(gate) {
     contactEmail: '',
     userType: 'custom',
     isBetaOwner: false,
-    athleteCreationLimit: null,
+    athleteCreationLimit: 0,
+    canCreateAthletes: false,
+    creationChoice: 'none',
+    quotaTouched: false,
     hasOwnerRole: false,
     assignments,
     activeAthleteId: preferred?.id || '',
@@ -711,6 +763,7 @@ function setFormMode(gate) {
   form.elements.contactEmail.value = state.draft.contactEmail || '';
   form.elements.userType.value = normalizeUserType(state.draft.userType);
   form.elements.isBetaOwner.checked = Boolean(state.draft.isBetaOwner);
+  renderQuotaControl(gate);
   form.elements.login.readOnly = !isNew;
   form.elements.contactEmail.readOnly = !isAppOwner() || isView;
   setControlDisabled(form.elements.login, false);
@@ -883,20 +936,20 @@ async function saveEditor(gate) {
   const contactEmail = String(form.elements.contactEmail?.value || '').trim();
   const userType = normalizeUserType(form.elements.userType?.value);
   const isBetaOwner = Boolean(form.elements.isBetaOwner?.checked) && isAppOwner();
+  const creationChoice = quotaChoice(state.draft);
+  const athleteCreationLimit = creationChoice === 'none' ? 0
+    : creationChoice === 'unlimited' ? null
+    : creationChoice === 'one' ? 1
+    : Number(form.elements.creationQuotaCount?.value);
+  if (creationChoice === 'custom' && (!Number.isSafeInteger(athleteCreationLimit) || athleteCreationLimit < 1 || athleteCreationLimit > 1000000)) {
+    setMessage(gate, 'Inserisci un numero intero di atleti tra 1 e 1.000.000.', 'error');
+    return;
+  }
   const originalUser = state.draft?.userId
     ? workspace(gate).users.find(user => user.userId === state.draft.userId)
     : null;
 
-  if (!assignments.length && !isBetaOwner) {
-    setMessage(gate, 'Seleziona almeno un atleta oppure abilita Founding Beta Owner.', 'error');
-    return;
-  }
-
-  if (!assignments.length && !isNew && (originalUser?.assignments || []).length) {
-    setMessage(gate, 'Non rimuovere qui l’ultimo atleta assegnato: mantienilo oppure elimina l’account.', 'error');
-    return;
-  }
-
+  // An account may have its own quota without any currently assigned athlete.
   if (contactEmail && !form.elements.contactEmail?.validity?.valid) {
     setMessage(gate, 'Inserisci un indirizzo email di contatto valido.', 'error');
     return;
@@ -950,6 +1003,7 @@ async function saveEditor(gate) {
         login,
         contactEmail,
         isBetaOwner,
+        allowUnassigned: !assignments.length && !isBetaOwner,
         userType,
         temporaryPassword: String(form.elements.temporaryPassword?.value || ''),
         role: 'member',
@@ -964,7 +1018,7 @@ async function saveEditor(gate) {
       }
     }
 
-    if (assignments.length && !state.draft.hasOwnerRole) {
+    if (!state.draft.hasOwnerRole && (!isNew || assignments.length)) {
       await replaceOwnerUserAccess({
         userId,
         assignments,
@@ -981,6 +1035,8 @@ async function saveEditor(gate) {
         contactEmail,
         isBetaOwner,
         userType,
+        athleteCreationLimit,
+        updateQuota: !state.draft.hasOwnerRole,
       });
     }
 
@@ -997,7 +1053,7 @@ async function saveEditor(gate) {
       gate,
       isNew
         ? isBetaOwner
-          ? `Founding Beta Owner creato con profilo ${userTypeLabel(userType)}. Potrà creare un solo atleta; i privilegi restano personalizzabili.`
+          ? `Founding Beta Owner creato con profilo ${userTypeLabel(userType)}. Quota e privilegi personalizzabili dall’Owner.`
           : accountCreated
             ? 'Utente creato. Atleti, email e privilegi sono stati salvati.'
             : 'Account esistente trovato: assegnazioni, email e privilegi sono stati salvati.'
@@ -1040,7 +1096,7 @@ async function deleteCurrentUser(gate) {
     const removable = (user.assignments || []).filter(assignment => assignment.role !== 'owner');
     let lastResult = null;
 
-    if (!removable.length && user.isBetaOwner && isAppOwner()) {
+    if (isAppOwner()) {
       lastResult = await deleteManagedAccount({ userId });
     } else {
       if (!removable.length) {
@@ -1060,7 +1116,7 @@ async function deleteCurrentUser(gate) {
 
     const listMessage = lastResult?.accountDeleted
       ? 'Utente eliminato completamente.'
-      : 'Le assegnazioni gestibili sono state rimosse; l’account è stato conservato perché esistono altre assegnazioni.';
+      : 'Assegnazioni rimosse. L’account resta disponibile se ha altri privilegi, una quota o lo stato Beta.';
 
     const list = gate.querySelector('#access-members-list');
     list?.insertAdjacentHTML(
@@ -1147,12 +1203,39 @@ function bindStaticEvents(gate) {
     }
   });
 
+  gate.querySelector('#access-form')?.elements.creationQuota?.addEventListener('change', event => {
+    const state = editorState(gate);
+    if (!state?.draft || !isEditableMode(gate) || !isAppOwner() || state.draft.hasOwnerRole) return;
+    const choice = String(event.target.value || 'none');
+    if (!['none', 'one', 'custom', 'unlimited'].includes(choice)) return;
+    state.draft.creationChoice = choice;
+    state.draft.quotaTouched = true;
+    state.draft.canCreateAthletes = choice !== 'none';
+    state.draft.athleteCreationLimit = choice === 'none' ? 0
+      : choice === 'one' ? 1
+      : choice === 'unlimited' ? null
+      : Math.max(1, Number(state.draft.athleteCreationLimit) || 2);
+    renderQuotaControl(gate);
+  });
+
+  gate.querySelector('#access-form')?.elements.creationQuotaCount?.addEventListener('input', event => {
+    const state = editorState(gate);
+    if (!state?.draft) return;
+    state.draft.athleteCreationLimit = Number(event.target.value);
+    state.draft.quotaTouched = true;
+  });
+
   gate.querySelector('#access-form')?.elements.isBetaOwner?.addEventListener('change', event => {
     const state = editorState(gate);
     if (!state || !isEditableMode(gate) || !isAppOwner()) return;
 
     persistActiveAssignment(gate);
     state.draft.isBetaOwner = Boolean(event.target.checked);
+    if (state.draft.isBetaOwner && !state.draft.quotaTouched && quotaChoice(state.draft) === 'none') {
+      state.draft.creationChoice = 'one';
+      state.draft.canCreateAthletes = true;
+      state.draft.athleteCreationLimit = 1;
+    }
 
     // New Beta Owners start in a clean workspace. They create their own athlete.
     // Existing assignments can still be added back manually and customized.

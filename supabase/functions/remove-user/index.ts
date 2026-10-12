@@ -213,18 +213,30 @@ Deno.serve(async req => {
     if (remainingError) throw remainingError;
 
     const remaining = remainingMemberships ?? [];
-    const accountDeleted = remaining.length === 0;
+    const { data: accountAccess, error: accountAccessError } =
+      await adminClient
+        .from('account_access')
+        .select('role, can_create_athletes')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+    if (accountAccessError) throw accountAccessError;
+
+    const { data: activeBeta, error: betaError } = await adminClient
+      .from('beta_accounts')
+      .select('user_id')
+      .eq('user_id', targetUserId)
+      .eq('program_code', 'founding_beta')
+      .eq('status', 'active')
+      .maybeSingle();
+    if (betaError) throw betaError;
+
+    // An unassigned account with a creation quota or active Beta status
+    // remains usable. Only dormant non-Beta accounts are auto-removed.
+    const accountDeleted = remaining.length === 0
+      && !accountAccess?.can_create_athletes
+      && !activeBeta;
 
     if (accountDeleted) {
-      const { data: accountAccess, error: accountAccessError } =
-        await adminClient
-          .from('account_access')
-          .select('role')
-          .eq('user_id', targetUserId)
-          .maybeSingle();
-
-      if (accountAccessError) throw accountAccessError;
-
       if (accountAccess?.role === 'owner') {
         throw new Error('L’owner globale non può essere eliminato.');
       }
@@ -238,15 +250,6 @@ Deno.serve(async req => {
         item => item.status === 'active' && item.role === 'admin',
       );
 
-      const { data: accountAccess, error: accountAccessError } =
-        await adminClient
-          .from('account_access')
-          .select('role')
-          .eq('user_id', targetUserId)
-          .maybeSingle();
-
-      if (accountAccessError) throw accountAccessError;
-
       if (accountAccess?.role !== 'owner') {
         const { error: accountUpdateError } = await adminClient
           .from('account_access')
@@ -254,7 +257,6 @@ Deno.serve(async req => {
             {
               user_id: targetUserId,
               role: hasActiveAdmin ? 'admin' : 'member',
-              can_create_athletes: hasActiveAdmin,
             },
             {
               onConflict: 'user_id',
