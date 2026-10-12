@@ -184,7 +184,9 @@ function normalizePermissions(input: PermissionInput[] | undefined) {
 }
 
 async function findUserByEmail(
-  adminClient: ReturnType<typeof createClient>,
+  // Supabase service-role clients carry generated schema generics that can
+  // differ across supabase-js minor versions; only Auth Admin is used here.
+  adminClient: any,
   email: string,
 ) {
   let page = 1;
