@@ -1,0 +1,77 @@
+name: Build Athlete Creation Quotas 1.2.24 Patch ZIP
+
+on:
+  push:
+    branches: [ chatgpt/athlete-creation-quotas-v1.2.24 ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Build patch zip
+        run: |
+          rm -rf patch TPOS_patch_v1.2.24_Athlete_Creation_Quotas.zip
+          mkdir -p patch/assets/css
+          mkdir -p patch/assets/js/cloud
+          mkdir -p patch/assets/js/components
+          mkdir -p patch/assets/js/ui
+          mkdir -p patch/assets/js
+          mkdir -p patch/supabase/functions/create-user
+          mkdir -p patch/supabase/migrations
+
+          cp README-PATCH.txt patch/README-PATCH.txt
+          cp RELEASE_LOG.md patch/RELEASE_LOG.md
+          cp assets/css/access-v2.css patch/assets/css/access-v2.css
+          cp assets/js/bootstrap.js patch/assets/js/bootstrap.js
+          cp assets/js/cloud/access.js patch/assets/js/cloud/access.js
+          cp assets/js/cloud/accessDirectory.js patch/assets/js/cloud/accessDirectory.js
+          cp assets/js/components/accessManagement.js patch/assets/js/components/accessManagement.js
+          cp assets/js/releaseLog.js patch/assets/js/releaseLog.js
+          cp assets/js/ui/versionDashboard.js patch/assets/js/ui/versionDashboard.js
+          cp assets/js/version.js patch/assets/js/version.js
+          cp index.html patch/index.html
+          cp sw.js patch/sw.js
+          cp supabase/functions/create-user/index.ts patch/supabase/functions/create-user/index.ts
+          cp supabase/functions/create-user/README.md patch/supabase/functions/create-user/README.md
+          cp supabase/migrations/20261012211000_account_athlete_creation_quotas.sql patch/supabase/migrations/
+
+          cd patch
+          zip -r ../TPOS_patch_v1.2.24_Athlete_Creation_Quotas.zip .
+
+      - name: Check JavaScript syntax
+        run: |
+          for file in             patch/assets/js/bootstrap.js             patch/assets/js/cloud/access.js             patch/assets/js/cloud/accessDirectory.js             patch/assets/js/components/accessManagement.js             patch/assets/js/releaseLog.js             patch/assets/js/ui/versionDashboard.js             patch/assets/js/version.js             patch/sw.js
+          do
+            node --input-type=module --check < "$file"
+          done
+
+      - name: Check Edge Function
+        run: |
+          deno check patch/supabase/functions/create-user/index.ts
+
+      - name: Verify patch scope and quota guards
+        run: |
+          test ! -e patch/tennis-player-os-site
+          test -f patch/supabase/migrations/20261012211000_account_athlete_creation_quotas.sql
+          grep -q 'athleteCreationMode' patch/assets/js/components/accessManagement.js
+          grep -q 'SÌ — illimitati' patch/assets/js/components/accessManagement.js
+          grep -q 'canCreateAthletes' patch/assets/js/cloud/accessDirectory.js
+          grep -q 'Solo l.Owner globale può modificare la quota di creazione atleti' patch/supabase/functions/create-user/index.ts
+          grep -q "APP_VERSION = '1.2.24'" patch/assets/js/version.js
+          unzip -l TPOS_patch_v1.2.24_Athlete_Creation_Quotas.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TPOS_patch_v1.2.24_Athlete_Creation_Quotas
+          path: TPOS_patch_v1.2.24_Athlete_Creation_Quotas.zip
+          if-no-files-found: error
