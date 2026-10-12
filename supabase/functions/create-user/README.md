@@ -9,8 +9,14 @@ username to an internal technical Supabase Auth email under
 temporary password. The user must replace that password at first login.
 
 For a new account, the caller can assign one athlete, several selected athletes,
-or all currently available athletes. The same athlete-level role and module
-permissions are applied to all of those initial assignments.
+or no existing athlete when the account is explicitly allowed to create new
+athletes. The same athlete-level role and module permissions are applied to all
+initial assignments.
+
+Athlete creation is an independent account-level capability. The caller may set
+`canCreateAthletes` plus `athleteCreationLimit`: `0/false` means no creation,
+`1` means one athlete, a positive integer is a custom quota, and `null` means
+unlimited. Athlete-level Admin no longer implicitly grants athlete creation.
 
 When an existing user is edited, athlete visibility can also be changed:
 existing assignments keep their own role and module permissions, the active
