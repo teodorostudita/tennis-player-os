@@ -46,9 +46,11 @@ function normalizeWorkspace(payload = {}) {
           strongestRole: String(user.strongestRole || 'member'),
           hasOwnerRole: Boolean(user.hasOwnerRole),
           isBetaOwner: Boolean(user.isBetaOwner),
+          canCreateAthletes: Boolean(user.canCreateAthletes),
           athleteCreationLimit: user.athleteCreationLimit == null
             ? null
             : Number(user.athleteCreationLimit),
+          athletesCreatedCount: Math.max(0, Number(user.athletesCreatedCount || 0)),
           firstCreatedAt: String(user.firstCreatedAt || ''),
           assignments: Array.isArray(user.assignments)
             ? user.assignments.map(normalizeAssignment).filter(item => item.athleteId)
@@ -115,6 +117,8 @@ export async function saveOwnerUserAccountOptions({
   userId,
   contactEmail = '',
   isBetaOwner = false,
+  canCreateAthletes = false,
+  athleteCreationLimit = 0,
   userType = 'custom',
 } = {}) {
   const normalizedUserId = String(userId || '').trim();
@@ -128,11 +132,15 @@ export async function saveOwnerUserAccountOptions({
       p_user_id: normalizedUserId,
       p_contact_email: String(contactEmail || '').trim() || null,
       p_is_beta_owner: Boolean(isBetaOwner),
+      p_can_create_athletes: Boolean(canCreateAthletes),
+      p_athlete_creation_limit: canCreateAthletes
+        ? (athleteCreationLimit == null ? null : Number(athleteCreationLimit))
+        : 0,
     },
   );
 
   if (accountError) {
-    throw new Error(`Impossibile salvare email/Founding Beta: ${accountError.message}`);
+    throw new Error(`Impossibile salvare opzioni account: ${accountError.message}`);
   }
 
   const { data: profileData, error: profileError } = await supabase.rpc(
