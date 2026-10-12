@@ -221,10 +221,14 @@ export async function createOrUpdateAthleteAccess({
       login: login || email,
       contactEmail,
       isBetaOwner: Boolean(isBetaOwner),
-      canCreateAthletes: Boolean(canCreateAthletes),
-      athleteCreationLimit: canCreateAthletes
-        ? (athleteCreationLimit == null ? null : Number(athleteCreationLimit))
-        : 0,
+      ...(isAppOwner()
+        ? {
+            canCreateAthletes: Boolean(canCreateAthletes),
+            athleteCreationLimit: canCreateAthletes
+              ? (athleteCreationLimit == null ? null : Number(athleteCreationLimit))
+              : 0,
+          }
+        : {}),
       userType,
       temporaryPassword,
       role,
