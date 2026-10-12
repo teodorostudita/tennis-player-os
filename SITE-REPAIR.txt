@@ -1,1 +1,0 @@
-Repair patch: restores app root index, installs marketing v1.2 in tennis-player-os-site/, and fixes Applica Patch folder unwrapping.

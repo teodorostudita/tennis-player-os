@@ -256,12 +256,23 @@ if [ -n "$FUNCTIONS" ]; then
     fi
 
     echo "  → $function_name"
-    if [ "$function_name" = "remove-user" ]; then
-      supabase functions deploy "$function_name" --no-verify-jwt \
-        || fail "Deploy della funzione $function_name non riuscito."
-    else
-      supabase functions deploy "$function_name" \
-        || fail "Deploy della funzione $function_name non riuscito."
+    # Supabase's documented alternative when the API bundle fails with 500.
+    edge_args=()
+    [ "$function_name" = "remove-user" ] && edge_args+=(--no-verify-jwt)
+
+    if ! supabase functions deploy "$function_name" "${edge_args[@]}"; then
+      echo
+      echo "Il deploy standard di $function_name non e' riuscito."
+      echo "Provo la compilazione locale con Docker (alternativa ufficiale Supabase)..."
+      echo
+
+      command -v docker >/dev/null 2>&1 \
+        || fail "Docker Desktop non risulta installato. Installalo e avvialo, poi rilancia questa pubblicazione. La migration SQL e' gia' applicata."
+      docker info >/dev/null 2>&1 \
+        || fail "Docker Desktop non e' avviato. Apri Docker Desktop, attendi che sia operativo e rilancia Pubblica Tennis Player OS.command."
+
+      supabase functions deploy "$function_name" "${edge_args[@]}" --use-docker --debug \
+        || fail "Anche il deploy con Docker di $function_name non e' riuscito. Copia qui l'output completo."
     fi
   done <<< "$FUNCTIONS"
   echo "  Edge Functions aggiornate."
