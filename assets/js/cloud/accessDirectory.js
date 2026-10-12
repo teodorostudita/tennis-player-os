@@ -46,6 +46,7 @@ function normalizeWorkspace(payload = {}) {
           strongestRole: String(user.strongestRole || 'member'),
           hasOwnerRole: Boolean(user.hasOwnerRole),
           isBetaOwner: Boolean(user.isBetaOwner),
+          canCreateAthletes: Boolean(user.canCreateAthletes),
           athleteCreationLimit: user.athleteCreationLimit == null
             ? null
             : Number(user.athleteCreationLimit),
@@ -93,10 +94,6 @@ export async function replaceOwnerUserAccess({
       : [],
   }));
 
-  if (!payload.length) {
-    throw new Error('Seleziona almeno un atleta.');
-  }
-
   const { data, error } = await supabase.rpc('replace_owner_user_access', {
     p_user_id: normalizedUserId,
     p_assignments: payload,
@@ -116,6 +113,8 @@ export async function saveOwnerUserAccountOptions({
   contactEmail = '',
   isBetaOwner = false,
   userType = 'custom',
+  athleteCreationLimit = 0,
+  updateQuota = true,
 } = {}) {
   const normalizedUserId = String(userId || '').trim();
   if (!normalizedUserId) {
@@ -135,6 +134,22 @@ export async function saveOwnerUserAccountOptions({
     throw new Error(`Impossibile salvare email/Founding Beta: ${accountError.message}`);
   }
 
+  let quotaData = null;
+  if (updateQuota) {
+    if (athleteCreationLimit !== null && (!Number.isSafeInteger(athleteCreationLimit) || athleteCreationLimit < 0)) {
+      throw new Error('La quota deve essere un numero intero non negativo.');
+    }
+
+    const { data, error } = await supabase.rpc(
+      'set_owner_user_creation_quota',
+      { p_user_id: normalizedUserId, p_limit: athleteCreationLimit },
+    );
+    if (error) {
+      throw new Error(`Impossibile salvare la quota di creazione: ${error.message}`);
+    }
+    quotaData = data;
+  }
+
   const { data: profileData, error: profileError } = await supabase.rpc(
     'set_owner_user_type',
     {
@@ -150,6 +165,7 @@ export async function saveOwnerUserAccountOptions({
   return {
     ...(accountData || {}),
     ...(profileData || {}),
+    ...(quotaData || {}),
     ok: true,
   };
 }

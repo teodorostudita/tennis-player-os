@@ -47,6 +47,7 @@ type RequestBody = {
   email?: string;
   contactEmail?: string;
   isBetaOwner?: boolean;
+  allowUnassigned?: boolean;
   userType?: string;
   temporaryPassword?: string;
   role?: 'admin' | 'member';
@@ -246,9 +247,10 @@ Deno.serve(async req => {
     const body = await req.json() as RequestBody;
     const sourceAthleteId = String(body.athleteId ?? '').trim();
     const isBetaOwner = Boolean(body.isBetaOwner);
+    const allowUnassigned = Boolean(body.allowUnassigned);
     const athleteIds = normalizeIdList(
       body.athleteIds,
-      isBetaOwner ? '' : sourceAthleteId,
+      (isBetaOwner || allowUnassigned) ? '' : sourceAthleteId,
       'atleta',
     );
     const managedAthleteIds = normalizeIdList(
@@ -271,7 +273,7 @@ Deno.serve(async req => {
       return json({ error: 'Atleta attivo non valido.' }, 400, origin);
     }
 
-    if (!athleteIds.length && !isBetaOwner) {
+    if (!athleteIds.length && !isBetaOwner && !allowUnassigned) {
       return json({ error: 'Seleziona almeno un atleta.' }, 400, origin);
     }
 
@@ -334,14 +336,14 @@ Deno.serve(async req => {
       return json({ error: 'Sessione non valida.' }, 401, origin);
     }
 
-    if (isBetaOwner) {
+    if (isBetaOwner || allowUnassigned) {
       const { data: appOwnerAllowed, error: appOwnerError } =
         await callerClient.rpc('is_app_owner');
 
       if (appOwnerError) throw appOwnerError;
       if (!appOwnerAllowed) {
         return json(
-          { error: 'Solo l’Owner globale può creare un Founding Beta Owner.' },
+          { error: 'Solo l’Owner globale può creare account senza atleti o Founding Beta Owner.' },
           403,
           origin,
         );
@@ -588,7 +590,7 @@ Deno.serve(async req => {
     const { data: accountRoleRow, error: accountRoleReadError } =
       await adminClient
         .from('account_access')
-        .select('role, must_change_password')
+        .select('role, can_create_athletes, athlete_creation_limit, must_change_password')
         .eq('user_id', targetUser.id)
         .maybeSingle();
 
@@ -626,8 +628,15 @@ Deno.serve(async req => {
       } = {
         user_id: targetUser.id,
         role: isBetaOwner ? 'admin' : hasAdminAccess ? 'admin' : 'member',
-        can_create_athletes: isBetaOwner || hasAdminAccess,
-        athlete_creation_limit: isBetaOwner ? 1 : null,
+        // Existing account creation rights must never be inferred from athlete roles.
+        // The Auth trigger already creates an account_access row for a brand-new
+        // user. Use accountCreated (not the row's existence) for first defaults.
+        can_create_athletes: accountCreated
+          ? isBetaOwner
+          : Boolean(accountRoleRow?.can_create_athletes),
+        athlete_creation_limit: accountCreated
+          ? (isBetaOwner ? 1 : 0)
+          : accountRoleRow ? accountRoleRow.athlete_creation_limit : 0,
       };
 
       if (accountCreated) {
