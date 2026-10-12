@@ -1095,7 +1095,7 @@ async function deleteCurrentUser(gate) {
     const removable = (user.assignments || []).filter(assignment => assignment.role !== 'owner');
     let lastResult = null;
 
-    if (!removable.length && isAppOwner()) {
+    if (isAppOwner()) {
       lastResult = await deleteManagedAccount({ userId });
     } else {
       if (!removable.length) {
@@ -1115,7 +1115,7 @@ async function deleteCurrentUser(gate) {
 
     const listMessage = lastResult?.accountDeleted
       ? 'Utente eliminato completamente.'
-      : 'Le assegnazioni gestibili sono state rimosse; l’account è stato conservato perché esistono altre assegnazioni.';
+      : 'Assegnazioni rimosse. L’account resta disponibile se ha altri privilegi, una quota o lo stato Beta.';
 
     const list = gate.querySelector('#access-members-list');
     list?.insertAdjacentHTML(
