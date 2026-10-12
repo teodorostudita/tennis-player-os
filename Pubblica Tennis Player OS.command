@@ -257,10 +257,16 @@ if [ -n "$FUNCTIONS" ]; then
 
     echo "  → $function_name"
     # Supabase's documented alternative when the API bundle fails with 500.
-    edge_args=()
-    [ "$function_name" = "remove-user" ] && edge_args+=(--no-verify-jwt)
+    # Use explicit branching for the Bash 3.2 shipped with macOS.
+    if [ "$function_name" = "remove-user" ]; then
+      supabase functions deploy "$function_name" --no-verify-jwt
+      edge_deploy_result=$?
+    else
+      supabase functions deploy "$function_name"
+      edge_deploy_result=$?
+    fi
 
-    if ! supabase functions deploy "$function_name" "${edge_args[@]}"; then
+    if [ "$edge_deploy_result" -ne 0 ]; then
       echo
       echo "Il deploy standard di $function_name non e' riuscito."
       echo "Provo la compilazione locale con Docker (alternativa ufficiale Supabase)..."
@@ -271,8 +277,13 @@ if [ -n "$FUNCTIONS" ]; then
       docker info >/dev/null 2>&1 \
         || fail "Docker Desktop non e' avviato. Apri Docker Desktop, attendi che sia operativo e rilancia Pubblica Tennis Player OS.command."
 
-      supabase functions deploy "$function_name" "${edge_args[@]}" --use-docker --debug \
-        || fail "Anche il deploy con Docker di $function_name non e' riuscito. Copia qui l'output completo."
+      if [ "$function_name" = "remove-user" ]; then
+        supabase functions deploy "$function_name" --no-verify-jwt --use-docker --debug \
+          || fail "Anche il deploy con Docker di $function_name non e' riuscito. Copia qui l'output completo."
+      else
+        supabase functions deploy "$function_name" --use-docker --debug \
+          || fail "Anche il deploy con Docker di $function_name non e' riuscito. Copia qui l'output completo."
+      fi
     fi
   done <<< "$FUNCTIONS"
   echo "  Edge Functions aggiornate."
