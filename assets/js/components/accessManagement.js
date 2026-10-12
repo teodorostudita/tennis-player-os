@@ -254,6 +254,33 @@ function renderShell(gate) {
                 </span>
               </label>
 
+              <section class="access-editor-section access-athlete-creation" id="access-athlete-creation" hidden>
+                <div class="access-permissions-head">
+                  <div>
+                    <strong>Creazione atleti</strong>
+                    <small>Questa autorizzazione è globale per l’account ed è indipendente dai privilegi sui singoli atleti.</small>
+                  </div>
+                </div>
+
+                <label class="access-field">
+                  <span>Può creare nuovi atleti?</span>
+                  <select name="athleteCreationMode">
+                    <option value="none">NO — non può creare atleti</option>
+                    <option value="one">1 — può creare un solo atleta</option>
+                    <option value="custom">Definisci numero</option>
+                    <option value="unlimited">SÌ — illimitati</option>
+                  </select>
+                </label>
+
+                <label class="access-field access-athlete-creation-custom" id="access-athlete-creation-custom" hidden>
+                  <span>Numero massimo di atleti</span>
+                  <input name="athleteCreationCustom" type="number" min="2" step="1" inputmode="numeric" />
+                  <small>Indica il numero massimo complessivo di atleti che questo account potrà creare.</small>
+                </label>
+
+                <div class="access-info access-athlete-creation-info" id="access-athlete-creation-info"></div>
+              </section>
+
               <div id="access-password-block">
                 <label class="access-field">
                   <span>Password temporanea</span>
