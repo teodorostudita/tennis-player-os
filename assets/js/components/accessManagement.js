@@ -476,12 +476,25 @@ function memberSummary(gate, user) {
   const names = (user.assignments || [])
     .map(assignment => athleteLabel(athleteById(gate, assignment.athleteId) || {}))
     .filter(Boolean);
+  const creation = athleteCreationLabel(
+    Boolean(user.canCreateAthletes),
+    user.athleteCreationLimit,
+  );
 
-  if (!names.length) return user.isBetaOwner
-    ? 'Founding Beta · nessun atleta ancora'
-    : 'Nessun atleta assegnato';
-  if (names.length <= 2) return names.join(' · ');
-  return `${names.slice(0, 2).join(' · ')} · +${names.length - 2}`;
+  if (!names.length) {
+    const base = user.isBetaOwner
+      ? 'Founding Beta · nessun atleta ancora'
+      : 'Nessun atleta assegnato';
+    return isAppOwner() ? `${base} · Crea: ${creation}` : base;
+  }
+
+  const athleteSummary = names.length <= 2
+    ? names.join(' · ')
+    : `${names.slice(0, 2).join(' · ')} · +${names.length - 2}`;
+
+  return isAppOwner()
+    ? `${athleteSummary} · Crea: ${creation}`
+    : athleteSummary;
 }
 
 function memberCards(gate) {
@@ -1166,7 +1179,7 @@ async function deleteCurrentUser(gate) {
     const removable = (user.assignments || []).filter(assignment => assignment.role !== 'owner');
     let lastResult = null;
 
-    if (!removable.length && user.isBetaOwner && isAppOwner()) {
+    if (!removable.length && isAppOwner()) {
       lastResult = await deleteManagedAccount({ userId });
     } else {
       if (!removable.length) {
