@@ -384,7 +384,7 @@ function renderShell(gate) {
                   </label>
 
                   <div id="access-admin-note" class="access-info" hidden>
-                    Un Admin può leggere e modificare tutti i moduli di questo atleta e può creare nuovi atleti.
+                    Un Admin può leggere e modificare tutti i moduli di questo atleta. La creazione di nuovi atleti è regolata separatamente a livello account.
                   </div>
 
                   <div id="access-owner-note" class="access-info" hidden>
@@ -767,6 +767,9 @@ function setFormMode(gate) {
   const userTypeHelp = gate.querySelector('#access-user-type-help');
   const profilePresetButton = gate.querySelector('#access-apply-profile-preset');
   const betaToggle = gate.querySelector('#access-beta-toggle');
+  const athleteCreationSection = gate.querySelector('#access-athlete-creation');
+  const athleteCreationCustom = gate.querySelector('#access-athlete-creation-custom');
+  const athleteCreationInfo = gate.querySelector('#access-athlete-creation-info');
   const modifyButton = gate.querySelector('#access-modify');
   const saveButton = gate.querySelector('#access-save');
   const deleteButton = gate.querySelector('#access-delete-user');
@@ -782,6 +785,16 @@ function setFormMode(gate) {
   form.elements.contactEmail.value = state.draft.contactEmail || '';
   form.elements.userType.value = normalizeUserType(state.draft.userType);
   form.elements.isBetaOwner.checked = Boolean(state.draft.isBetaOwner);
+  const creationMode = protectedUser
+    ? 'unlimited'
+    : athleteCreationMode(
+        state.draft.canCreateAthletes,
+        state.draft.athleteCreationLimit,
+      );
+  form.elements.athleteCreationMode.value = creationMode;
+  form.elements.athleteCreationCustom.value = creationMode === 'custom'
+    ? String(state.draft.athleteCreationLimit || '')
+    : '';
   form.elements.login.readOnly = !isNew;
   form.elements.contactEmail.readOnly = !isAppOwner() || isView;
   setControlDisabled(form.elements.login, false);
@@ -790,7 +803,26 @@ function setFormMode(gate) {
     isView || (!isNew && !isAppOwner()),
   );
   setControlDisabled(form.elements.isBetaOwner, !isAppOwner() || isView || protectedUser);
+  setControlDisabled(
+    form.elements.athleteCreationMode,
+    !isAppOwner() || isView || protectedUser,
+  );
+  setControlDisabled(
+    form.elements.athleteCreationCustom,
+    !isAppOwner() || isView || protectedUser,
+  );
   if (betaToggle) betaToggle.hidden = !isAppOwner();
+  if (athleteCreationSection) athleteCreationSection.hidden = !isAppOwner();
+  if (athleteCreationCustom) athleteCreationCustom.hidden = creationMode !== 'custom';
+  if (athleteCreationInfo && isAppOwner()) {
+    const created = Math.max(0, Number(state.draft.athletesCreatedCount || 0));
+    athleteCreationInfo.textContent = protectedUser
+      ? `Owner globale · creazione atleti illimitata · ${created} creati`
+      : `Impostazione attuale: ${athleteCreationLabel(
+          state.draft.canCreateAthletes,
+          state.draft.athleteCreationLimit,
+        )} · ${created} già creati da questo account.`;
+  }
   if (contactHelp) {
     contactHelp.textContent = state.draft.isBetaOwner
       ? 'Email amministrativa/di contatto. Non modifica il nome utente tecnico usato per il login.'
