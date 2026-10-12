@@ -259,6 +259,11 @@ Deno.serve(async req => {
             : Number(rawCreationLimit)
         )
       : 0;
+    const quotaSettingProvided =
+      Object.prototype.hasOwnProperty.call(body, 'canCreateAthletes')
+      || Object.prototype.hasOwnProperty.call(body, 'athleteCreationLimit');
+    let effectiveCanCreateAthletes = requestedCanCreateAthletes;
+    let effectiveCreationLimit: number | null = requestedCreationLimit;
     const athleteIds = normalizeIdList(
       body.athleteIds,
       (isBetaOwner || requestedCanCreateAthletes) ? '' : sourceAthleteId,
@@ -358,18 +363,26 @@ Deno.serve(async req => {
       return json({ error: 'Sessione non valida.' }, 401, origin);
     }
 
-    if (isBetaOwner) {
-      const { data: appOwnerAllowed, error: appOwnerError } =
-        await callerClient.rpc('is_app_owner');
+    const { data: appOwnerAllowed, error: appOwnerError } =
+      await callerClient.rpc('is_app_owner');
 
-      if (appOwnerError) throw appOwnerError;
-      if (!appOwnerAllowed) {
-        return json(
-          { error: 'Solo l’Owner globale può creare un Founding Beta Owner.' },
-          403,
-          origin,
-        );
-      }
+    if (appOwnerError) throw appOwnerError;
+    const callerIsAppOwner = Boolean(appOwnerAllowed);
+
+    if (isBetaOwner && !callerIsAppOwner) {
+      return json(
+        { error: 'Solo l’Owner globale può creare un Founding Beta Owner.' },
+        403,
+        origin,
+      );
+    }
+
+    if (quotaSettingProvided && !callerIsAppOwner) {
+      return json(
+        { error: 'Solo l’Owner globale può modificare la quota di creazione atleti.' },
+        403,
+        origin,
+      );
     }
 
     const adminClient = createClient(
@@ -612,7 +625,7 @@ Deno.serve(async req => {
     const { data: accountRoleRow, error: accountRoleReadError } =
       await adminClient
         .from('account_access')
-        .select('role, must_change_password')
+        .select('role, must_change_password, can_create_athletes, athlete_creation_limit')
         .eq('user_id', targetUser.id)
         .maybeSingle();
 
@@ -624,6 +637,23 @@ Deno.serve(async req => {
         409,
         origin,
       );
+    }
+
+    if (callerIsAppOwner && quotaSettingProvided) {
+      effectiveCanCreateAthletes = requestedCanCreateAthletes;
+      effectiveCreationLimit = requestedCanCreateAthletes
+        ? requestedCreationLimit
+        : 0;
+    } else if (callerIsAppOwner && isBetaOwner && !quotaSettingProvided) {
+      effectiveCanCreateAthletes = true;
+      effectiveCreationLimit = 1;
+    } else {
+      effectiveCanCreateAthletes = Boolean(accountRoleRow?.can_create_athletes);
+      effectiveCreationLimit = effectiveCanCreateAthletes
+        ? (accountRoleRow?.athlete_creation_limit == null
+            ? null
+            : Number(accountRoleRow.athlete_creation_limit))
+        : 0;
     }
 
     if (accountRoleRow?.role !== 'owner') {
@@ -649,10 +679,10 @@ Deno.serve(async req => {
         must_change_password?: boolean;
       } = {
         user_id: targetUser.id,
-        role: (isBetaOwner || hasAdminAccess || requestedCanCreateAthletes) ? 'admin' : 'member',
-        can_create_athletes: requestedCanCreateAthletes,
-        athlete_creation_limit: requestedCanCreateAthletes
-          ? requestedCreationLimit
+        role: (isBetaOwner || hasAdminAccess || effectiveCanCreateAthletes) ? 'admin' : 'member',
+        can_create_athletes: effectiveCanCreateAthletes,
+        athlete_creation_limit: effectiveCanCreateAthletes
+          ? effectiveCreationLimit
           : 0,
       };
 
@@ -694,9 +724,9 @@ Deno.serve(async req => {
         email,
         contactEmail,
         isBetaOwner,
-        canCreateAthletes: requestedCanCreateAthletes,
-        athleteCreationLimit: requestedCanCreateAthletes
-          ? requestedCreationLimit
+        canCreateAthletes: effectiveCanCreateAthletes,
+        athleteCreationLimit: effectiveCanCreateAthletes
+          ? effectiveCreationLimit
           : 0,
         userType,
         beta: betaStatus,
