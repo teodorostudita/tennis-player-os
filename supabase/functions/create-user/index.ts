@@ -47,6 +47,8 @@ type RequestBody = {
   email?: string;
   contactEmail?: string;
   isBetaOwner?: boolean;
+  canCreateAthletes?: boolean;
+  athleteCreationLimit?: number | null;
   userType?: string;
   temporaryPassword?: string;
   role?: 'admin' | 'member';
@@ -246,9 +248,20 @@ Deno.serve(async req => {
     const body = await req.json() as RequestBody;
     const sourceAthleteId = String(body.athleteId ?? '').trim();
     const isBetaOwner = Boolean(body.isBetaOwner);
+    const requestedCanCreateAthletes = body.canCreateAthletes == null
+      ? isBetaOwner
+      : Boolean(body.canCreateAthletes);
+    const rawCreationLimit = body.athleteCreationLimit;
+    const requestedCreationLimit = requestedCanCreateAthletes
+      ? (
+          rawCreationLimit == null
+            ? (isBetaOwner && body.canCreateAthletes == null ? 1 : null)
+            : Number(rawCreationLimit)
+        )
+      : 0;
     const athleteIds = normalizeIdList(
       body.athleteIds,
-      isBetaOwner ? '' : sourceAthleteId,
+      (isBetaOwner || requestedCanCreateAthletes) ? '' : sourceAthleteId,
       'atleta',
     );
     const managedAthleteIds = normalizeIdList(
@@ -271,8 +284,19 @@ Deno.serve(async req => {
       return json({ error: 'Atleta attivo non valido.' }, 400, origin);
     }
 
-    if (!athleteIds.length && !isBetaOwner) {
-      return json({ error: 'Seleziona almeno un atleta.' }, 400, origin);
+    if (
+      requestedCanCreateAthletes
+      && requestedCreationLimit != null
+      && (
+        !Number.isInteger(requestedCreationLimit)
+        || requestedCreationLimit < 1
+      )
+    ) {
+      return json({ error: 'Il limite di creazione atleti deve essere un intero positivo.' }, 400, origin);
+    }
+
+    if (!athleteIds.length && !requestedCanCreateAthletes) {
+      return json({ error: 'Seleziona almeno un atleta oppure abilita la creazione di nuovi atleti.' }, 400, origin);
     }
 
     if (!contactEmail || !contactEmail.includes('@')) {
@@ -625,9 +649,11 @@ Deno.serve(async req => {
         must_change_password?: boolean;
       } = {
         user_id: targetUser.id,
-        role: isBetaOwner ? 'admin' : hasAdminAccess ? 'admin' : 'member',
-        can_create_athletes: isBetaOwner || hasAdminAccess,
-        athlete_creation_limit: isBetaOwner ? 1 : null,
+        role: (isBetaOwner || hasAdminAccess || requestedCanCreateAthletes) ? 'admin' : 'member',
+        can_create_athletes: requestedCanCreateAthletes,
+        athlete_creation_limit: requestedCanCreateAthletes
+          ? requestedCreationLimit
+          : 0,
       };
 
       if (accountCreated) {
@@ -668,6 +694,10 @@ Deno.serve(async req => {
         email,
         contactEmail,
         isBetaOwner,
+        canCreateAthletes: requestedCanCreateAthletes,
+        athleteCreationLimit: requestedCanCreateAthletes
+          ? requestedCreationLimit
+          : 0,
         userType,
         beta: betaStatus,
         role,
