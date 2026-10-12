@@ -41,7 +41,7 @@ begin
   end if;
 
   if not public.is_app_owner() then
-    raise exception 'Only the global Owner can change Founding Beta account settings.'
+    raise exception 'Only the global Owner can change account-level athlete creation settings.'
       using errcode = '42501';
   end if;
 
@@ -479,8 +479,9 @@ begin
     v_assignment_count := v_assignment_count + 1;
   end loop;
 
-  -- Account-level Admin means that at least one active athlete assignment is
-  -- Admin (or Owner, though Owner accounts are protected above).
+  -- Account role remains Admin when the user either has an Admin athlete
+  -- assignment or an independent account-level right to create athletes.
+  -- Creation capability and quota themselves are preserved here.
   select exists (
     select 1
     from public.athlete_members am
