@@ -40,6 +40,46 @@ function roleLabel(role) {
   return 'Member';
 }
 
+function athleteCreationMode(canCreateAthletes, athleteCreationLimit) {
+  if (!canCreateAthletes) return 'none';
+  if (athleteCreationLimit == null) return 'unlimited';
+
+  const limit = Number(athleteCreationLimit);
+  if (limit === 1) return 'one';
+  return 'custom';
+}
+
+function athleteCreationLabel(canCreateAthletes, athleteCreationLimit) {
+  const mode = athleteCreationMode(canCreateAthletes, athleteCreationLimit);
+  if (mode === 'unlimited') return 'SÌ · illimitati';
+  if (mode === 'one') return '1 atleta';
+  if (mode === 'custom') return `${Number(athleteCreationLimit) || 0} atleti`;
+  return 'NO';
+}
+
+function readAthleteCreationSetting(form) {
+  const mode = String(form?.elements?.athleteCreationMode?.value || 'none');
+
+  if (mode === 'unlimited') {
+    return { canCreateAthletes: true, athleteCreationLimit: null };
+  }
+
+  if (mode === 'one') {
+    return { canCreateAthletes: true, athleteCreationLimit: 1 };
+  }
+
+  if (mode === 'custom') {
+    const limit = Number(form?.elements?.athleteCreationCustom?.value);
+    if (!Number.isInteger(limit) || limit < 2) {
+      throw new Error('Inserisci un numero di atleti pari almeno a 2.');
+    }
+    return { canCreateAthletes: true, athleteCreationLimit: limit };
+  }
+
+  return { canCreateAthletes: false, athleteCreationLimit: 0 };
+}
+
+
 function athleteLabel(athlete = {}) {
   return [athlete.firstName, athlete.lastName]
     .filter(Boolean)
@@ -523,7 +563,9 @@ function userToDraft(user) {
     contactEmail: String(user.contactEmail || user.email || ''),
     userType: normalizeUserType(user.userType),
     isBetaOwner: Boolean(user.isBetaOwner),
+    canCreateAthletes: Boolean(user.canCreateAthletes),
     athleteCreationLimit: user.athleteCreationLimit == null ? null : Number(user.athleteCreationLimit),
+    athletesCreatedCount: Math.max(0, Number(user.athletesCreatedCount || 0)),
     hasOwnerRole: Boolean(user.hasOwnerRole),
     assignments,
     activeAthleteId: assignmentIds({ assignments })[0] || '',
@@ -546,7 +588,9 @@ function newDraft(gate) {
     contactEmail: '',
     userType: 'custom',
     isBetaOwner: false,
-    athleteCreationLimit: null,
+    canCreateAthletes: false,
+    athleteCreationLimit: 0,
+    athletesCreatedCount: 0,
     hasOwnerRole: false,
     assignments,
     activeAthleteId: preferred?.id || '',
