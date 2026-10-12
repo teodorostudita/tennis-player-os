@@ -629,10 +629,14 @@ Deno.serve(async req => {
         user_id: targetUser.id,
         role: isBetaOwner ? 'admin' : hasAdminAccess ? 'admin' : 'member',
         // Existing account creation rights must never be inferred from athlete roles.
-        can_create_athletes: accountRoleRow ? Boolean(accountRoleRow.can_create_athletes) : isBetaOwner,
-        athlete_creation_limit: accountRoleRow
-          ? accountRoleRow.athlete_creation_limit
-          : isBetaOwner ? 1 : 0,
+        // The Auth trigger already creates an account_access row for a brand-new
+        // user. Use accountCreated (not the row's existence) for first defaults.
+        can_create_athletes: accountCreated
+          ? isBetaOwner
+          : Boolean(accountRoleRow?.can_create_athletes),
+        athlete_creation_limit: accountCreated
+          ? (isBetaOwner ? 1 : 0)
+          : accountRoleRow ? accountRoleRow.athlete_creation_limit : 0,
       };
 
       if (accountCreated) {
