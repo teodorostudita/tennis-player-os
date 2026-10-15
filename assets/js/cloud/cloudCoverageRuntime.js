@@ -1,10 +1,10 @@
-import '../bootstrap.js?v=1.2.6';
+import '../bootstrap.js?v=1.2.25';
 
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from './access.js?v=1.2.6';
+} from './access.js?v=1.2.24';
 
 import {
   loadCloudModuleState,
