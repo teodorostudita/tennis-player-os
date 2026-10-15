@@ -349,15 +349,15 @@ if (session) {
         }
 
         // Contextual Homes aggregate the data they need before the first render.
-        // Parent requires Health + Economics; Trainer requires Health.
-        // Dedicated module runtimes remain authoritative for subsequent edits.
+        // Health supports contextual homes; Economics must be loaded for
+        // every permitted user before the app is rendered.
         if (['parent', 'trainer'].includes(getCurrentUserType()) && canReadModule('health')) {
           await loadHealthModule({
             store,
             athleteId: cloudAthlete.id,
           });
         }
-        if (getCurrentUserType() === 'parent' && canReadModule('economics')) {
+        if (canReadModule('economics')) {
           await loadEconomicsIntoLocalStore({
             store,
             athleteId: cloudAthlete.id,
@@ -365,7 +365,7 @@ if (session) {
           });
         }
 
-        await import('./app.js?v=1.2.21');
+        await import('./app.js?v=1.2.25');
         mountAuthControls(session.user);
         mountAthleteControls({
           currentAthlete: cloudAthlete,
