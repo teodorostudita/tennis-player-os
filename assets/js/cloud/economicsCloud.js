@@ -1,7 +1,7 @@
 import {
   loadCloudModuleState,
   saveCloudModuleState,
-} from './moduleStateCloud.js?v=1.2.4';
+} from './moduleStateCloud.js?v=1.2.6';
 
 const MODULE_KEY = 'economics';
 const SCHEMA_VERSION = 3;
@@ -45,6 +45,42 @@ function fingerprint(payload) {
   return JSON.stringify(normalizeEconomicsPayload(payload));
 }
 
+/**
+ * Import local-only items only on the first successful cloud hydration of an
+ * old browser cache. Cloud values win whenever a record ID already exists.
+ * Subsequent visits are cloud-first (including deletions done elsewhere).
+ */
+function recoverUnmigratedEconomics(localPayload, cloudPayload) {
+  const local = normalizeEconomicsPayload(localPayload);
+  const cloud = normalizeEconomicsPayload(cloudPayload);
+  const keyFor = (item, collection) => {
+    if (item?.id) return String(item.id);
+    if (collection === 'budgetPlans' && item?.seasonStart != null) {
+      return `season:${item.seasonStart}`;
+    }
+    if (collection === 'budgets' && item?.year != null) {
+      return `year:${item.year}`;
+    }
+    return JSON.stringify(item);
+  };
+
+  const merged = { ...cloud };
+  for (const collection of [
+    'trainingAreas', 'agreements', 'entries', 'budgets', 'budgetPlans', 'sponsors',
+  ]) {
+    const seen = new Set(cloud[collection].map(item => keyFor(item, collection)));
+    const rows = [...cloud[collection]];
+    for (const item of local[collection]) {
+      const key = keyFor(item, collection);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(item);
+    }
+    merged[collection] = rows;
+  }
+  return normalizeEconomicsPayload(merged);
+}
+
 export async function loadEconomicsIntoLocalStore({
   store,
   athleteId,
@@ -60,17 +96,43 @@ export async function loadEconomicsIntoLocalStore({
 
     if (cloudState) {
       const cloudEconomics = normalizeEconomicsPayload(cloudState.payload);
+      const localMeta = store.getState().meta || {};
+      const firstCloudLoad = !localMeta.economicsCloudLoadedAt
+        && !localMeta.economicsCloudMigratedAt;
+      let economics = cloudEconomics;
+      let savedState = cloudState;
+      let recoveryError = null;
+
+      if (allowWrite && firstCloudLoad && hasMeaningfulEconomicsData(localEconomics)) {
+        const recovered = recoverUnmigratedEconomics(localEconomics, cloudEconomics);
+        if (fingerprint(recovered) !== fingerprint(cloudEconomics)) {
+          economics = recovered;
+          try {
+            savedState = await saveCloudModuleState({
+              athleteId,
+              moduleKey: MODULE_KEY,
+              payload: recovered,
+              schemaVersion: SCHEMA_VERSION,
+            });
+          } catch (error) {
+            recoveryError = error;
+            console.warn('Economics local-only data retained; cloud recovery pending.', error);
+          }
+        }
+      }
 
       store.update(state => {
-        state.economics = clone(cloudEconomics);
-        state.meta.economicsCloudLoadedAt = new Date().toISOString();
+        state.economics = clone(economics);
+        if (!recoveryError) {
+          state.meta.economicsCloudLoadedAt = new Date().toISOString();
+        }
       });
 
       return {
-        source: 'cloud',
-        economics: cloudEconomics,
-        cloudState,
-        cloudError: null,
+        source: recoveryError ? 'local-recovery-pending' : 'cloud',
+        economics,
+        cloudState: savedState,
+        cloudError: recoveryError,
       };
     }
 
