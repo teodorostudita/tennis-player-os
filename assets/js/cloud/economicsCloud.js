@@ -1,7 +1,7 @@
 import {
   loadCloudModuleState,
   saveCloudModuleState,
-} from './moduleStateCloud.js?v=1.2.4';
+} from './moduleStateCloud.js?v=1.2.6';
 
 const MODULE_KEY = 'economics';
 const SCHEMA_VERSION = 3;
