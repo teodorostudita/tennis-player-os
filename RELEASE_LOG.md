@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.2.25 — Economics mobile sync e nuovo movimento
+- Corretta la sincronizzazione fra desktop, Supabase e mobile: Economics, Sponsor e runtime ora condividono lo stesso store e la stessa istanza dei permessi autenticati.
+- Uniformati i riferimenti di bootstrap per evitare caricamenti duplicati; Economics viene letto dal cloud per tutti gli utenti autorizzati.
+- **Nuovo Movimento:** una sola **Data**. Per movimenti pagati coincide con la data pagamento, conservando il campo storico `paidDate` nei dati salvati.
+- Campi dinamici: **Formazione** (accordo e area), **Tornei/Trasferte** (torneo), **Attrezzatura** (tipo materiale); rimossi i riferimenti incoerenti al salvataggio.
+- Nessuna migration SQL, nessuna Edge Function, nessuna modifica a `tennis-player-os-site/` o ai `.command`.
+
 ## v1.2.24 — Account athlete creation quotas
 - In **Utenti & Accessi** ogni account dispone di una quota autonoma di creazione atleti: **NO (0)**, **1**, **Definisci numero (N)**, **SÌ (illimitati)**.
 - La quota non viene alterata passando da **Member** ad **Admin** su un atleta, né cambiando i privilegi dei moduli.

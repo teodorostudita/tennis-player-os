@@ -1,5 +1,5 @@
 import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
-import { canWriteModule } from '../cloud/access.js?v=1.2.4';
+import { canWriteModule } from '../cloud/access.js?v=1.2.24';
 
 const sections = [
   { id: 'overview', label: 'Overview' },
@@ -1124,7 +1124,7 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
       </div>
 
       <div class="dialog-body form-grid">
-        <div class="field full economics-agreement-picker-field">
+        <div class="field full economics-agreement-picker-field" data-economics-category-only="training">
           <label>Collega a un accordo economico</label>
           <select name="agreementId" id="economics-entry-agreement">
             <option value="">— Movimento libero —</option>
@@ -1180,8 +1180,9 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
         </div>
 
         <div class="field">
-          <label>Data movimento</label>
-          <input name="date" type="date" value="${escapeAttr(entry.date || todayKey())}" />
+          <label>Data</label>
+          <input name="date" type="date" value="${escapeAttr(entry.status === 'paid' ? (entry.paidDate || entry.date || todayKey()) : (entry.date || todayKey()))}" />
+          <small class="economics-field-help">Per i movimenti pagati corrisponde alla data del pagamento.</small>
         </div>
 
         <div class="field">
@@ -1194,12 +1195,7 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
           <input name="dueDate" type="date" value="${escapeAttr(entry.dueDate)}" />
         </div>
 
-        <div class="field">
-          <label>Data pagamento</label>
-          <input name="paidDate" type="date" value="${escapeAttr(entry.paidDate)}" />
-        </div>
-
-        <div class="field">
+        <div class="field" data-economics-category-only="training">
           <label>Area formazione</label>
           <select name="areaId">
             <option value="">—</option>
@@ -1211,7 +1207,7 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
           </select>
         </div>
 
-        <div class="field">
+        <div class="field" data-economics-category-only="tournament travel">
           <label>Torneo collegato</label>
           <select name="tournamentId">
             <option value="">—</option>
@@ -1223,7 +1219,7 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
           </select>
         </div>
 
-        <div class="field">
+        <div class="field" data-economics-category-only="equipment">
           <label>Tipo attrezzatura</label>
           <select name="equipmentType">${equipmentOptions(entry.equipmentType)}</select>
         </div>
@@ -1263,6 +1259,22 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
   const form = dialog.querySelector('#economics-entry-form');
   const agreementSelect = form.querySelector('[name="agreementId"]');
 
+  const syncCategoryFields = () => {
+    const category = form.elements.category.value;
+    form.querySelectorAll('[data-economics-category-only]').forEach(field => {
+      const categories = String(field.dataset.economicsCategoryOnly || '').split(' ');
+      const visible = categories.includes(category);
+      field.hidden = !visible;
+      field.style.display = visible ? '' : 'none';
+      field.querySelectorAll('input, select, textarea').forEach(input => {
+        input.disabled = !visible;
+      });
+    });
+  };
+
+  form.elements.category.addEventListener('change', syncCategoryFields);
+  syncCategoryFields();
+
   agreementSelect?.addEventListener('change', () => {
     if (!agreementSelect.value) return;
 
@@ -1270,6 +1282,7 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
     const next = hydrateEntryFromAgreement(current, agreementSelect.value, economics);
 
     form.elements.category.value = next.category;
+    syncCategoryFields();
     form.elements.areaId.value = next.areaId;
     form.elements.direction.value = 'expense';
 
@@ -1291,17 +1304,21 @@ function createEntryDialog(host, state, store, preset, entryId, onSave) {
 
     const data = Object.fromEntries(new FormData(form).entries());
 
+    const category = String(data.category || 'other');
     const normalized = {
       ...data,
+      // Preserve paidDate for historical reports while exposing one date.
+      date: data.date || todayKey(),
+      paidDate: data.status === 'paid' ? (data.date || todayKey()) : '',
+      agreementId: category === 'training' ? (data.agreementId || '') : '',
+      areaId: category === 'training' ? (data.areaId || '') : '',
+      tournamentId: ['tournament', 'travel'].includes(category) ? (data.tournamentId || '') : '',
+      equipmentType: category === 'equipment' ? (data.equipmentType || 'other') : '',
       amount: Number(data.amount || 0),
       id: existing?.id || makeId('econ-entry'),
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-
-    if (normalized.status === 'paid' && !normalized.paidDate) {
-      normalized.paidDate = normalized.date || todayKey();
-    }
 
     store.update(next => {
       ensureEconomicsCollections(next.economics);

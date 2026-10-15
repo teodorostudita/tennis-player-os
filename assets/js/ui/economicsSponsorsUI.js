@@ -1,7 +1,7 @@
-import '../cloud/economicsCloudRuntime.js?v=1.2.4';
+import '../cloud/economicsCloudRuntime.js?v=1.2.25';
 
-import { store } from '../data/store.js?v=1.2.4';
-import { canWriteModule } from '../cloud/access.js?v=1.2.4';
+import { store } from '../data/store.js?v=1.2.6';
+import { canWriteModule } from '../cloud/access.js?v=1.2.24';
 import { showInAppConfirm } from './inAppMessages.js?v=1.2.4';
 
 const statusLabels = {

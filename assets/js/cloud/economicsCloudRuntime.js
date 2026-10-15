@@ -1,17 +1,17 @@
 // Economics cloud persistence is attached after the authenticated bootstrap has
 // resolved the current athlete and its module permissions.
-import '../bootstrap.js?v=1.2.4';
+import '../bootstrap.js?v=1.2.25';
 
 import {
   canReadModule,
   canWriteModule,
   getCurrentAccess,
-} from './access.js?v=1.2.4';
-import { store } from '../data/store.js?v=1.2.4';
+} from './access.js?v=1.2.24';
+import { store } from '../data/store.js?v=1.2.6';
 import {
   loadEconomicsIntoLocalStore,
   startEconomicsCloudSync,
-} from './economicsCloud.js?v=1.2.4';
+} from './economicsCloud.js?v=1.2.25';
 
 let lastStatus = { status: 'synced', message: '' };
 

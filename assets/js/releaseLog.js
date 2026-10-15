@@ -1,5 +1,18 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.25',
+    date: '2026-10-15',
+    title: 'Economics mobile sync e nuovo movimento',
+    details: [
+      'Ripristinata la sincronizzazione di Economics desktop-mobile tramite store e permessi condivisi.',
+      'Eliminati gli avvii duplicati causati dai diversi URL versionati del bootstrap.',
+      'Economics viene caricato prima del render per tutti gli account autorizzati.',
+      'Nuovo Movimento: una data unica con scadenza distinta, conservando la compatibilità con i dati storici.',
+      'Campi correlati pertinenti alla categoria, senza collegamenti incongrui.',
+      'Nessuna migration, Edge Function o modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.24',
     date: '2026-10-12',
     title: 'Account athlete creation quotas',
