@@ -1,5 +1,13 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.2',
+    date: '2026-10-20',
+    title: 'VR Lab: ingresso in VR su Meta Quest',
+    details: [
+      'Corretto l’ingresso in VR sul Meta Quest: la scena dovrebbe comparire subito, senza dover premere il tasto Meta.',
+    ],
+  },
+  {
     version: '1.3.1',
     date: '2026-10-20',
     title: 'VR Lab: osservatore arretrato e palla più visibile',

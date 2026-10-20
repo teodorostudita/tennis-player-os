@@ -66,7 +66,12 @@ function createAudio() {
 // settings: { trialCount, difficulty, occlusion: { mode, offsetM }, ballShadow }
 // onSeriesComplete(session) → Promise<{ saved, queued?, error? }>
 export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd }) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  // Contesto WebGL creato già xrCompatible: sul Quest Browser la conversione
+  // tardiva (makeXRCompatible all'ingresso in VR) può lasciare la scena nera
+  // finché non si preme il tasto Meta.
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('webgl2', { antialias: true, alpha: false, xrCompatible: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, context, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(host.clientWidth, host.clientHeight);
   renderer.xr.enabled = true;
@@ -340,7 +345,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
   async function enterVR() {
     audio.unlock();
     const session = await navigator.xr.requestSession('immersive-vr', {
-      optionalFeatures: ['local-floor', 'bounded-floor'],
+      optionalFeatures: ['local-floor'],
     });
     session.addEventListener('end', () => {
       camera.position.set(0, EYE_HEIGHT_DESKTOP, 0);

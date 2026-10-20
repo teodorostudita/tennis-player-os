@@ -1,5 +1,10 @@
 # Tennis Player OS — Release Log
 
+## v1.3.2 — VR Lab: ingresso in VR su Meta Quest
+- Il contesto WebGL di VR Lab viene creato già `xrCompatible: true` invece di essere convertito con `makeXRCompatible()` all'ingresso in VR: sul Quest Browser la scena restava nera finché non si premeva il tasto Meta.
+- Rimossa la richiesta della feature opzionale `bounded-floor`, non usata.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.1 — VR Lab: osservatore arretrato e palla più visibile
 - Osservatore a 1 m dietro il centro della linea di fondo: camera e controller sono in un rig spostato di +1 m in z, quindi coordinate del campo, fisica e dati salvati restano invariati. Il valore viene salvato in `settings.observerBehindBaselineM`.
 - Palla di dimensioni reali ma più luminosa (emissive più forte) con un alone additivo tenue.
