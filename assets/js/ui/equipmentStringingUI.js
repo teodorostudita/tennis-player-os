@@ -11,13 +11,6 @@ function racketHumanId(racket = {}) {
 function applyEquipmentStringingLabels() {
   if (currentRoute() !== 'equipment') return;
 
-  // The Equipment component still has an old hard-coded number after the
-  // dashboard reorder. Keep the visible page title aligned with module #7.
-  const pageTitle = document.querySelector('#page-title');
-  if (pageTitle && pageTitle.textContent !== '7. Equipment') {
-    pageTitle.textContent = '7. Equipment';
-  }
-
   const main = document.querySelector('#main-content');
   if (!main) return;
 

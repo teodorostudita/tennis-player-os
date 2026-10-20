@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.2.26',
+    date: '2026-10-20',
+    title: 'Titoli moduli, caricamento Mental e layout tablet',
+    details: [
+      'Il titolo in alto riporta sempre lo stesso numero e nome della barra laterale (es. Calendar era indicato come 12).',
+      'Mental e Perception & Neuro mostrano subito un caricamento invece della scheda di presentazione; alle aperture successive compaiono immediatamente.',
+      'Su tablet e finestre strette la barra laterale è più compatta e il titolo resta su una riga.',
+      'Nessuna migration, Edge Function o modifica al sito marketing.',
+    ],
+  },
+  {
     version: '1.2.25',
     date: '2026-10-15',
     title: 'Economics mobile sync e nuovo movimento',

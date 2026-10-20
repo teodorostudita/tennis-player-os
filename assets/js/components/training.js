@@ -1,5 +1,6 @@
 import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
 import { fileProvider } from '../data/providers/provider.js?v=1.2.6';
+import { moduleTitle } from '../data/schema.js?v=1.2.4';
 
 const sections = [
   { id: 'overview', label: 'Overview' },
@@ -100,7 +101,7 @@ export function renderTraining({ main, title, store }) {
     }
   } catch (_) {}
 
-  title.textContent = '2. Athletics';
+  title.textContent = moduleTitle('training');
   const state = store.getState();
   const training = state.training;
 

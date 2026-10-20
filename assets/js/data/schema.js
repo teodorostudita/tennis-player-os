@@ -7,15 +7,22 @@ export const modules = [
   { id: 'training', number: 2, name: 'Athletics', icon: '🏋️', subtitle: 'Preparazione atletica · Carico · Performance fisica', color: 'var(--training)', description: 'Preparazione fisica dell’atleta: forza, potenza, velocità, agilità, conditioning, mobilità, prevenzione e monitoraggio del carico atletico.' },
   { id: 'development', number: 3, name: 'Development', icon: '🎯', subtitle: 'Tecnica · Tattica · Sviluppo del gioco', color: 'var(--development)', description: 'Valutazioni per colpo/skill, progressi, video, obiettivi e piani di sviluppo tecnico-tattico. Gli aspetti mentali hanno ora un modulo dedicato.' },
   { id: 'drills', number: 4, name: 'Drills', icon: '🎾', subtitle: 'Esercizi · Pattern · Sessioni tennis', color: 'var(--drills)', description: 'Libreria degli esercizi tennis-specifici: obiettivo, setup, modalità, durata, intensità, varianti e organizzazione delle sessioni in campo.' },
-  { id: 'competition', number: 5, name: 'Competition', icon: '🏆', subtitle: 'Match · Risultati · Performance', color: 'var(--competition)', description: 'Risultati, statistiche, analisi match e debrief. La programmazione dei tornei vive nel Calendar e viene richiamata qui senza duplicazioni.' },
+  { id: 'competition', number: 5, name: 'Match', icon: '🏆', subtitle: 'Results · Debrief · Performance', color: 'var(--competition)', description: 'Registro match, import da TennisTalker, debrief post-partita e insight sulle prestazioni.' },
   { id: 'opponents', number: 6, name: 'Opponents', icon: '👥', subtitle: 'Scouting · Analisi · Preparazione', color: 'var(--opponents)', description: 'Profili avversari, pattern, H2H, video, note e brief pre-match.' },
   { id: 'equipment', number: 7, name: 'Equipment', icon: '🎾', subtitle: 'Racchette · Corde · Setup', color: 'var(--equipment)', description: 'Specifiche, corde e tensioni, scarpe, storico configurazioni e comfort.' },
-  { id: 'health', number: 8, name: 'Body & Health', icon: '♡', subtitle: 'Infortuni · Dolore · Monitoraggio', color: 'var(--health)', description: 'Storico problemi fisici, dolore, disponibilità, visite, protocolli e documentazione clinica.' },
+  { id: 'health', number: 8, name: 'Body & Health', icon: '♡', subtitle: 'Injuries · Physio · Screening · Monitoring', color: 'var(--health)', description: 'Stato fisico dell’atleta, infortuni, fisioterapia, certificazione sportiva, screening periodici e monitoraggio fisiologico.' },
   { id: 'nutrition', number: 9, name: 'Nutrition & Recovery', icon: '☾', subtitle: 'Alimentazione · Sonno · Recupero', color: 'var(--nutrition)', description: 'Pasti e idratazione, sonno, fatigue, soreness, riposo e readiness nello stesso modulo di gestione quotidiana.' },
-  { id: 'mental', number: 10, name: 'Mental', icon: '🧠', subtitle: 'Routine · Focus · Gestione emotiva', color: 'var(--mental)', description: 'Mental training, routine pre-match, respirazione, visualizzazione mentale, cue, journaling e strategie di gestione della pressione.' },
-  { id: 'visual', number: 11, name: 'Visual', icon: '👁', subtitle: 'Percezione · Anticipazione · Training visivo', color: 'var(--visual)', description: 'Allenamento percettivo e visivo: profondità, traiettoria, spin, anticipazione, tracking e protocolli anche in VR.' },
+  { id: 'mental', number: 10, name: 'Mental', icon: '🧠', subtitle: 'Motivazione · Fiducia · Concentrazione · Regolazione', color: 'var(--mental)', description: 'Allenamento mentale della prestazione: motivazione, fiducia, concentrazione, regolazione emotiva, mental resilience, mental toughness, mental imagery e strumenti operativi.' },
+  { id: 'visual', number: 11, name: 'Perception & Neuro', icon: '👁', subtitle: 'Visione · Neurocognizione · Coordinazione · Propriocezione', color: 'var(--visual)', description: 'Allenamento visivo, percettivo, neurocognitivo e sensomotorio con protocolli, sessioni e misurazioni longitudinali Reflexion Go.' },
   { id: 'economics', number: 12, name: 'Economics', icon: '◉', subtitle: 'Costi · Budget · Sostenibilità', color: 'var(--economics)', description: 'Spese, budget stagionale, costo per torneo/match, sponsor e report.' },
 ];
+
+// Titolo canonico di un modulo (es. "1. Calendar"): numero e nome vengono
+// sempre da `modules`, così barra laterale e intestazione restano coerenti.
+export function moduleTitle(id) {
+  const module = modules.find(item => item.id === id);
+  return module ? `${module.number}. ${module.name}` : '';
+}
 
 export const defaultState = {
   meta: {

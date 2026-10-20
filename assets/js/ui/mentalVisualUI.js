@@ -3627,19 +3627,46 @@ async function enhanceCurrentRoute() {
   const host = activeContentHost();
   if (!host) return;
 
-  try {
-    await ensureCloud(current);
-  } catch (error) {
-    console.warn(`${current} initialization failed.`, error);
-    setCloudIndicator(current, 'error', error?.message || '');
+  const render = () => (current === 'mental' ? renderMental(host) : renderVisual(host));
+  const stillCurrent = () => route() === current && host.isConnected;
+  const slot = cloudState[current];
+  const athleteId = String(getCurrentAccess().athleteId || '');
+
+  // Dati già caricati per questo atleta: render immediato, senza passare dal
+  // placeholder generico. La libreria Mental si aggiorna in background e
+  // ridisegna solo se è cambiata.
+  if (slot.loaded && slot.athleteId === athleteId) {
+    render();
+    void ensureCloud(current);
+    if (current === 'mental') {
+      const before = resourceCacheSignature();
+      await refreshMentalResourceCache();
+      if (stillCurrent() && resourceCacheSignature() !== before) render();
+    }
+    return;
   }
 
-  if (current === 'mental') {
-    await refreshMentalResourceCache();
-    renderMental(host);
-  } else {
-    renderVisual(host);
-  }
+  host.innerHTML = `
+    <section class="panel mv-empty-panel">
+      <div class="mv-empty">Caricamento ${current === 'mental' ? 'Mental' : 'Perception &amp; Neuro'}…</div>
+    </section>
+  `;
+
+  const cloudReady = ensureCloud(current).catch(error => {
+    console.warn(`${current} initialization failed.`, error);
+    setCloudIndicator(current, 'error', error?.message || '');
+  });
+
+  await Promise.all([
+    cloudReady,
+    current === 'mental' ? refreshMentalResourceCache() : null,
+  ]);
+
+  if (stillCurrent()) render();
+}
+
+function resourceCacheSignature() {
+  return mentalResourceCache.map(item => `${item.id}:${item.updatedAt || ''}`).join('|');
 }
 
 function queueEnhancement() {

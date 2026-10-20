@@ -1,4 +1,5 @@
 import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
+import { moduleTitle } from '../data/schema.js?v=1.2.4';
 
 const MEAL_TYPES = {
   breakfast: 'Colazione',
@@ -19,7 +20,7 @@ let nutritionSection = 'overview';
 let weekAnchor = startOfWeek(new Date());
 
 export function renderNutrition({ main, title, store }) {
-  title.textContent = '8. Nutrition & Recovery';
+  title.textContent = moduleTitle('nutrition');
   const state = store.getState();
   const nutrition = normalizeNutrition(state.nutrition);
 

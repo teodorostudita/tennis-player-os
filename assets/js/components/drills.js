@@ -1,4 +1,5 @@
 import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
+import { moduleTitle } from '../data/schema.js?v=1.2.4';
 
 const sections = [
   { id: 'overview', label: 'Overview' },
@@ -47,7 +48,7 @@ const ui = {
 };
 
 export function renderDrills({ main, title, store }) {
-  title.textContent = '3. Drills';
+  title.textContent = moduleTitle('drills');
   const state = store.getState();
   const drills = state.drills;
 

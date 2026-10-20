@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.2.26 — Titoli moduli, caricamento Mental e layout tablet
+- **Titoli dei moduli coerenti:** numero e nome nel titolo della pagina vengono sempre da `modules` (`schema.js`) tramite `moduleTitle()`. Corretti i titoli scritti a mano e sbagliati (Calendar «12», Drills «3», Equipment «6», Nutrition «8») e rimosse le toppe che li correggevano a posteriori in Equipment, Economics e Drills.
+- `schema.js` contiene ora direttamente i nomi definitivi (Match, Perception & Neuro) e i sottotitoli aggiornati, invece di riceverli a runtime.
+- **Mental / Perception & Neuro:** al primo ingresso compare un indicatore di caricamento invece della scheda di presentazione generica; dati cloud e libreria Mental vengono caricati in parallelo. Alle aperture successive il modulo viene disegnato subito e la libreria si aggiorna in background.
+- **Layout tablet (761–1100 px):** sidebar compatta, titolo su una riga, comandi della topbar che vanno a capo.
+- Nessuna migration SQL, nessuna Edge Function, nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.25 — Economics mobile sync e nuovo movimento
 - Corretta la sincronizzazione fra desktop, Supabase e mobile: Economics, Sponsor e runtime ora condividono lo stesso store e la stessa istanza dei permessi autenticati.
 - Uniformati i riferimenti di bootstrap per evitare caricamenti duplicati; Economics viene letto dal cloud per tutti gli utenti autorizzati.

@@ -616,11 +616,6 @@ function enhanceEconomics() {
   const switcher = main?.querySelector('.economics-section-switch');
   if (!main || !switcher) return;
 
-  const pageTitle = document.querySelector('#page-title');
-  if (pageTitle && pageTitle.textContent !== '12. Economics') {
-    pageTitle.textContent = '12. Economics';
-  }
-
   let sponsorButton = switcher.querySelector('[data-economics-sponsor]');
 
   if (!sponsorButton) {

@@ -1,4 +1,5 @@
 import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.6';
+import { moduleTitle } from '../data/schema.js?v=1.2.4';
 
 const CATEGORY_LABELS = {
   tennis: 'Tennis',
@@ -173,7 +174,7 @@ function consumeRequestedCalendarSection() {
 
 export function renderCalendar({ main, title, store }) {
   consumeRequestedCalendarSection();
-  title.textContent = '12. Calendar';
+  title.textContent = moduleTitle('calendar');
   ensureRecurringCoverage(store, dateKey(addDays(weekAnchor, RECURRENCE_EXTENSION_WEEKS * 7)));
   const state = store.getState();
   const planner = normalizePlanner(state.planner);

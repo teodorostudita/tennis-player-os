@@ -11,6 +11,7 @@ import {
   appAssetUrl,
   companionSetupUrl,
 } from '../companionConfig.js?v=1.2.4';
+import { moduleTitle } from '../data/schema.js?v=1.2.4';
 
 const SECTIONS = [
   ['rankings', 'Rankings'],
@@ -622,7 +623,7 @@ function renderOpponents() {
     ? state.profiles.find(profile => profile.id === ui.selectedProfileId)
     : null;
 
-  document.querySelector('#page-title').textContent = '6. Opponents';
+  document.querySelector('#page-title').textContent = moduleTitle('opponents');
 
   if (selected) {
     main.innerHTML = `<div data-opponents-root>${renderProfileDetail(selected)}</div>`;

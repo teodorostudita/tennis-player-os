@@ -1,4 +1,5 @@
 import { showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
+import { moduleTitle } from '../data/schema.js?v=1.2.4';
 
 const RACKET_STATUSES = {
   active: 'In uso',
@@ -36,7 +37,7 @@ function consumeRequestedEquipmentSection() {
 
 export function renderEquipment({ main, title, store }) {
   consumeRequestedEquipmentSection();
-  title.textContent = '6. Equipment';
+  title.textContent = moduleTitle('equipment');
   const equipment = normalizeEquipment(store.getState().equipment);
 
   main.innerHTML = `

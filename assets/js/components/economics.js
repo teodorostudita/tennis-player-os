@@ -1,5 +1,6 @@
 import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.4';
 import { canWriteModule } from '../cloud/access.js?v=1.2.24';
+import { moduleTitle } from '../data/schema.js?v=1.2.4';
 
 const sections = [
   { id: 'overview', label: 'Overview' },
@@ -69,7 +70,7 @@ function consumeRequestedEconomicsSection() {
 
 export function renderEconomics({ main, title, store }) {
   consumeRequestedEconomicsSection();
-  title.textContent = '12. Economics';
+  title.textContent = moduleTitle('economics');
 
   const state = store.getState();
   const economics = normalizeEconomicsState(state.economics);

@@ -479,9 +479,6 @@ function renderOverviewBridge() {
 function enhanceDrills() {
   if (route() !== 'drills') return;
 
-  const pageTitle = document.querySelector('#page-title');
-  if (pageTitle) pageTitle.textContent = '4. Drills';
-
   if (document.querySelector('.drills-library-grid')) {
     enhanceDrillsLibrary();
   }

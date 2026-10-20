@@ -1,6 +1,6 @@
 import '../bootstrap.js?v=1.2.4';
 
-import { modules } from '../data/schema.js?v=1.2.4';
+import { modules, moduleTitle } from '../data/schema.js?v=1.2.4';
 import { store } from '../data/store.js?v=1.2.4';
 import {
   canReadModule,
@@ -394,7 +394,7 @@ function renderRoot() {
   if (!main || !title) return;
 
   const state = competitionState();
-  title.textContent = '5. Match';
+  title.textContent = moduleTitle('competition');
 
   main.innerHTML = `
     <section class="match-module-head">
