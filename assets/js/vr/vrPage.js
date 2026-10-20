@@ -14,6 +14,7 @@ import {
 } from './bounceTrainer.js?v=1.3.0';
 
 const SETTINGS_KEY = 'tennisPlayerOS.vr.bounceSettings.v1';
+const DIAGNOSTICS_KEY = 'tennisPlayerOS.vr.lastDiagnostics.v1';
 const DEFAULT_SETTINGS = {
   trialCount: 10,
   difficulty: 'medium',
@@ -48,6 +49,28 @@ function loadSettings() {
   } catch (_) {
     return structuredClone(DEFAULT_SETTINGS);
   }
+}
+
+function readDiagnostics() {
+  try { return JSON.parse(localStorage.getItem(DIAGNOSTICS_KEY) || 'null'); } catch (_) { return null; }
+}
+
+function storeDiagnostics(diagnostics) {
+  try { localStorage.setItem(DIAGNOSTICS_KEY, JSON.stringify({ ...diagnostics, savedAt: new Date().toISOString() })); } catch (_) {}
+}
+
+function renderDiagnostics(host, diagnostics) {
+  if (!diagnostics) {
+    host.hidden = true;
+    return;
+  }
+  host.hidden = false;
+  const lines = [
+    `Durata: ${diagnostics.durationS ?? '—'} s · frame VR disegnati: ${diagnostics.xrFrames}`,
+    diagnostics.errors?.length ? `Errori: ${diagnostics.errors.join(' | ')}` : 'Errori: nessuno',
+    ...(diagnostics.events || []),
+  ];
+  host.querySelector('pre').textContent = lines.join('\n');
 }
 
 function storeSettings(settings) {
@@ -202,11 +225,18 @@ async function renderPage(athlete) {
           <button id="vr-restart" class="vr-button" type="button">Ricomincia la serie</button>
         </div>
         <p class="vr-muted">Mettiti in piedi guardando verso la rete prima di entrare in VR: nel campo virtuale ti troverai 2 m dietro il centro della linea di fondo.</p>
+        <p class="vr-muted"><strong>In VR:</strong> grilletto = lancia / conferma il punto · grip tenuto premuto = interrompi la serie · grip nel riepilogo = esci.
+          Per uscire in qualsiasi momento: premi il <strong>tasto Meta</strong> e scegli <strong>Esci</strong>.</p>
       </section>
 
       <section class="vr-card">
         <h2>Ultima serie</h2>
         <div id="vr-last-result"></div>
+      </section>
+
+      <section class="vr-card" id="vr-diagnostics" hidden>
+        <h2>Diagnostica ultima sessione VR</h2>
+        <pre class="vr-diagnostics"></pre>
       </section>
     </main>
   `;
@@ -216,6 +246,8 @@ async function renderPage(athlete) {
   let lastSummary = null;
   let lastSaveText = '';
   renderSummary(lastResult, null);
+  const diagnosticsHost = root.querySelector('#vr-diagnostics');
+  renderDiagnostics(diagnosticsHost, readDiagnostics());
 
   const trainer = createBounceTrainer({
     host: root.querySelector('#vr-stage'),
@@ -231,7 +263,13 @@ async function renderPage(athlete) {
       renderSummary(lastResult, lastSummary, lastSaveText);
       return outcome;
     },
-    onEnd: () => renderSummary(lastResult, lastSummary, lastSaveText),
+    onEnd: ({ diagnostics } = {}) => {
+      renderSummary(lastResult, lastSummary, lastSaveText);
+      if (diagnostics) {
+        storeDiagnostics(diagnostics);
+        renderDiagnostics(diagnosticsHost, diagnostics);
+      }
+    },
   });
 
   function readForm() {

@@ -1,6 +1,5 @@
 // VR Lab — "Bounce prediction": rendering, input dei controller e anteprima desktop.
 import * as THREE from 'three';
-import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { COURT, positionAt, rayToGround } from './ballPhysics.js?v=1.3.0';
 import { buildScene, setPath } from './court.js?v=1.3.0';
 import { createPanel } from './hud.js?v=1.3.0';
@@ -107,7 +106,10 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
   const raycaster = new THREE.Raycaster();
   let pointerInside = false;
 
-  const modelFactory = new XRControllerModelFactory();
+  // Controller disegnati localmente: niente modelli 3D scaricati da CDN esterne
+  // all'ingresso in VR (sospettati di bloccare il rendering sul Quest).
+  const controllerMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2f38, roughness: 0.5 });
+  const controllerTipMaterial = new THREE.MeshBasicMaterial({ color: 0xffe14d });
   for (let i = 0; i < 2; i += 1) {
     const controller = renderer.xr.getController(i);
     const ray = new THREE.Line(
@@ -142,7 +144,12 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     controllers.push(controller);
 
     const grip = renderer.xr.getControllerGrip(i);
-    grip.add(modelFactory.createControllerModel(grip));
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.11, 12), controllerMaterial);
+    handle.rotation.x = Math.PI / 2 - 0.5;
+    handle.position.set(0, -0.02, 0.03);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), controllerTipMaterial);
+    tip.position.set(0, 0, -0.03);
+    grip.add(handle, tip);
     rig.add(grip);
   }
 
@@ -337,7 +344,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
         { text: `Migliore ${Math.round(s.bestErrorCm)} cm · peggiore ${Math.round(s.worstErrorCm)} cm`, size: 0.7, color: '#c9d6ea' },
         { text: `Tendenza: ${describeDepth(s.meanDepthBiasCm)} · ${describeLateral(s.meanLateralBiasCm)}`, size: 0.7, color: '#c9d6ea' },
         { text: saveStatus, size: 0.7, color: saveStatus.includes('✓') ? '#3ddc84' : '#ffb36b' },
-        { text: 'Grilletto: nuova serie · Grip o tasto Meta: esci', size: 0.75, color: '#ffe14d', weight: 700 },
+        { text: 'Grilletto: nuova serie · Grip: esci dalla VR', size: 0.75, color: '#ffe14d', weight: 700 },
       ]);
     }
   }
@@ -354,7 +361,33 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     }
   }
 
+  // Diagnostica della sessione VR, mostrata nella pagina all'uscita.
+  const diagnostics = { frames: 0, xrFrames: 0, errors: [], events: [] };
+  function logEvent(text) {
+    const at = diagnostics.sessionStart ? ((now() - diagnostics.sessionStart).toFixed(1) + ' s') : '—';
+    diagnostics.events.push(`${at} · ${text}`);
+    if (diagnostics.events.length > 40) diagnostics.events.shift();
+  }
+
+  // Un errore in un singolo frame non deve fermare il loop: senza frame il
+  // Quest mostra il passthrough e la sessione resta "appesa".
   function tick() {
+    diagnostics.frames += 1;
+    if (renderer.xr.isPresenting) diagnostics.xrFrames += 1;
+    try {
+      drawFrame();
+    } catch (error) {
+      const message = `${error?.name || 'Error'}: ${error?.message || error}`;
+      if (!diagnostics.errors.includes(message) && diagnostics.errors.length < 8) {
+        diagnostics.errors.push(message);
+        logEvent(`errore nel frame: ${message}`);
+      }
+      console.error('VR frame error:', error);
+      try { renderer.render(scene, camera); } catch (_) {}
+    }
+  }
+
+  function drawFrame() {
     checkGripHold();
     const frame = series.update(now());
     if (frame.events.includes('launched')) {
@@ -386,13 +419,29 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     const session = await navigator.xr.requestSession('immersive-vr', {
       optionalFeatures: ['local-floor', 'bounded-floor'],
     });
+    Object.assign(diagnostics, {
+      sessionStart: now(), frames: 0, xrFrames: 0, errors: [], events: [],
+      userAgent: navigator.userAgent,
+    });
+    logEvent('sessione immersiva avviata');
+    session.addEventListener('visibilitychange', () => logEvent(`visibilità: ${session.visibilityState}`));
+    session.addEventListener('inputsourceschange', event => {
+      for (const source of event.added || []) logEvent(`controller collegato: ${source.handedness} (${(source.profiles || []).join(', ')})`);
+      for (const source of event.removed || []) logEvent(`controller scollegato: ${source.handedness}`);
+    });
     session.addEventListener('end', () => {
+      logEvent('sessione terminata');
+      diagnostics.durationS = Math.round((now() - diagnostics.sessionStart) * 10) / 10;
       camera.position.set(0, EYE_HEIGHT_DESKTOP, 0);
       camera.lookAt(0, 0.6, COURT.netZ - 2);
       onResize();
-      onEnd?.({ trials: series.trials, summary: series.summary });
+      onEnd?.({ trials: series.trials, summary: series.summary, diagnostics: structuredClone(diagnostics) });
     });
     await renderer.xr.setSession(session);
+    logEvent(`reference space: ${renderer.xr.getReferenceSpace() ? 'local-floor' : 'non disponibile'}`);
+    const frameCheck = (label) => () => logEvent(`${label}: ${diagnostics.xrFrames} frame VR disegnati`);
+    setTimeout(frameCheck('dopo 1 s'), 1000);
+    setTimeout(frameCheck('dopo 3 s'), 3000);
   }
 
   function dispose() {

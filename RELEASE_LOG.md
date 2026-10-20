@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.3.5 — VR Lab: stabilità della sessione su Meta Quest
+- Sintomo sul Quest 3: la scena VR compare per circa un secondo, poi il visore mostra il passthrough e la sessione resta aperta (si esce solo con Meta → Esci). Coerente con il loop di rendering che smette di consegnare frame.
+- Rimosso `XRControllerModelFactory` (modelli GLTF dei controller scaricati da CDN al collegamento dei controller, circa 1 s dopo l'ingresso): controller ora disegnati localmente.
+- Il loop è protetto da try/catch: un'eccezione in un frame non ferma più `setAnimationLoop` (three richiede il frame successivo solo dopo la callback).
+- Diagnostica della sessione (frame disegnati a 1 s e 3 s, errori, eventi di visibilità e input) mostrata in `vr.html` e conservata in `localStorage`.
+- Istruzioni dei comandi in pagina, inclusa l'uscita con tasto Meta → Esci.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.4 — Avvio più robusto con rete non pronta
 - `bootstrap.js`: su errore di rete all'avvio («Failed to fetch» e simili) la pagina si ricarica da sola, con attese crescenti (1,5 / 3 / 4,5 s, o al ritorno di `online`), fino a 3 tentativi consecutivi (contatore in `sessionStorage`, azzerato a ogni avvio riuscito). Caso osservato: shortcut TPOS sul Meta Quest aperto prima che il Wi-Fi fosse pronto.
 - Pulsante **Riprova** nella schermata «Impossibile aprire l'atleta» e nella schermata d'errore di VR Lab.

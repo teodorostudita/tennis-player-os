@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.5',
+    date: '2026-10-20',
+    title: 'VR Lab: stabilità della sessione su Meta Quest',
+    details: [
+      'Controller disegnati direttamente dall’app, senza scaricare modelli esterni all’ingresso in VR.',
+      'Un errore in un singolo fotogramma non interrompe più la scena.',
+      'Istruzioni dei comandi e dell’uscita (tasto Meta → Esci) nella pagina VR Lab.',
+      'Diagnostica dell’ultima sessione VR visibile nella pagina dopo l’uscita.',
+    ],
+  },
+  {
     version: '1.3.4',
     date: '2026-10-20',
     title: 'Avvio più robusto quando la rete non è ancora pronta',
