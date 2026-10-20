@@ -3,6 +3,8 @@
 // ready ─grilletto→ countdown ─0,8 s→ flight ─occlusione→ aim ─grilletto→ feedback
 //   feedback ─grilletto→ countdown (lancio successivo) | summary (ultimo lancio)
 //   summary ─grilletto→ countdown (nuova serie)
+// interrupt(): in qualsiasi stato della serie chiude con i lanci già completati
+// (summary), oppure torna a ready se non ne è stato completato nessuno.
 // I tempi sono in secondi (performance.now() / 1000).
 import {
   generateLaunch,
@@ -72,6 +74,39 @@ export function createSeries({ settings, rng = Math.random }) {
     setState('feedback', now);
   }
 
+  function finish(now, interrupted) {
+    summary = {
+      ...summarizeTrials(trials),
+      plannedTrialCount: settings.trialCount,
+      interrupted,
+    };
+    current = null;
+    setState('summary', now);
+    return {
+      type: 'completed',
+      session: {
+        drillKey: 'bounce_prediction',
+        startedAt,
+        completedAt: new Date().toISOString(),
+        settings: { ...settings, drillVersion: BOUNCE_DRILL_VERSION },
+        summary,
+        trials: [...trials],
+      },
+    };
+  }
+
+  // Il lancio in corso senza risposta viene scartato.
+  function interrupt(now) {
+    if (state === 'ready' || state === 'summary') return null;
+    if (!trials.length) {
+      current = null;
+      startedAt = null;
+      setState('ready', now);
+      return { type: 'cancelled' };
+    }
+    return finish(now, true);
+  }
+
   // prediction: { x, z } sul piano del campo, oppure null se il raggio non lo colpisce.
   function trigger(now, prediction = null, hand = '') {
     advance(now);
@@ -89,21 +124,7 @@ export function createSeries({ settings, rng = Math.random }) {
       return { type: 'predicted', trial: current.trial };
     }
     if (state === 'feedback') {
-      if (trials.length >= settings.trialCount) {
-        summary = summarizeTrials(trials);
-        setState('summary', now);
-        return {
-          type: 'completed',
-          session: {
-            drillKey: 'bounce_prediction',
-            startedAt,
-            completedAt: new Date().toISOString(),
-            settings: { ...settings, drillVersion: BOUNCE_DRILL_VERSION },
-            summary,
-            trials: [...trials],
-          },
-        };
-      }
+      if (trials.length >= settings.trialCount) return finish(now, false);
       startTrial(now);
       return { type: 'next' };
     }
@@ -162,6 +183,7 @@ export function createSeries({ settings, rng = Math.random }) {
 
   return {
     trigger,
+    interrupt,
     update,
     get state() { return state; },
     get current() { return current; },

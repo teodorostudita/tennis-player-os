@@ -7,9 +7,11 @@ import { createPanel } from './hud.js?v=1.3.0';
 import { createSeries } from './series.js?v=1.3.0';
 
 const EYE_HEIGHT_DESKTOP = 1.7;
-// L'osservatore sta 1 m dietro il centro della linea di fondo. Camera e controller
+// L'osservatore sta 2 m dietro il centro della linea di fondo. Camera e controller
 // vivono in un "rig" spostato di +z: le coordinate del campo e della fisica non cambiano.
-export const OBSERVER_BEHIND_BASELINE_M = 1.0;
+export const OBSERVER_BEHIND_BASELINE_M = 2.0;
+// Grip tenuto premuto per interrompere la serie: evita interruzioni accidentali.
+const INTERRUPT_HOLD_S = 0.5;
 const RAY_LENGTH = 6;
 
 export function describeDepth(cm) {
@@ -66,12 +68,7 @@ function createAudio() {
 // settings: { trialCount, difficulty, occlusion: { mode, offsetM }, ballShadow }
 // onSeriesComplete(session) → Promise<{ saved, queued?, error? }>
 export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd }) {
-  // Contesto WebGL creato già xrCompatible: sul Quest Browser la conversione
-  // tardiva (makeXRCompatible all'ingresso in VR) può lasciare la scena nera
-  // finché non si preme il tasto Meta.
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('webgl2', { antialias: true, alpha: false, xrCompatible: true });
-  const renderer = new THREE.WebGLRenderer({ canvas, context, antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(host.clientWidth, host.clientHeight);
   renderer.xr.enabled = true;
@@ -132,7 +129,14 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
       handleTrigger(groundHitFromController(controller), controller.userData.hand);
     });
     controller.addEventListener('squeezestart', () => {
-      if (series.state === 'summary') renderer.xr.getSession()?.end();
+      if (series.state === 'summary') {
+        renderer.xr.getSession()?.end();
+        return;
+      }
+      controller.userData.squeezeSince = now();
+    });
+    controller.addEventListener('squeezeend', () => {
+      controller.userData.squeezeSince = null;
     });
     rig.add(controller);
     controllers.push(controller);
@@ -176,7 +180,12 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     handleTrigger(groundHitFromPointer(), 'mouse');
   }
   function onKeyDown(event) {
-    if (renderer.xr.isPresenting || event.code !== 'Space') return;
+    if (renderer.xr.isPresenting) return;
+    if (event.code === 'Escape') {
+      handleInterrupt();
+      return;
+    }
+    if (event.code !== 'Space') return;
     event.preventDefault();
     handleTrigger(pointerInside ? groundHitFromPointer() : null, 'keyboard');
   }
@@ -208,24 +217,53 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     } else if (result.type === 'predicted') {
       showFeedback(result.trial);
     } else if (result.type === 'completed') {
+      onCompleted(result);
+    } else if (result.type === 'cancelled') {
       clearFeedback();
-      saveStatus = 'Salvataggio in corso…';
-      const session = {
-        ...result.session,
-        settings: { ...result.session.settings, observerBehindBaselineM: OBSERVER_BEHIND_BASELINE_M },
-      };
-      Promise.resolve(onSeriesComplete?.(session))
-        .then(outcome => {
-          saveStatus = outcome?.saved
-            ? 'Sessione salvata ✓'
-            : 'Salvataggio non riuscito: sessione in coda, verrà ritentata';
-        })
-        .catch(() => {
-          saveStatus = 'Salvataggio non riuscito';
-        })
-        .finally(() => { lastHudKey = ''; });
+      launcher.visible = false;
     }
     lastHudKey = '';
+  }
+
+  function handleInterrupt() {
+    const result = series.interrupt(now());
+    if (!result) return;
+    if (result.type === 'completed') onCompleted(result);
+    else {
+      clearFeedback();
+      launcher.visible = false;
+    }
+    lastHudKey = '';
+  }
+
+  function checkGripHold() {
+    for (const controller of controllers) {
+      const since = controller.userData.squeezeSince;
+      if (since != null && now() - since >= INTERRUPT_HOLD_S) {
+        controller.userData.squeezeSince = null;
+        handleInterrupt();
+      }
+    }
+  }
+
+  function onCompleted(result) {
+    clearFeedback();
+    launcher.visible = false;
+    saveStatus = 'Salvataggio in corso…';
+    const session = {
+      ...result.session,
+      settings: { ...result.session.settings, observerBehindBaselineM: OBSERVER_BEHIND_BASELINE_M },
+    };
+    Promise.resolve(onSeriesComplete?.(session))
+      .then(outcome => {
+        saveStatus = outcome?.saved
+          ? 'Sessione salvata ✓'
+          : 'Salvataggio non riuscito: sessione in coda, verrà ritentata';
+      })
+      .catch(() => {
+        saveStatus = 'Salvataggio non riuscito';
+      })
+      .finally(() => { lastHudKey = ''; });
   }
 
   function prepareLaunch() {
@@ -280,7 +318,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
         { text: 'Dove rimbalza la palla?', size: 1.3, weight: 700 },
         { text: `Serie di ${total} lanci · ${occlusionLabel(settings.occlusion)}`, size: 0.75, color: '#c9d6ea' },
         { text: 'Punta il controller sul campo e premi il grilletto', size: 0.75, color: '#c9d6ea' },
-        { text: 'Grilletto per iniziare', size: 0.95, color: '#ffe14d', weight: 700 },
+        { text: 'Grilletto per iniziare · grip tenuto premuto: interrompi', size: 0.85, color: '#ffe14d', weight: 700 },
       ]);
     } else if (state === 'feedback') {
       const trial = series.trials[done - 1];
@@ -289,12 +327,12 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
         { text: `Errore ${Math.round(trial.errorCm)} cm`, size: 1.6, weight: 800 },
         { text: `${describeDepth(trial.depthCm)} · ${describeLateral(trial.lateralCm)}`, size: 0.75, color: '#c9d6ea' },
         { text: 'verde = rimbalzo reale · arancio = tua previsione', size: 0.7, color: '#9fb1c9' },
-        { text: done >= total ? 'Grilletto: riepilogo' : 'Grilletto: prossimo lancio', size: 0.85, color: '#ffe14d', weight: 700 },
+        { text: done >= total ? 'Grilletto: riepilogo' : 'Grilletto: prossimo lancio · grip tenuto: interrompi', size: 0.8, color: '#ffe14d', weight: 700 },
       ]);
     } else if (state === 'summary') {
       const s = series.summary;
       panel.draw([
-        { text: 'Serie completata', size: 1.1, weight: 700 },
+        { text: s.interrupted ? `Serie interrotta · ${s.trialCount}/${s.plannedTrialCount} lanci` : 'Serie completata', size: 1.1, weight: 700 },
         { text: `Errore medio ${Math.round(s.meanErrorCm)} cm · mediano ${Math.round(s.medianErrorCm)} cm`, size: 0.9, weight: 700 },
         { text: `Migliore ${Math.round(s.bestErrorCm)} cm · peggiore ${Math.round(s.worstErrorCm)} cm`, size: 0.7, color: '#c9d6ea' },
         { text: `Tendenza: ${describeDepth(s.meanDepthBiasCm)} · ${describeLateral(s.meanLateralBiasCm)}`, size: 0.7, color: '#c9d6ea' },
@@ -317,6 +355,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
   }
 
   function tick() {
+    checkGripHold();
     const frame = series.update(now());
     if (frame.events.includes('launched')) {
       launcher.visible = true;
@@ -345,7 +384,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
   async function enterVR() {
     audio.unlock();
     const session = await navigator.xr.requestSession('immersive-vr', {
-      optionalFeatures: ['local-floor'],
+      optionalFeatures: ['local-floor', 'bounded-floor'],
     });
     session.addEventListener('end', () => {
       camera.position.set(0, EYE_HEIGHT_DESKTOP, 0);

@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.3.3 — VR Lab: interruzione della serie e osservatore a 2 m
+- **Interruzione:** grip tenuto premuto per 0,5 s (Esc nell'anteprima desktop) chiude la serie in qualsiasi stato. Se c'è almeno un lancio con risposta, la serie viene riepilogata e salvata con `summary.interrupted = true` e `summary.plannedTrialCount`; altrimenti torna allo stato iniziale senza salvare. Il lancio in corso senza risposta viene scartato. Lo storico del modulo segna le serie interrotte.
+- **Osservatore** a 2 m dietro il centro della linea di fondo (`settings.observerBehindBaselineM = 2`).
+- **Annullata la v1.3.2** (contesto WebGL `xrCompatible` e rimozione di `bounded-floor`): non risolveva lo schermo vuoto all'ingresso in VR e impediva l'uscita con il tasto Meta.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.2 — VR Lab: ingresso in VR su Meta Quest
 - Il contesto WebGL di VR Lab viene creato già `xrCompatible: true` invece di essere convertito con `makeXRCompatible()` all'ingresso in VR: sul Quest Browser la scena restava nera finché non si premeva il tasto Meta.
 - Rimossa la richiesta della feature opzionale `bounded-floor`, non usata.

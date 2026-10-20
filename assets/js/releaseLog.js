@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.3',
+    date: '2026-10-20',
+    title: 'VR Lab: interruzione della serie e osservatore a 2 m',
+    details: [
+      'La serie si può interrompere in qualsiasi momento tenendo premuto il grip: viene mostrato e salvato il riepilogo dei lanci già fatti.',
+      'L’osservatore è ora 2 m dietro il centro della linea di fondo.',
+      'Ripristinato il comportamento precedente all’ingresso in VR (annullata la modifica della 1.3.2, che non risolveva il problema).',
+    ],
+  },
+  {
     version: '1.3.2',
     date: '2026-10-20',
     title: 'VR Lab: ingresso in VR su Meta Quest',

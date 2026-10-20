@@ -150,7 +150,7 @@ async function renderPage(athlete) {
       <section class="vr-stage-card">
         <div id="vr-stage" class="vr-stage" aria-label="Anteprima del campo"></div>
         <p class="vr-muted vr-stage-hint">
-          Anteprima su schermo: muovi il mouse sul campo e clicca (o premi spazio) al posto del grilletto.
+          Anteprima su schermo: muovi il mouse sul campo e clicca (o premi spazio) al posto del grilletto; Esc interrompe la serie.
         </p>
       </section>
 
@@ -193,7 +193,7 @@ async function renderPage(athlete) {
             : `<p class="vr-notice">WebXR immersivo non disponibile su questo browser. Apri questa pagina dal <strong>Meta Quest Browser</strong> con lo stesso account: <code>${escapeHtml(location.origin + location.pathname)}</code></p>`}
           <button id="vr-restart" class="vr-button" type="button">Ricomincia la serie</button>
         </div>
-        <p class="vr-muted">Mettiti in piedi guardando verso la rete prima di entrare in VR: nel campo virtuale ti troverai 1 m dietro il centro della linea di fondo.</p>
+        <p class="vr-muted">Mettiti in piedi guardando verso la rete prima di entrare in VR: nel campo virtuale ti troverai 2 m dietro il centro della linea di fondo.</p>
       </section>
 
       <section class="vr-card">

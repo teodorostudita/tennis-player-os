@@ -92,7 +92,7 @@ function historyMarkup(sessions, canDelete) {
         ${sessions.map(s => `
           <tr>
             <td class="num">${escapeHtml(formatDate(s.completed_at))}</td>
-            <td class="num">${s.trial_count}</td>
+            <td class="num">${s.trial_count}${s.summary?.interrupted ? ` <small title="Serie interrotta">/${s.summary.plannedTrialCount ?? ''} interrotta</small>` : ''}</td>
             <td class="hide-mobile">${escapeHtml(occlusionText(s.settings?.occlusion))}</td>
             <td class="hide-mobile">${escapeHtml(DIFFICULTY_LABELS[s.settings?.difficulty] || '—')}</td>
             <td class="num"><strong>${s.mean_error_cm == null ? '—' : `${Math.round(s.mean_error_cm)} cm`}</strong></td>
@@ -131,7 +131,7 @@ export function renderVrLab({ main, title, store }) {
           <ol class="vr-muted">
             <li>Sul visore apri <strong>Meta Quest Browser</strong> ed entra in Tennis Player OS con lo stesso account.</li>
             <li>Apri questo modulo e tocca <strong>Apri VR Lab</strong>, oppure digita l’indirizzo qui sotto.</li>
-            <li>Mettiti in piedi guardando verso la rete e premi <strong>Entra in VR</strong>: sarai 1 m dietro il centro della linea di fondo.</li>
+            <li>Mettiti in piedi guardando verso la rete e premi <strong>Entra in VR</strong>: sarai 2 m dietro il centro della linea di fondo.</li>
           </ol>
           <div class="vr-lab-url">
             <code>${escapeHtml(url)}</code>
