@@ -47,7 +47,35 @@ import { loadEconomicsIntoLocalStore } from './cloud/economicsCloud.js?v=1.2.6';
 import { store } from './data/store.js?v=1.2.6';
 import { rescueSameAthleteLocalCaches } from './cloud/localCacheRescue.js?v=1.2.6';
 
+// Errore di rete all'avvio (es. Quest appena uscito dallo standby, Wi-Fi non
+// ancora pronto): la richiesta non arriva a Supabase. Si ricarica da soli,
+// con attese crescenti e al massimo STARTUP_NETWORK_RETRIES volte di fila.
+const STARTUP_RETRY_KEY = 'tennisPlayerOS.startupNetworkRetry.v1';
+const STARTUP_NETWORK_RETRIES = 3;
+
+function isNetworkError(message = '') {
+  return /Failed to fetch|NetworkError|Load failed|network/i.test(String(message));
+}
+
+function scheduleStartupRetry() {
+  let attempt = 0;
+  try { attempt = Number(sessionStorage.getItem(STARTUP_RETRY_KEY) || 0); } catch (_) {}
+  if (attempt >= STARTUP_NETWORK_RETRIES) return false;
+  try { sessionStorage.setItem(STARTUP_RETRY_KEY, String(attempt + 1)); } catch (_) {}
+  const delay = 1500 * (attempt + 1);
+  const reload = () => setTimeout(() => window.location.reload(), delay);
+  if (navigator.onLine === false) window.addEventListener('online', reload, { once: true });
+  else reload();
+  return true;
+}
+
+function clearStartupRetry() {
+  try { sessionStorage.removeItem(STARTUP_RETRY_KEY); } catch (_) {}
+}
+
 function showStartupError(message) {
+  const retrying = isNetworkError(message) && scheduleStartupRetry();
+  if (!retrying) clearStartupRetry();
   document.body.innerHTML = `
     <main class="auth-gate">
       <section class="auth-card" aria-labelledby="startup-error-title">
@@ -56,11 +84,18 @@ function showStartupError(message) {
         <h1 id="startup-error-title">Impossibile aprire l'atleta</h1>
         <p class="auth-intro">${escapeHtml(message)}</p>
         <p class="auth-footnote">
-          L'accesso è riuscito, ma i dati cloud necessari non sono disponibili.
+          ${retrying
+            ? 'Connessione non ancora disponibile: nuovo tentativo automatico in corso…'
+            : "L'accesso è riuscito, ma i dati cloud necessari non sono disponibili."}
         </p>
+        <button class="auth-submit" type="button" data-startup-retry>Riprova</button>
       </section>
     </main>
   `;
+  document.querySelector('[data-startup-retry]')?.addEventListener('click', () => {
+    clearStartupRetry();
+    window.location.reload();
+  });
 }
 
 function showCalendarMigrationResult(result) {
@@ -366,6 +401,7 @@ if (session) {
         }
 
         await import('./app.js?v=1.2.25');
+        clearStartupRetry();
         mountAuthControls(session.user);
         mountAthleteControls({
           currentAthlete: cloudAthlete,

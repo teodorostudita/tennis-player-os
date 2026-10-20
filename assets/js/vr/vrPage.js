@@ -69,7 +69,7 @@ function deviceLabel() {
   return /OculusBrowser|Quest/i.test(navigator.userAgent) ? 'Meta Quest' : 'Browser desktop';
 }
 
-function showMessage(title, message) {
+function showMessage(title, message, { retry = false } = {}) {
   root.innerHTML = `
     <main class="auth-gate">
       <section class="auth-card">
@@ -77,10 +77,12 @@ function showMessage(title, message) {
         <div class="auth-kicker">Tennis Player OS · VR Lab</div>
         <h1>${escapeHtml(title)}</h1>
         <p class="auth-intro">${escapeHtml(message)}</p>
+        ${retry ? '<button class="auth-submit" type="button" data-vr-retry>Riprova</button>' : ''}
         <a class="auth-submit" href="./index.html">Torna all'app</a>
       </section>
     </main>
   `;
+  root.querySelector('[data-vr-retry]')?.addEventListener('click', () => window.location.reload());
 }
 
 function resolveAthlete(athletes) {
@@ -129,7 +131,13 @@ async function start() {
     await renderPage(athlete);
   } catch (error) {
     console.error('VR Lab startup failed:', error);
-    showMessage('Impossibile aprire VR Lab', error?.message || 'Errore sconosciuto.');
+    const message = String(error?.message || 'Errore sconosciuto.');
+    const network = /Failed to fetch|NetworkError|Load failed|network/i.test(message);
+    showMessage(
+      'Impossibile aprire VR Lab',
+      network ? `${message}. La connessione del visore non sembra ancora pronta.` : message,
+      { retry: true },
+    );
   }
 }
 

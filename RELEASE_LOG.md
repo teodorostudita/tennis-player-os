@@ -1,5 +1,10 @@
 # Tennis Player OS — Release Log
 
+## v1.3.4 — Avvio più robusto con rete non pronta
+- `bootstrap.js`: su errore di rete all'avvio («Failed to fetch» e simili) la pagina si ricarica da sola, con attese crescenti (1,5 / 3 / 4,5 s, o al ritorno di `online`), fino a 3 tentativi consecutivi (contatore in `sessionStorage`, azzerato a ogni avvio riuscito). Caso osservato: shortcut TPOS sul Meta Quest aperto prima che il Wi-Fi fosse pronto.
+- Pulsante **Riprova** nella schermata «Impossibile aprire l'atleta» e nella schermata d'errore di VR Lab.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.3 — VR Lab: interruzione della serie e osservatore a 2 m
 - **Interruzione:** grip tenuto premuto per 0,5 s (Esc nell'anteprima desktop) chiude la serie in qualsiasi stato. Se c'è almeno un lancio con risposta, la serie viene riepilogata e salvata con `summary.interrupted = true` e `summary.plannedTrialCount`; altrimenti torna allo stato iniziale senza salvare. Il lancio in corso senza risposta viene scartato. Lo storico del modulo segna le serie interrotte.
 - **Osservatore** a 2 m dietro il centro della linea di fondo (`settings.observerBehindBaselineM = 2`).

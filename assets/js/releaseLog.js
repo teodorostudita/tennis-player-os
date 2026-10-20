@@ -1,5 +1,14 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.4',
+    date: '2026-10-20',
+    title: 'Avvio più robusto quando la rete non è ancora pronta',
+    details: [
+      'Se all’apertura la connessione non è ancora disponibile (ad esempio sul Meta Quest appena uscito dallo standby), l’app riprova da sola invece di fermarsi su «Impossibile aprire l’atleta».',
+      'La schermata di errore ha ora il pulsante Riprova; anche VR Lab lo mostra.',
+    ],
+  },
+  {
     version: '1.3.3',
     date: '2026-10-20',
     title: 'VR Lab: interruzione della serie e osservatore a 2 m',
