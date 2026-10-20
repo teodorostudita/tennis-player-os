@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.3.0 — Modulo 13 VR Lab (WebXR, Meta Quest)
+- **Nuovo modulo 13 `vr` — VR Lab**, marcato `adminOnly` in `schema.js`: compare in sidebar e dashboard solo a chi ha `canRead('vr')` (oggi Owner/Admin) e non è ancora concedibile ai member in Utenti & Accessi (la RPC di assegnazione permessi non accetta ancora la chiave `vr`).
+- **Bounce prediction v1** in pagina autonoma `vr.html` (Three.js 0.169.0 da jsDelivr via import map): campo singolare/doppio in scala 1:1 con rete 0,914 m al centro e 1,07 m ai pali, giocatore all'origine `local-floor` = centro della propria linea di fondo.
+- Lanci generati a partire dal punto di rimbalzo (traiettoria parabolica senza spin né attrito): sempre sopra la rete e dentro il campo del singolare. Tre difficoltà (55–80, 70–100, 90–125 km/h), occlusione regolabile da 6 m prima a 8 m dopo la rete, oppure nessuna.
+- Feedback per lancio: rimbalzo reale, punto indicato, traiettoria visibile/nascosta, errore in cm scomposto in profondità e laterale, tempo di risposta. Riepilogo a fine serie (10/15/20 lanci).
+- Salvataggio in `public.vr_training_sessions` (una riga per serie, lanci in `trials` jsonb) con RLS su `has_module_access(athlete_id, 'vr', …)`; coda locale con nuovo tentativo se il visore è offline.
+- Richiede la migration `20261020191009_vr_training_sessions.sql` (già applicata al progetto Supabase).
+- Nessuna Edge Function, nessuna modifica a `tennis-player-os-site/`.
+
 ## v1.2.26 — Titoli moduli, caricamento Mental e layout tablet
 - **Titoli dei moduli coerenti:** numero e nome nel titolo della pagina vengono sempre da `modules` (`schema.js`) tramite `moduleTitle()`. Corretti i titoli scritti a mano e sbagliati (Calendar «12», Drills «3», Equipment «6», Nutrition «8») e rimosse le toppe che li correggevano a posteriori in Equipment, Economics e Drills.
 - `schema.js` contiene ora direttamente i nomi definitivi (Match, Perception & Neuro) e i sottotitoli aggiornati, invece di riceverli a runtime.

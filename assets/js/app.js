@@ -12,6 +12,8 @@ import { renderAthleteHome } from './components/contextualHome.js?v=1.2.6';
 import { renderParentHome } from './components/parentHome.js?v=1.2.6';
 import { renderTrainerHome } from './components/trainerHome.js?v=1.2.6';
 import { getCurrentUserType } from './cloud/accountAccess.js?v=1.2.6';
+import { canReadModule } from './cloud/access.js?v=1.2.24';
+import { renderVrLab } from './components/vrLab.js?v=1.3.0';
 
 const sidebar = document.querySelector('#sidebar');
 const main = document.querySelector('#main-content');
@@ -92,11 +94,11 @@ function renderDashboard() {
     </section>
 
     <div class="section-head">
-      <div><h3>Player Journey</h3><p>I dodici domini del sistema operativo dell’atleta.</p></div>
+      <div><h3>Player Journey</h3><p>I domini del sistema operativo dell’atleta.</p></div>
     </div>
 
     <section class="module-grid">
-      ${modules.map(m => `
+      ${modules.filter(m => !m.adminOnly || canReadModule(m.id)).map(m => `
         <article class="module-card" style="background:${m.color}">
           <div>
             <div class="module-top">
@@ -268,6 +270,13 @@ function render() {
   else if (route === 'athlete') renderAthleteProfile();
   else if (route === 'calendar') renderCalendar({ main, title, store });
   else if (route === 'economics') renderEconomics({ main, title, store });
+  else if (route === 'vr') {
+    if (!canReadModule('vr')) {
+      setRoute(defaultRoute());
+      return;
+    }
+    renderVrLab({ main, title, store });
+  }
   else {
     const module = modules.find(m => m.id === route);
     if (!module) {

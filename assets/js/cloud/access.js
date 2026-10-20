@@ -15,6 +15,7 @@ const MODULE_KEYS = [
   'visual',
   'economics',
   'calendar',
+  'vr',
 ];
 
 let currentAccess = {

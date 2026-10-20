@@ -15,6 +15,9 @@ export const modules = [
   { id: 'mental', number: 10, name: 'Mental', icon: '🧠', subtitle: 'Motivazione · Fiducia · Concentrazione · Regolazione', color: 'var(--mental)', description: 'Allenamento mentale della prestazione: motivazione, fiducia, concentrazione, regolazione emotiva, mental resilience, mental toughness, mental imagery e strumenti operativi.' },
   { id: 'visual', number: 11, name: 'Perception & Neuro', icon: '👁', subtitle: 'Visione · Neurocognizione · Coordinazione · Propriocezione', color: 'var(--visual)', description: 'Allenamento visivo, percettivo, neurocognitivo e sensomotorio con protocolli, sessioni e misurazioni longitudinali Reflexion Go.' },
   { id: 'economics', number: 12, name: 'Economics', icon: '◉', subtitle: 'Costi · Budget · Sostenibilità', color: 'var(--economics)', description: 'Spese, budget stagionale, costo per torneo/match, sponsor e report.' },
+  // adminOnly: visibile solo a chi ha accesso al modulo (oggi owner/admin) e
+  // non ancora concedibile ai member da Utenti & Accessi.
+  { id: 'vr', number: 13, name: 'VR Lab', icon: '◭', subtitle: 'Anticipazione · Rimbalzo · Meta Quest', color: 'var(--vr)', description: 'Allenamento percettivo in realtà virtuale (WebXR, Meta Quest): predizione del punto di rimbalzo con occlusione della traiettoria e storico dell’errore.', adminOnly: true },
 ];
 
 // Titolo canonico di un modulo (es. "1. Calendar"): numero e nome vengono

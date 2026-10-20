@@ -13,6 +13,7 @@ const MODULE_KEYS = new Set([
   'visual',
   'economics',
   'calendar',
+  'vr',
 ]);
 
 let observer = null;

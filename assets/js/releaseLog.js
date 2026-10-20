@@ -1,5 +1,17 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.0',
+    date: '2026-10-20',
+    title: 'Modulo 13 VR Lab: predizione del rimbalzo su Meta Quest',
+    details: [
+      'Nuovo modulo 13 VR Lab, per ora visibile e utilizzabile solo da Owner e Admin dell’atleta.',
+      'Bounce prediction in WebXR: campo 1:1, palla lanciata dal fondo avversario che scompare in un punto regolabile; l’atleta indica il rimbalzo con il controller.',
+      'Feedback per lancio (errore in cm, scomposto in profondità e direzione) e riepilogo a fine serie da 10, 15 o 20 lanci.',
+      'Le serie vengono salvate nel cloud per atleta, con storico e andamento dell’errore nel modulo.',
+      'Anteprima giocabile anche da computer, con il mouse.',
+    ],
+  },
+  {
     version: '1.2.26',
     date: '2026-10-20',
     title: 'Titoli moduli, caricamento Mental e layout tablet',

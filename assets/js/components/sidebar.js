@@ -1,10 +1,11 @@
 import { modules } from '../data/schema.js?v=1.2.4';
 import { APP_VERSION } from '../version.js?v=1.2.4';
 import { getCurrentUserType } from '../cloud/accountAccess.js?v=1.2.4';
+import { canReadModule } from '../cloud/access.js?v=1.2.24';
 
 export function renderSidebar(activeRoute) {
   const contextualHome = ['athlete', 'parent', 'trainer'].includes(getCurrentUserType());
-  const items = modules.map(m => `
+  const items = modules.filter(m => !m.adminOnly || canReadModule(m.id)).map(m => `
     <button class="nav-item ${activeRoute === m.id ? 'active' : ''}" data-route="${m.id}">
       <span class="nav-icon">${m.icon}</span>
       <span class="nav-label">${m.number}. ${m.name}</span>

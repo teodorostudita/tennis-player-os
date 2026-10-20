@@ -1,4 +1,7 @@
-import { modules } from '../data/schema.js?v=1.2.4';
+import { modules as allModules } from '../data/schema.js?v=1.2.4';
+
+// I moduli adminOnly (es. VR Lab) non sono ancora concedibili ai member.
+const modules = allModules.filter(module => !module.adminOnly);
 import {
   normalizeUserType,
   permissionPresetForUserType,
