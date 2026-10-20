@@ -7,6 +7,9 @@ import { createPanel } from './hud.js?v=1.3.0';
 import { createSeries } from './series.js?v=1.3.0';
 
 const EYE_HEIGHT_DESKTOP = 1.7;
+// L'osservatore sta 1 m dietro il centro della linea di fondo. Camera e controller
+// vivono in un "rig" spostato di +z: le coordinate del campo e della fisica non cambiano.
+export const OBSERVER_BEHIND_BASELINE_M = 1.0;
 const RAY_LENGTH = 6;
 
 export function describeDepth(cm) {
@@ -72,12 +75,15 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
   host.appendChild(renderer.domElement);
 
   const camera = new THREE.PerspectiveCamera(70, host.clientWidth / host.clientHeight, 0.05, 120);
-  camera.position.set(0, EYE_HEIGHT_DESKTOP, 0.3);
+  const rig = new THREE.Group();
+  rig.position.set(0, 0, OBSERVER_BEHIND_BASELINE_M);
+  camera.position.set(0, EYE_HEIGHT_DESKTOP, 0);
+  rig.add(camera);
   camera.lookAt(0, 0.6, COURT.netZ - 2);
 
   const world = buildScene();
   const { scene, ball, ballShadow, launcher, actualMarker, predictedMarker, reticle, errorLine, visiblePath, hiddenPath } = world;
-  scene.add(camera);
+  scene.add(rig);
 
   const panel = createPanel({ width: 2.6, height: 1.3 });
   panel.mesh.position.set(0, 2.9, -4.5);
@@ -123,12 +129,12 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     controller.addEventListener('squeezestart', () => {
       if (series.state === 'summary') renderer.xr.getSession()?.end();
     });
-    scene.add(controller);
+    rig.add(controller);
     controllers.push(controller);
 
     const grip = renderer.xr.getControllerGrip(i);
     grip.add(modelFactory.createControllerModel(grip));
-    scene.add(grip);
+    rig.add(grip);
   }
 
   function groundHitFromController(controller) {
@@ -199,7 +205,11 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     } else if (result.type === 'completed') {
       clearFeedback();
       saveStatus = 'Salvataggio in corso…';
-      Promise.resolve(onSeriesComplete?.(result.session))
+      const session = {
+        ...result.session,
+        settings: { ...result.session.settings, observerBehindBaselineM: OBSERVER_BEHIND_BASELINE_M },
+      };
+      Promise.resolve(onSeriesComplete?.(session))
         .then(outcome => {
           saveStatus = outcome?.saved
             ? 'Sessione salvata ✓'
@@ -333,7 +343,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
       optionalFeatures: ['local-floor', 'bounded-floor'],
     });
     session.addEventListener('end', () => {
-      camera.position.set(0, EYE_HEIGHT_DESKTOP, 0.3);
+      camera.position.set(0, EYE_HEIGHT_DESKTOP, 0);
       camera.lookAt(0, 0.6, COURT.netZ - 2);
       onResize();
       onEnd?.({ trials: series.trials, summary: series.summary });

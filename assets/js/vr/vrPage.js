@@ -193,7 +193,7 @@ async function renderPage(athlete) {
             : `<p class="vr-notice">WebXR immersivo non disponibile su questo browser. Apri questa pagina dal <strong>Meta Quest Browser</strong> con lo stesso account: <code>${escapeHtml(location.origin + location.pathname)}</code></p>`}
           <button id="vr-restart" class="vr-button" type="button">Ricomincia la serie</button>
         </div>
-        <p class="vr-muted">Posizionati al centro della tua linea di fondo, guardando verso la rete, prima di entrare in VR: il punto in cui ti trovi diventa il centro della linea di fondo.</p>
+        <p class="vr-muted">Mettiti in piedi guardando verso la rete prima di entrare in VR: nel campo virtuale ti troverai 1 m dietro il centro della linea di fondo.</p>
       </section>
 
       <section class="vr-card">

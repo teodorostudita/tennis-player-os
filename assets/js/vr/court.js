@@ -134,6 +134,21 @@ function buildBackdrop() {
   return group;
 }
 
+function haloTexture() {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
+}
+
 function ringMarker(color, radius = 0.12) {
   const mesh = new THREE.Mesh(
     new THREE.RingGeometry(radius * 0.62, radius, 40),
@@ -156,10 +171,22 @@ export function buildScene() {
 
   scene.add(buildGround(), buildLines(), buildNet(), buildBackdrop());
 
+  // Palla di dimensioni reali ma più luminosa, con un alone tenue che la rende
+  // leggibile da 24 m senza alterarne la grandezza apparente del nucleo.
   const ball = new THREE.Mesh(
-    new THREE.SphereGeometry(BALL_RADIUS, 20, 14),
-    new THREE.MeshStandardMaterial({ color: 0xdcf03c, emissive: 0x4a5a00, roughness: 0.7 }),
+    new THREE.SphereGeometry(BALL_RADIUS, 24, 16),
+    new THREE.MeshStandardMaterial({ color: 0xe8ff3a, emissive: 0xb8d400, emissiveIntensity: 0.9, roughness: 0.55 }),
   );
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: haloTexture(),
+    color: 0xf2ff70,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  }));
+  halo.scale.setScalar(BALL_RADIUS * 5);
+  ball.add(halo);
   ball.visible = false;
   scene.add(ball);
 

@@ -1,5 +1,10 @@
 # Tennis Player OS — Release Log
 
+## v1.3.1 — VR Lab: osservatore arretrato e palla più visibile
+- Osservatore a 1 m dietro il centro della linea di fondo: camera e controller sono in un rig spostato di +1 m in z, quindi coordinate del campo, fisica e dati salvati restano invariati. Il valore viene salvato in `settings.observerBehindBaselineM`.
+- Palla di dimensioni reali ma più luminosa (emissive più forte) con un alone additivo tenue.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.0 — Modulo 13 VR Lab (WebXR, Meta Quest)
 - **Nuovo modulo 13 `vr` — VR Lab**, marcato `adminOnly` in `schema.js`: compare in sidebar e dashboard solo a chi ha `canRead('vr')` (oggi Owner/Admin) e non è ancora concedibile ai member in Utenti & Accessi (la RPC di assegnazione permessi non accetta ancora la chiave `vr`).
 - **Bounce prediction v1** in pagina autonoma `vr.html` (Three.js 0.169.0 da jsDelivr via import map): campo singolare/doppio in scala 1:1 con rete 0,914 m al centro e 1,07 m ai pali, giocatore all'origine `local-floor` = centro della propria linea di fondo.

@@ -1,5 +1,14 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.1',
+    date: '2026-10-20',
+    title: 'VR Lab: osservatore arretrato e palla più visibile',
+    details: [
+      'In VR l’atleta si trova ora 1 m dietro il centro della linea di fondo.',
+      'La palla, sempre di dimensioni reali, è più luminosa e ha un leggero alone che la rende leggibile anche dal fondo campo avversario.',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-10-20',
     title: 'Modulo 13 VR Lab: predizione del rimbalzo su Meta Quest',

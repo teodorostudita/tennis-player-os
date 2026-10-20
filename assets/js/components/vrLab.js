@@ -131,7 +131,7 @@ export function renderVrLab({ main, title, store }) {
           <ol class="vr-muted">
             <li>Sul visore apri <strong>Meta Quest Browser</strong> ed entra in Tennis Player OS con lo stesso account.</li>
             <li>Apri questo modulo e tocca <strong>Apri VR Lab</strong>, oppure digita l’indirizzo qui sotto.</li>
-            <li>Mettiti al centro della linea di fondo, guardando verso la rete, e premi <strong>Entra in VR</strong>.</li>
+            <li>Mettiti in piedi guardando verso la rete e premi <strong>Entra in VR</strong>: sarai 1 m dietro il centro della linea di fondo.</li>
           </ol>
           <div class="vr-lab-url">
             <code>${escapeHtml(url)}</code>
