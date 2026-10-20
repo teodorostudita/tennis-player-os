@@ -130,3 +130,24 @@ export async function deleteVrSession(id) {
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
   if (error) throw new Error(`Impossibile eliminare la sessione VR: ${error.message}`);
 }
+
+// Diagnostica tecnica della sessione WebXR (una riga per sessione immersiva,
+// aggiornata più volte). Gli errori di rete vengono ignorati: è solo supporto al debug.
+export async function saveVrDiagnostics(snapshot) {
+  try {
+    const userId = await currentUserId();
+    const { error } = await supabase
+      .from('vr_client_diagnostics')
+      .upsert({
+        id: snapshot.id,
+        user_id: userId,
+        updated_at: new Date().toISOString(),
+        user_agent: navigator.userAgent.slice(0, 300),
+        app_version: APP_VERSION,
+        payload: snapshot,
+      }, { onConflict: 'id' });
+    return !error;
+  } catch (_) {
+    return false;
+  }
+}

@@ -1,5 +1,13 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.6',
+    date: '2026-10-20',
+    title: 'VR Lab: diagnostica remota delle sessioni VR',
+    details: [
+      'Durante la sessione VR l’app registra ogni secondo lo stato tecnico (fotogrammi, errori, eventi del visore) e lo invia al cloud, per individuare la causa della scena che scompare sul Meta Quest.',
+    ],
+  },
+  {
     version: '1.3.5',
     date: '2026-10-20',
     title: 'VR Lab: stabilità della sessione su Meta Quest',

@@ -1,5 +1,10 @@
 # Tennis Player OS — Release Log
 
+## v1.3.6 — VR Lab: diagnostica remota delle sessioni VR
+- Nuova tabella `public.vr_client_diagnostics` (migration `20261020201621_vr_client_diagnostics.sql`, già applicata): una riga per sessione immersiva, aggiornata ogni secondo con frame VR totali e al secondo, errori, eventi XR (visibilità, input, fine sessione), eventi della pagina (visibilitychange, pagehide, error, unhandledrejection, webglcontextlost). RLS: ogni utente legge e scrive solo le proprie righe.
+- La diagnostica resta anche in `localStorage` e viene mostrata in `vr.html` alla riapertura: con Meta → Esci la pagina viene chiusa e l'evento `end` non arriva.
+- Nessuna Edge Function.
+
 ## v1.3.5 — VR Lab: stabilità della sessione su Meta Quest
 - Sintomo sul Quest 3: la scena VR compare per circa un secondo, poi il visore mostra il passthrough e la sessione resta aperta (si esce solo con Meta → Esci). Coerente con il loop di rendering che smette di consegnare frame.
 - Rimosso `XRControllerModelFactory` (modelli GLTF dei controller scaricati da CDN al collegamento dei controller, circa 1 s dopo l'ingresso): controller ora disegnati localmente.

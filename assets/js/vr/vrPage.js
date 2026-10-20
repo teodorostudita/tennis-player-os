@@ -4,7 +4,7 @@ import { requireAuthenticatedSession } from '../cloud/auth.js?v=1.2.6';
 import { loadCurrentAccountAccess } from '../cloud/accountAccess.js?v=1.2.6';
 import { canReadModule, canWriteModule, loadCurrentAccess } from '../cloud/access.js?v=1.2.24';
 import { getSelectedAthleteId, loadAccessibleAthletes } from '../cloud/athlete.js?v=1.2.6';
-import { flushPendingVrSessions, saveVrSession } from '../cloud/vrTrainingCloud.js?v=1.3.0';
+import { flushPendingVrSessions, saveVrDiagnostics, saveVrSession } from '../cloud/vrTrainingCloud.js?v=1.3.0';
 import { DIFFICULTIES } from './ballPhysics.js?v=1.3.0';
 import {
   createBounceTrainer,
@@ -66,7 +66,8 @@ function renderDiagnostics(host, diagnostics) {
   }
   host.hidden = false;
   const lines = [
-    `Durata: ${diagnostics.durationS ?? '—'} s · frame VR disegnati: ${diagnostics.xrFrames}`,
+    `Durata: ${diagnostics.durationS ?? diagnostics.elapsedS ?? '—'} s · frame VR disegnati: ${diagnostics.xrFrames}`,
+    `Frame al secondo: ${(diagnostics.xrFramesPerSecond || []).join(' ') || '—'}`,
     diagnostics.errors?.length ? `Errori: ${diagnostics.errors.join(' | ')}` : 'Errori: nessuno',
     ...(diagnostics.events || []),
   ];
@@ -249,6 +250,7 @@ async function renderPage(athlete) {
   const diagnosticsHost = root.querySelector('#vr-diagnostics');
   renderDiagnostics(diagnosticsHost, readDiagnostics());
 
+  let diagnosticsUpload = null;
   const trainer = createBounceTrainer({
     host: root.querySelector('#vr-stage'),
     settings,
@@ -263,6 +265,12 @@ async function renderPage(athlete) {
       renderSummary(lastResult, lastSummary, lastSaveText);
       return outcome;
     },
+    onDiagnostics: snapshot => {
+      storeDiagnostics(snapshot);
+      if (!diagnosticsUpload) {
+        diagnosticsUpload = saveVrDiagnostics(snapshot).finally(() => { diagnosticsUpload = null; });
+      }
+    },
     onEnd: ({ diagnostics } = {}) => {
       renderSummary(lastResult, lastSummary, lastSaveText);
       if (diagnostics) {
@@ -271,6 +279,12 @@ async function renderPage(athlete) {
       }
     },
   });
+
+  // Eventi della pagina utili a capire perché la scena VR scompare.
+  window.addEventListener('error', event => trainer.logEvent(`errore pagina: ${event.message}`));
+  window.addEventListener('unhandledrejection', event => trainer.logEvent(`promise rifiutata: ${event.reason?.message || event.reason}`));
+  document.addEventListener('visibilitychange', () => trainer.logEvent(`pagina: ${document.visibilityState}`));
+  window.addEventListener('pagehide', () => trainer.logEvent('pagehide'));
 
   function readForm() {
     const data = new FormData(form);

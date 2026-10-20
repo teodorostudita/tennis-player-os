@@ -66,7 +66,7 @@ function createAudio() {
 
 // settings: { trialCount, difficulty, occlusion: { mode, offsetM }, ballShadow }
 // onSeriesComplete(session) → Promise<{ saved, queued?, error? }>
-export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd }) {
+export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, onDiagnostics }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(host.clientWidth, host.clientHeight);
@@ -362,18 +362,36 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
   }
 
   // Diagnostica della sessione VR, mostrata nella pagina all'uscita.
-  const diagnostics = { frames: 0, xrFrames: 0, errors: [], events: [] };
+  // Inviata a onDiagnostics ogni secondo durante la sessione: se la pagina viene
+  // chiusa o si blocca resta comunque l'ultimo stato.
+  const diagnostics = { frames: 0, xrFrames: 0, errors: [], events: [], xrFramesPerSecond: [] };
+  let diagnosticsTimer = null;
+  let framesAtLastTick = 0;
   function logEvent(text) {
-    const at = diagnostics.sessionStart ? ((now() - diagnostics.sessionStart).toFixed(1) + ' s') : '—';
+    const at = diagnostics.sessionStart ? ((now() - diagnostics.sessionStart).toFixed(2) + ' s') : 'pre';
     diagnostics.events.push(`${at} · ${text}`);
-    if (diagnostics.events.length > 40) diagnostics.events.shift();
+    if (diagnostics.events.length > 60) diagnostics.events.shift();
   }
+  function emitDiagnostics() {
+    if (!diagnostics.id) return;
+    diagnostics.elapsedS = Math.round((now() - diagnostics.sessionStart) * 100) / 100;
+    diagnostics.seriesState = series.state;
+    try { onDiagnostics?.(structuredClone(diagnostics)); } catch (_) {}
+  }
+  renderer.domElement.addEventListener('webglcontextlost', () => { logEvent('webglcontextlost'); emitDiagnostics(); });
+  renderer.domElement.addEventListener('webglcontextrestored', () => logEvent('webglcontextrestored'));
 
   // Un errore in un singolo frame non deve fermare il loop: senza frame il
   // Quest mostra il passthrough e la sessione resta "appesa".
   function tick() {
     diagnostics.frames += 1;
-    if (renderer.xr.isPresenting) diagnostics.xrFrames += 1;
+    if (renderer.xr.isPresenting) {
+      diagnostics.xrFrames += 1;
+      if (diagnostics.xrFrames === 1) {
+        logEvent('primo frame VR');
+        emitDiagnostics();
+      }
+    }
     try {
       drawFrame();
     } catch (error) {
@@ -416,14 +434,25 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
 
   async function enterVR() {
     audio.unlock();
+    const clickAt = now();
     const session = await navigator.xr.requestSession('immersive-vr', {
       optionalFeatures: ['local-floor', 'bounded-floor'],
     });
     Object.assign(diagnostics, {
-      sessionStart: now(), frames: 0, xrFrames: 0, errors: [], events: [],
-      userAgent: navigator.userAgent,
+      id: crypto.randomUUID(),
+      sessionStart: now(), frames: 0, xrFrames: 0, errors: [], events: [], xrFramesPerSecond: [],
+      requestSessionMs: Math.round((now() - clickAt) * 1000),
+      settings: structuredClone(settings),
     });
-    logEvent('sessione immersiva avviata');
+    framesAtLastTick = 0;
+    logEvent(`sessione immersiva avviata (requestSession ${diagnostics.requestSessionMs} ms, enabledFeatures: ${(session.enabledFeatures || []).join(', ') || 'n/d'})`);
+    clearInterval(diagnosticsTimer);
+    diagnosticsTimer = setInterval(() => {
+      diagnostics.xrFramesPerSecond.push(diagnostics.xrFrames - framesAtLastTick);
+      if (diagnostics.xrFramesPerSecond.length > 120) diagnostics.xrFramesPerSecond.shift();
+      framesAtLastTick = diagnostics.xrFrames;
+      emitDiagnostics();
+    }, 1000);
     session.addEventListener('visibilitychange', () => logEvent(`visibilità: ${session.visibilityState}`));
     session.addEventListener('inputsourceschange', event => {
       for (const source of event.added || []) logEvent(`controller collegato: ${source.handedness} (${(source.profiles || []).join(', ')})`);
@@ -431,17 +460,23 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
     });
     session.addEventListener('end', () => {
       logEvent('sessione terminata');
+      clearInterval(diagnosticsTimer);
+      emitDiagnostics();
       diagnostics.durationS = Math.round((now() - diagnostics.sessionStart) * 10) / 10;
       camera.position.set(0, EYE_HEIGHT_DESKTOP, 0);
       camera.lookAt(0, 0.6, COURT.netZ - 2);
       onResize();
       onEnd?.({ trials: series.trials, summary: series.summary, diagnostics: structuredClone(diagnostics) });
     });
-    await renderer.xr.setSession(session);
-    logEvent(`reference space: ${renderer.xr.getReferenceSpace() ? 'local-floor' : 'non disponibile'}`);
-    const frameCheck = (label) => () => logEvent(`${label}: ${diagnostics.xrFrames} frame VR disegnati`);
-    setTimeout(frameCheck('dopo 1 s'), 1000);
-    setTimeout(frameCheck('dopo 3 s'), 3000);
+    try {
+      await renderer.xr.setSession(session);
+      logEvent(`setSession completato (reference space ${renderer.xr.getReferenceSpace() ? 'ok' : 'assente'})`);
+    } catch (error) {
+      logEvent(`setSession fallito: ${error?.message || error}`);
+      emitDiagnostics();
+      throw error;
+    }
+    emitDiagnostics();
   }
 
   function dispose() {
@@ -463,6 +498,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd })
 
   return {
     enterVR,
+    logEvent: text => { logEvent(text); emitDiagnostics(); },
     restart,
     dispose,
     unlockAudio: () => audio.unlock(),
