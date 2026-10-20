@@ -28,8 +28,27 @@ fail() {
   echo "=========================================="
   echo "$1"
   echo
-  echo "Copia questo output in ChatGPT: controlleremo solo il punto che non è andato a buon fine."
+  echo "Copia questo output in Claude: controlleremo solo il punto che non è andato a buon fine."
   pause_and_exit 1
+}
+
+# Riferimento dell'ultima versione pubblicata (origin/main). Tutti i controlli
+# confrontano la cartella locale con questo riferimento, così vengono rilevati
+# sia i commit locali non ancora inviati sia le modifiche non registrate.
+BASE_REF=""
+
+# Stampa "CODICE<TAB>percorso" per ogni file cambiato rispetto a BASE_REF
+# (A = nuovo, M = modificato, D = eliminato, R = rinominato).
+changed_since_published() {
+  if [ -n "$BASE_REF" ]; then
+    git diff --name-status --no-renames "$BASE_REF" -- "$1" 2>/dev/null \
+      | awk -F'\t' 'NF >= 2 { print substr($1, 1, 1) "\t" $2 }'
+  elif git rev-parse --verify HEAD >/dev/null 2>&1; then
+    git diff --name-status --no-renames HEAD -- "$1" 2>/dev/null \
+      | awk -F'\t' 'NF >= 2 { print substr($1, 1, 1) "\t" $2 }'
+  fi
+  git ls-files --others --exclude-standard -- "$1" 2>/dev/null \
+    | awk 'NF { print "A\t" $0 }'
 }
 
 collect_marketing_changes() {
@@ -38,10 +57,8 @@ collect_marketing_changes() {
   [ -d "$APP_DIR/tennis-player-os-site" ] || return 0
 
   if git rev-parse --verify HEAD >/dev/null 2>&1; then
-    {
-      git diff --name-only HEAD -- tennis-player-os-site 2>/dev/null || true
-      git ls-files --others --exclude-standard -- tennis-player-os-site 2>/dev/null || true
-    } \
+    changed_since_published tennis-player-os-site \
+      | cut -f2 \
       | sed -n 's#^tennis-player-os-site/##p' \
       | awk 'NF' \
       | sort -u \
@@ -146,31 +163,46 @@ if git ls-files --error-unmatch "tennis-player-os-site/mail-config.php" >/dev/nu
   echo
 fi
 
+echo "Leggo l'ultima versione pubblicata su GitHub..."
+git fetch --quiet origin main 2>/dev/null \
+  || echo "  Attenzione: GitHub non raggiungibile, uso l'ultimo stato noto."
+if git rev-parse --verify -q origin/main >/dev/null 2>&1; then
+  BASE_REF="origin/main"
+fi
+echo
+
 # Snapshot dei soli file marketing realmente modificati PRIMA del commit.
 # Il file temporaneo resta disponibile fino alla fine del comando, così dopo
 # il push possiamo fare un deploy FTP incrementale invece di ricaricare tutto.
 collect_marketing_changes
 
 STATUS="$(git status --porcelain)"
-if [ -z "$STATUS" ]; then
-  echo "Nessuna modifica locale da registrare."
-  echo
-  echo "Controllo che GitHub sia aggiornato..."
-  git push -u origin main || fail "Il push GitHub non è riuscito."
+if [ -n "$BASE_REF" ]; then
+  UNPUSHED="$(git log --oneline "$BASE_REF..HEAD" 2>/dev/null || true)"
+else
+  UNPUSHED="$(git log --oneline 2>/dev/null || true)"
+fi
+
+if [ -z "$STATUS" ] && [ -z "$UNPUSHED" ]; then
+  echo "Nessuna modifica da pubblicare: GitHub è già aggiornato."
   deploy_marketing_site
   echo
   echo "=========================================="
-  echo " PUBBLICAZIONE COMPLETATA"
+  echo " NIENTE DA PUBBLICARE"
   echo "=========================================="
-  echo
-  echo "GitHub è aggiornato."
-  echo "Il sito marketing non viene toccato se non contiene modifiche locali."
   pause_and_exit 0
 fi
 
-echo "Modifiche rilevate:"
-git status --short
-echo
+if [ -n "$UNPUSHED" ]; then
+  echo "Modifiche già registrate, da pubblicare:"
+  echo "$UNPUSHED" | sed 's/^/  /'
+  echo
+fi
+if [ -n "$STATUS" ]; then
+  echo "Modifiche non ancora registrate:"
+  git status --short
+  echo
+fi
 
 if find assets/js -type f -name '*.js' -print -quit 2>/dev/null | grep -q .; then
   command -v node >/dev/null 2>&1 \
@@ -191,14 +223,14 @@ if [ -f "tennis-player-os-site/app.js" ]; then
     || fail "Errore di sintassi JavaScript in tennis-player-os-site/app.js"
 fi
 
-MIGRATION_STATUS="$(git status --porcelain -- supabase/migrations 2>/dev/null || true)"
+MIGRATION_STATUS="$(changed_since_published supabase/migrations | sort -u)"
 if [ -n "$MIGRATION_STATUS" ]; then
   while IFS= read -r line; do
     [ -z "$line" ] && continue
-    code="${line:0:2}"
-    path="${line:3}"
+    code="$(printf '%s' "$line" | cut -f1)"
+    path="$(printf '%s' "$line" | cut -f2)"
     case "$code" in
-      "??"|"A "|" A") ;;
+      A) ;;
       *) fail "È stata modificata una migrazione già esistente: $path
 Per sicurezza Tennis Player OS pubblica solo nuove migrazioni SQL; non riscrive quelle già applicate." ;;
     esac
@@ -225,8 +257,8 @@ Per sicurezza Tennis Player OS pubblica solo nuove migrazioni SQL; non riscrive 
   esac
 fi
 
-FUNCTIONS="$(git status --porcelain -- supabase/functions \
-  | awk '{print $2}' \
+FUNCTIONS="$(changed_since_published supabase/functions \
+  | cut -f2 \
   | sed -n 's#^supabase/functions/\([^/]*\)/.*#\1#p' \
   | sort -u)"
 
