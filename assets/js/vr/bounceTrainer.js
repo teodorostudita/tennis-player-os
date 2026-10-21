@@ -1,9 +1,15 @@
-// VR Lab — "Bounce prediction": rendering, input dei controller e anteprima desktop.
+// VR Lab — "Lettura del colpo": rendering, input dei controller e anteprima desktop.
+// L'avversario animato sostituisce la lanciapalle; serie, fisica e occlusione
+// lo usano solo tramite il contratto di opponent/opponentContract.js.
 import * as THREE from 'three';
-import { COURT, positionAt, rayToGround } from './ballPhysics.js?v=1.3.0';
-import { buildScene, setPath } from './court.js?v=1.3.0';
-import { createPanel } from './hud.js?v=1.3.0';
-import { createSeries } from './series.js?v=1.3.0';
+import { COURT, rayToGround } from './ballPhysics.js?v=1.3.7';
+import { positionAt } from './ballFlight.js?v=1.3.7';
+import { SHOTS } from './physicsConfig.js?v=1.3.7';
+import { OCCLUSION_MODES, normalizeOcclusionMode } from './occlusion.js?v=1.3.7';
+import { buildScene, setPath } from './court.js?v=1.3.7';
+import { createPanel } from './hud.js?v=1.3.7';
+import { createSeries } from './series.js?v=1.3.7';
+import { createMannequin } from './opponent/mannequin.js?v=1.3.7';
 
 const EYE_HEIGHT_DESKTOP = 1.7;
 // L'osservatore sta 2 m dietro il centro della linea di fondo. Camera e controller
@@ -23,13 +29,25 @@ export function describeLateral(cm) {
   return cm > 0 ? `${Math.round(cm)} cm a destra` : `${Math.round(-cm)} cm a sinistra`;
 }
 
-function occlusionLabel(occlusion) {
-  if (!occlusion || occlusion.mode === 'none') return 'nessuna occlusione';
-  const offset = Number(occlusion.offsetM || 0);
-  if (Math.abs(offset) < 0.01) return 'occlusione alla rete';
-  return offset > 0
-    ? `occlusione ${offset.toFixed(1)} m dopo la rete`
-    : `occlusione ${(-offset).toFixed(1)} m prima della rete`;
+export function occlusionLabel(occlusion) {
+  const mode = normalizeOcclusionMode(occlusion?.mode);
+  return mode === 'none' ? 'nessuna occlusione' : `occlusione: ${OCCLUSION_MODES[mode].label.toLowerCase()}`;
+}
+
+// «Topspin · 2.600 rpm · 118 km/h» (rotazione negativa = backspin).
+export function describeShot(trial) {
+  const label = SHOTS[trial.shotType]?.label || trial.shotType || '—';
+  const rpm = Math.abs(Math.round(trial.spinRpm / 50) * 50).toLocaleString('it-IT');
+  const spin = trial.spinRpm < 0 ? `backspin ${rpm} rpm` : `${rpm} rpm`;
+  return `${label} · ${spin} · ${Math.round(trial.speedKmh)} km/h`;
+}
+
+// «Topspin 45 cm (4) · Slice 60 cm (3)»
+export function describeByShotType(byShotType = {}) {
+  return Object.keys(SHOTS)
+    .filter(type => byShotType[type])
+    .map(type => `${SHOTS[type].label} ${Math.round(byShotType[type].meanErrorCm)} cm (${byShotType[type].count})`)
+    .join(' · ');
 }
 
 function createAudio() {
@@ -41,7 +59,8 @@ function createAudio() {
         if (ctx.state === 'suspended') void ctx.resume();
       } catch (_) { ctx = null; }
     },
-    // Solo il colpo di lancio: il suono del rimbalzo rivelerebbe la risposta.
+    // Solo l'impatto della racchetta, identico per ogni tipo di colpo:
+    // il suono del rimbalzo rivelerebbe la risposta.
     pop() {
       if (!ctx) return;
       const duration = 0.07;
@@ -64,7 +83,7 @@ function createAudio() {
   };
 }
 
-// settings: { trialCount, difficulty, occlusion: { mode, offsetM }, ballShadow }
+// settings: { trialCount, difficulty, occlusion: { mode }, shotWeights, ballShadow }
 // onSeriesComplete(session) → Promise<{ saved, queued?, error? }>
 export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, onDiagnostics }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -83,8 +102,11 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
   camera.lookAt(0, 0.6, COURT.netZ - 2);
 
   const world = buildScene();
-  const { scene, ball, ballShadow, launcher, actualMarker, predictedMarker, reticle, errorLine, visiblePath, hiddenPath } = world;
+  const { scene, ball, ballShadow, actualMarker, predictedMarker, reticle, errorLine, visiblePath, hiddenPath } = world;
   scene.add(rig);
+  const opponent = createMannequin();
+  scene.add(opponent.object3d);
+  const newSeries = () => createSeries({ settings, prepareShot: opponent.prepare });
 
   const panel = createPanel({ width: 2.6, height: 1.3 });
   panel.mesh.position.set(0, 2.9, -4.5);
@@ -92,7 +114,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
   scene.add(panel.mesh);
 
   const audio = createAudio();
-  let series = createSeries({ settings });
+  let series = newSeries();
   let saveStatus = '';
   let lastHudKey = '';
 
@@ -220,14 +242,13 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
 
     if (result.type === 'started' || result.type === 'next' || result.type === 'restarted') {
       if (result.type === 'restarted') saveStatus = '';
-      prepareLaunch();
+      clearFeedback();
     } else if (result.type === 'predicted') {
       showFeedback(result.trial);
     } else if (result.type === 'completed') {
       onCompleted(result);
     } else if (result.type === 'cancelled') {
       clearFeedback();
-      launcher.visible = false;
     }
     lastHudKey = '';
   }
@@ -236,10 +257,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
     const result = series.interrupt(now());
     if (!result) return;
     if (result.type === 'completed') onCompleted(result);
-    else {
-      clearFeedback();
-      launcher.visible = false;
-    }
+    else clearFeedback();
     lastHudKey = '';
   }
 
@@ -255,7 +273,6 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
 
   function onCompleted(result) {
     clearFeedback();
-    launcher.visible = false;
     saveStatus = 'Salvataggio in corso…';
     const session = {
       ...result.session,
@@ -273,14 +290,6 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
       .finally(() => { lastHudKey = ''; });
   }
 
-  function prepareLaunch() {
-    clearFeedback();
-    const { launch } = series.current;
-    launcher.position.set(launch.x0, 0, launch.z0 - 0.35);
-    launcher.lookAt(launch.bounce.x, 0, launch.bounce.z);
-    launcher.visible = true;
-  }
-
   function clearFeedback() {
     for (const object of [actualMarker, predictedMarker, errorLine, visiblePath, hiddenPath]) {
       object.visible = false;
@@ -288,7 +297,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
   }
 
   function showFeedback(trial) {
-    const { launch, tOcc } = series.current;
+    const { shot, occ } = series.current;
     actualMarker.position.set(trial.bounce.x, 0.006, trial.bounce.z);
     predictedMarker.position.set(trial.prediction.x, 0.007, trial.prediction.z);
     actualMarker.visible = true;
@@ -301,13 +310,18 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
     errorLine.geometry.computeBoundingSphere();
     errorLine.visible = true;
 
-    const steps = 40;
-    const cut = tOcc ?? launch.flightTime;
-    const sample = (from, to) => Array.from({ length: steps + 1 }, (_, i) => positionAt(launch, from + ((to - from) * i) / steps));
-    setPath(visiblePath, sample(0, cut));
-    visiblePath.visible = true;
-    if (tOcc != null) {
-      setPath(hiddenPath, sample(tOcc, launch.flightTime));
+    // Traiettoria vista (bianca) e nascosta (tratteggiata), con un tratto dopo
+    // il rimbalzo per mostrare l'effetto della rotazione.
+    const steps = 48;
+    const end = shot.flightTime + 0.35;
+    const cut = occ == null ? end : Math.min(end, Math.max(0, occ));
+    const sample = (from, to) => Array.from({ length: steps + 1 }, (_, i) => positionAt(shot.trajectory, from + ((to - from) * i) / steps));
+    if (cut > 0) {
+      setPath(visiblePath, sample(0, cut));
+      visiblePath.visible = true;
+    }
+    if (cut < end) {
+      setPath(hiddenPath, sample(cut, end));
       hiddenPath.visible = true;
     }
   }
@@ -322,26 +336,28 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
     panel.mesh.visible = state === 'ready' || state === 'feedback' || state === 'summary';
     if (state === 'ready') {
       panel.draw([
-        { text: 'Dove rimbalza la palla?', size: 1.3, weight: 700 },
-        { text: `Serie di ${total} lanci · ${occlusionLabel(settings.occlusion)}`, size: 0.75, color: '#c9d6ea' },
+        { text: 'Leggi il dritto: dove rimbalza?', size: 1.2, weight: 700 },
+        { text: `Serie di ${total} colpi · ${occlusionLabel(settings.occlusion)}`, size: 0.75, color: '#c9d6ea' },
         { text: 'Punta il controller sul campo e premi il grilletto', size: 0.75, color: '#c9d6ea' },
         { text: 'Grilletto per iniziare · grip tenuto premuto: interrompi', size: 0.85, color: '#ffe14d', weight: 700 },
       ]);
     } else if (state === 'feedback') {
       const trial = series.trials[done - 1];
       panel.draw([
-        { text: `Lancio ${done}/${total}`, size: 0.8, color: '#c9d6ea' },
-        { text: `Errore ${Math.round(trial.errorCm)} cm`, size: 1.6, weight: 800 },
+        { text: `Colpo ${done}/${total}`, size: 0.8, color: '#c9d6ea' },
+        { text: `Errore ${Math.round(trial.errorCm)} cm`, size: 1.5, weight: 800 },
+        { text: describeShot(trial), size: 0.85, color: '#ffffff', weight: 700 },
         { text: `${describeDepth(trial.depthCm)} · ${describeLateral(trial.lateralCm)}`, size: 0.75, color: '#c9d6ea' },
         { text: 'verde = rimbalzo reale · arancio = tua previsione', size: 0.7, color: '#9fb1c9' },
-        { text: done >= total ? 'Grilletto: riepilogo' : 'Grilletto: prossimo lancio · grip tenuto: interrompi', size: 0.8, color: '#ffe14d', weight: 700 },
+        { text: done >= total ? 'Grilletto: riepilogo' : 'Grilletto: prossimo colpo · grip tenuto: interrompi', size: 0.8, color: '#ffe14d', weight: 700 },
       ]);
     } else if (state === 'summary') {
       const s = series.summary;
       panel.draw([
-        { text: s.interrupted ? `Serie interrotta · ${s.trialCount}/${s.plannedTrialCount} lanci` : 'Serie completata', size: 1.1, weight: 700 },
+        { text: s.interrupted ? `Serie interrotta · ${s.trialCount}/${s.plannedTrialCount} colpi` : 'Serie completata', size: 1.1, weight: 700 },
         { text: `Errore medio ${Math.round(s.meanErrorCm)} cm · mediano ${Math.round(s.medianErrorCm)} cm`, size: 0.9, weight: 700 },
         { text: `Migliore ${Math.round(s.bestErrorCm)} cm · peggiore ${Math.round(s.worstErrorCm)} cm`, size: 0.7, color: '#c9d6ea' },
+        { text: `Per colpo: ${describeByShotType(s.byShotType)}`, size: 0.7, color: '#ffffff', weight: 700 },
         { text: `Tendenza: ${describeDepth(s.meanDepthBiasCm)} · ${describeLateral(s.meanLateralBiasCm)}`, size: 0.7, color: '#c9d6ea' },
         { text: saveStatus, size: 0.7, color: saveStatus.includes('✓') ? '#3ddc84' : '#ffb36b' },
         { text: 'Grilletto: nuova serie · Grip: esci dalla VR', size: 0.75, color: '#ffe14d', weight: 700 },
@@ -408,17 +424,17 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
   function drawFrame() {
     checkGripHold();
     const frame = series.update(now());
-    if (frame.events.includes('launched')) {
-      launcher.visible = true;
-      audio.pop();
-    }
-    if (frame.state === 'aim' || frame.state === 'summary') launcher.visible = false;
+    if (frame.events.includes('impact')) audio.pop();
 
-    ball.visible = frame.ballVisible;
-    ballShadow.visible = frame.ballVisible && Boolean(settings.ballShadow);
-    if (frame.ballVisible) {
-      ball.position.set(frame.ball.x, frame.ball.y, frame.ball.z);
-      ballShadow.position.set(frame.ball.x, 0.004, frame.ball.z);
+    opponent.setVisible(frame.opponent.visible);
+    if (frame.opponent.visible) opponent.pose(frame.opponent);
+
+    ball.visible = frame.ball.visible;
+    ballShadow.visible = frame.ball.visible && Boolean(settings.ballShadow);
+    if (frame.ball.visible) {
+      const p = frame.ball.position;
+      ball.position.set(p.x, p.y, p.z);
+      ballShadow.position.set(p.x, 0.004, p.z);
     }
 
     const hit = frame.state === 'aim' ? currentAimHit() : null;
@@ -489,11 +505,10 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
 
   function restart(nextSettings) {
     Object.assign(settings, nextSettings || {});
-    series = createSeries({ settings });
+    series = newSeries();
     saveStatus = '';
     lastHudKey = '';
     clearFeedback();
-    launcher.visible = false;
   }
 
   return {

@@ -1,14 +1,14 @@
-// VR Lab — geometria del campo e fisica della palla (funzioni pure, senza Three.js).
+// VR Lab — geometria del campo e valutazione delle predizioni (funzioni pure, senza Three.js).
 //
 // Sistema di riferimento (metri), coerente con lo spazio WebXR `local-floor`:
 //   origine = centro della linea di fondo del giocatore, a terra;
 //   y verso l'alto; il giocatore guarda verso -z;
 //   +x = destra del giocatore.
 // Rete a z = -11.885, linea di fondo avversaria a z = -23.77.
-// Traiettoria parabolica semplice: niente spin, niente attrito dell'aria.
+// La fisica del volo (aria, Magnus, rimbalzo) è in ballFlight.js.
+import { BALL, SHOT_TYPES } from './physicsConfig.js?v=1.3.7';
 
-export const G = 9.81;
-export const BALL_RADIUS = 0.0335;
+export const BALL_RADIUS = BALL.radius;
 
 export const COURT = Object.freeze({
   length: 23.77,
@@ -22,30 +22,6 @@ export const COURT = Object.freeze({
   netPostHeight: 1.07,
   netPostX: 6.399, // 0,914 m oltre la linea del doppio
 });
-
-export const DIFFICULTIES = Object.freeze({
-  easy: { label: 'Facile', speedKmh: [55, 80] },
-  medium: { label: 'Medio', speedKmh: [70, 100] },
-  hard: { label: 'Difficile', speedKmh: [90, 125] },
-});
-
-// Velocità orizzontale campionata dal preset; il resto della traiettoria si
-// ricava dal punto di rimbalzo scelto, quindi ogni lancio è valido per costruzione.
-const LAUNCH = Object.freeze({
-  x: [-3.6, 3.6],
-  zBehindBaseline: [0, 1.2],
-  height: [0.5, 1.3],
-});
-
-const BOUNCE = Object.freeze({
-  x: [-(COURT.singlesHalfWidth - 0.15), COURT.singlesHalfWidth - 0.15],
-  z: [-10.5, -0.35],
-});
-
-const NET_CLEARANCE = 0.04;
-const MAX_APEX = 6.5;
-const MIN_OCCLUSION_TIME = 0.12;
-const MIN_OCCLUSION_LEAD = 0.1; // la palla sparisce almeno 0,1 s prima del rimbalzo
 
 export function netHeightAt(x) {
   const ratio = Math.min(1, Math.abs(x) / COURT.netPostX);
@@ -63,99 +39,6 @@ export function mulberry32(seed) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-function between(rng, [min, max]) {
-  return min + (max - min) * rng();
-}
-
-export function positionAt(launch, t) {
-  return {
-    x: launch.x0 + launch.vx * t,
-    y: launch.y0 + launch.vy * t - 0.5 * G * t * t,
-    z: launch.z0 + launch.vz * t,
-  };
-}
-
-// Dopo il rimbalzo (solo per la visualizzazione): restituzione semplificata.
-export function positionAfterBounce(launch, t) {
-  if (t <= launch.flightTime) return positionAt(launch, t);
-  const dt = t - launch.flightTime;
-  const vyImpact = launch.vy - G * launch.flightTime;
-  const vy = -0.72 * vyImpact;
-  return {
-    x: launch.bounce.x + launch.vx * 0.68 * dt,
-    y: Math.max(BALL_RADIUS, BALL_RADIUS + vy * dt - 0.5 * G * dt * dt),
-    z: launch.bounce.z + launch.vz * 0.68 * dt,
-  };
-}
-
-function buildLaunch({ x0, y0, z0, bounceX, bounceZ, horizontalSpeed }) {
-  const dx = bounceX - x0;
-  const dz = bounceZ - z0;
-  const distance = Math.hypot(dx, dz);
-  const flightTime = distance / horizontalSpeed;
-  const vx = dx / flightTime;
-  const vz = dz / flightTime;
-  const vy = (BALL_RADIUS - y0 + 0.5 * G * flightTime * flightTime) / flightTime;
-
-  return {
-    x0, y0, z0, vx, vy, vz,
-    flightTime,
-    bounce: { x: bounceX, z: bounceZ },
-    speedKmh: Math.hypot(vx, vy, vz) * 3.6,
-  };
-}
-
-export function netCrossing(launch) {
-  const t = (COURT.netZ - launch.z0) / launch.vz;
-  const p = positionAt(launch, t);
-  return { t, ...p, clearance: p.y - BALL_RADIUS - netHeightAt(p.x) };
-}
-
-export function apexHeight(launch) {
-  if (launch.vy <= 0) return launch.y0;
-  return launch.y0 + (launch.vy * launch.vy) / (2 * G);
-}
-
-export function isRealistic(launch) {
-  return netCrossing(launch).clearance >= NET_CLEARANCE
-    && apexHeight(launch) <= MAX_APEX;
-}
-
-export function generateLaunch({ difficulty = 'medium', rng = Math.random } = {}) {
-  const preset = DIFFICULTIES[difficulty] || DIFFICULTIES.medium;
-
-  for (let attempt = 0; attempt < 500; attempt += 1) {
-    const launch = buildLaunch({
-      x0: between(rng, LAUNCH.x),
-      y0: between(rng, LAUNCH.height),
-      z0: COURT.opponentBaselineZ - between(rng, LAUNCH.zBehindBaseline),
-      bounceX: between(rng, BOUNCE.x),
-      bounceZ: between(rng, BOUNCE.z),
-      horizontalSpeed: between(rng, preset.speedKmh) / 3.6,
-    });
-    if (isRealistic(launch)) return launch;
-  }
-
-  // Ripiego sicuro (praticamente irraggiungibile): palla media al centro.
-  return buildLaunch({
-    x0: 0, y0: 1, z0: COURT.opponentBaselineZ,
-    bounceX: 0, bounceZ: -4, horizontalSpeed: 18,
-  });
-}
-
-// occlusion: { mode: 'none' } oppure { mode: 'distance', offsetM }, dove
-// offsetM è la distanza dalla rete verso il giocatore (negativo = prima della rete).
-// Restituisce l'istante di scomparsa, o null se la palla resta sempre visibile.
-export function occlusionTime(launch, occlusion) {
-  if (!occlusion || occlusion.mode === 'none') return null;
-  const z = COURT.netZ + Number(occlusion.offsetM || 0);
-  const t = (z - launch.z0) / launch.vz;
-  return Math.min(
-    Math.max(t, MIN_OCCLUSION_TIME),
-    launch.flightTime - MIN_OCCLUSION_LEAD,
-  );
 }
 
 // Intersezione di un raggio con il piano del campo (y = 0).
@@ -204,5 +87,21 @@ export function summarizeTrials(trials) {
     meanAbsDepthCm: round(mean(trials.map(t => Math.abs(t.depthCm)))),
     meanAbsLateralCm: round(mean(trials.map(t => Math.abs(t.lateralCm)))),
     meanResponseMs: round(mean(trials.map(t => t.responseMs).filter(Number.isFinite))),
+    byShotType: summarizeByShotType(trials, round),
   };
+}
+
+// Errore medio per tipo di colpo (solo i tipi presenti nella serie).
+function summarizeByShotType(trials, round) {
+  const result = {};
+  for (const type of SHOT_TYPES) {
+    const items = trials.filter(t => t.shotType === type);
+    if (!items.length) continue;
+    result[type] = {
+      count: items.length,
+      meanErrorCm: round(mean(items.map(t => t.errorCm))),
+      meanDepthBiasCm: round(mean(items.map(t => t.depthCm))),
+    };
+  }
+  return result;
 }

@@ -1,6 +1,6 @@
 // VR Lab — costruzione della scena: campo in scala 1:1, rete, palla, marcatori.
 import * as THREE from 'three';
-import { BALL_RADIUS, COURT, netHeightAt } from './ballPhysics.js?v=1.3.0';
+import { BALL_RADIUS, COURT, netHeightAt } from './ballPhysics.js?v=1.3.7';
 
 const LINE_Y = 0.003;
 const LINE_WIDTH = 0.05;
@@ -198,22 +198,6 @@ export function buildScene() {
   ballShadow.visible = false;
   scene.add(ballShadow);
 
-  const launcher = new THREE.Group();
-  const launcherBody = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.5, 0.6),
-    new THREE.MeshStandardMaterial({ color: 0x3b3f46, roughness: 0.6 }),
-  );
-  launcherBody.position.y = 0.25;
-  const launcherMouth = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16),
-    new THREE.MeshStandardMaterial({ color: 0x1b1d21 }),
-  );
-  launcherMouth.rotation.x = Math.PI / 2;
-  launcherMouth.position.set(0, 0.55, 0.15);
-  launcher.add(launcherBody, launcherMouth);
-  launcher.visible = false;
-  scene.add(launcher);
-
   const actualMarker = ringMarker(0x3ddc84);
   const predictedMarker = ringMarker(0xff8a2a);
   const reticle = ringMarker(0xffffff, 0.09);
@@ -240,7 +224,7 @@ export function buildScene() {
   scene.add(visiblePath, hiddenPath);
 
   return {
-    scene, ball, ballShadow, launcher,
+    scene, ball, ballShadow,
     actualMarker, predictedMarker, reticle, errorLine, visiblePath, hiddenPath,
   };
 }

@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.7',
+    date: '2026-10-21',
+    title: 'VR Lab: lettura del colpo con avversario animato',
+    details: [
+      'La lanciapalle è sostituita da un avversario animato che gioca dal fondo campo tre dritti: topspin, slice e piatto. Il tipo di colpo si legge solo dal gesto.',
+      'Palla con resistenza dell’aria ed effetto della rotazione: il topspin scende prima e rimbalza alto, lo slice resta basso e scivola.',
+      'Quattro punti di scomparsa: 150 ms prima dell’impatto, all’impatto (sparisce anche l’avversario), al passaggio della rete, nessuno.',
+      'Frequenza dei tre colpi regolabile nel menu; il feedback mostra il colpo effettivo e il riepilogo l’errore medio per tipo di colpo.',
+    ],
+  },
+  {
     version: '1.3.6',
     date: '2026-10-20',
     title: 'VR Lab: diagnostica remota delle sessioni VR',

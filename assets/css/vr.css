@@ -99,16 +99,33 @@
   background: #fff;
 }
 
-.vr-form input[type="range"] {
-  width: 100%;
+.vr-weights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
 }
 
-.vr-range-scale {
-  display: flex;
-  justify-content: space-between;
-  font-size: .75rem;
-  font-weight: 400;
-  color: var(--muted, #6b7a90);
+.vr-weights legend {
+  padding: 0 4px;
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.vr-weights input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.vr-weights p {
+  grid-column: 1 / -1;
+  margin: 0;
 }
 
 .vr-form .vr-check {

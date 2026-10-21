@@ -1,68 +1,153 @@
-// VR Lab — macchina a stati di una serie di lanci (indipendente dal rendering).
+// VR Lab — macchina a stati di una serie "Lettura del colpo" (indipendente dal rendering).
 //
-// ready ─grilletto→ countdown ─0,8 s→ flight ─occlusione→ aim ─grilletto→ feedback
-//   feedback ─grilletto→ countdown (lancio successivo) | summary (ultimo lancio)
-//   summary ─grilletto→ countdown (nuova serie)
-// interrupt(): in qualsiasi stato della serie chiude con i lanci già completati
+// ready ─grilletto→ windup ─impatto→ flight ─occlusione→ aim ─grilletto→ feedback
+//   feedback ─grilletto→ windup (colpo successivo) | summary (ultimo colpo)
+//   summary ─grilletto→ windup (nuova serie)
+// Con occlusione prima dell'impatto si passa direttamente da windup ad aim.
+// interrupt(): in qualsiasi stato della serie chiude con i colpi già completati
 // (summary), oppure torna a ready se non ne è stato completato nessuno.
+//
+// Il gesto dell'avversario arriva da prepareShot (contratto in
+// opponent/opponentContract.js): la serie conosce solo durata, istante d'impatto
+// e punto di contatto della racchetta, da cui parte la palla.
 // I tempi sono in secondi (performance.now() / 1000).
-import {
-  generateLaunch,
-  occlusionTime,
-  positionAfterBounce,
-  predictionError,
-  summarizeTrials,
-} from './ballPhysics.js?v=1.3.0';
+import { OPPONENT_PLACEMENT, OCCLUSION, SHOTS, SHOT_TYPES, TARGET } from './physicsConfig.js?v=1.3.7';
+import { generateShot, positionAt } from './ballFlight.js?v=1.3.7';
+import { hidesOpponent, normalizeOcclusionMode, occlusionTime } from './occlusion.js?v=1.3.7';
+import { COURT, predictionError, summarizeTrials } from './ballPhysics.js?v=1.3.7';
 
-export const BOUNCE_DRILL_VERSION = 1;
+export const OPPONENT_DRILL_KEY = 'opponent_read';
+export const OPPONENT_DRILL_VERSION = 1;
 
-const COUNTDOWN = 0.8;
+const READY_PAUSE = 0.5; // dal grilletto all'inizio del gesto
 const TRIGGER_COOLDOWN = 0.3;
-const UNOCCLUDED_TAIL = 0.6; // senza occlusione la palla resta visibile dopo il rimbalzo
 const REPLAY_TAIL = 0.6;
+const REPLAY_GESTURE_LEAD = 0.6; // nel feedback dei modi pre150/impact si rivede il gesto
+
+// Avversario fermo in attesa, al centro della sua linea di fondo.
+export const IDLE_PLACEMENT = Object.freeze({
+  x: 0, z: COURT.opponentBaselineZ - 0.5, yaw: Math.PI, aimX: 0,
+});
 
 const r3 = v => Math.round(v * 1000) / 1000;
 const r1 = v => Math.round(v * 10) / 10;
 
-export function createSeries({ settings, rng = Math.random }) {
+function between(rng, [min, max]) {
+  return min + (max - min) * rng();
+}
+
+export function normalizeShotWeights(weights = {}) {
+  const result = {};
+  let total = 0;
+  for (const type of SHOT_TYPES) {
+    const value = Number(weights[type]);
+    result[type] = Number.isFinite(value) && value > 0 ? value : 0;
+    total += result[type];
+  }
+  if (total > 0) return result;
+  return Object.fromEntries(SHOT_TYPES.map(type => [type, SHOTS[type].defaultWeight]));
+}
+
+export function pickShotType(weights, rng = Math.random) {
+  const normalized = normalizeShotWeights(weights);
+  const total = SHOT_TYPES.reduce((sum, type) => sum + normalized[type], 0);
+  let roll = rng() * total;
+  for (const type of SHOT_TYPES) {
+    roll -= normalized[type];
+    if (roll < 0) return type;
+  }
+  return SHOT_TYPES.at(-1);
+}
+
+// Posizione e orientamento dell'avversario: non dipendono dal tipo di colpo.
+function randomPlacement(rng) {
+  const x = between(rng, OPPONENT_PLACEMENT.x);
+  const z = COURT.opponentBaselineZ - between(rng, OPPONENT_PLACEMENT.behindBaseline);
+  const aimX = between(rng, TARGET.aimX);
+  // L'avversario (che nel suo riferimento guarda verso −z) ruota verso il punto di mira.
+  const yaw = Math.atan2(-(aimX - x), -(TARGET.aimZ - z));
+  return { x, z, yaw, aimX };
+}
+
+// Senza avversario (test in Node): contatto fisso davanti e a lato del corpo.
+function defaultPrepareShot({ placement }) {
+  return {
+    duration: 1.6,
+    impactTime: 0.95,
+    contact: { x: placement.x - 0.9, y: 0.9, z: placement.z + 0.4 },
+  };
+}
+
+export function createSeries({ settings, prepareShot = defaultPrepareShot, rng = Math.random }) {
   let state = 'ready';
   let stateSince = -Infinity;
   let trials = [];
   let current = null;
   let startedAt = null;
   let summary = null;
+  let pendingEvents = [];
 
   function setState(next, now) {
     state = next;
     stateSince = now;
   }
 
+  function occlusionMode() {
+    return normalizeOcclusionMode(settings.occlusion?.mode);
+  }
+
   function startTrial(now) {
     if (!startedAt) startedAt = new Date().toISOString();
-    const launch = generateLaunch({ difficulty: settings.difficulty, rng });
+    const shotType = pickShotType(settings.shotWeights, rng);
+    const placement = randomPlacement(rng);
+    const clip = prepareShot({ shotType, placement });
+    const shot = generateShot({
+      shotType,
+      contact: clip.contact,
+      aim: { x: placement.aimX, z: TARGET.aimZ },
+      difficulty: settings.difficulty,
+      rng,
+    });
+    const mode = occlusionMode();
+    const tClipStart = now + READY_PAUSE;
     current = {
-      launch,
-      tLaunch: now + COUNTDOWN,
-      tOcc: occlusionTime(launch, settings.occlusion),
+      shotType,
+      placement,
+      clip,
+      shot,
+      mode,
+      tClipStart,
+      tImpact: tClipStart + clip.impactTime,
+      occ: occlusionTime(mode, shot),
+      impactFired: false,
       aimStart: null,
       trial: null,
     };
-    setState('countdown', now);
+    setState('windup', now);
   }
 
   function recordPrediction(now, prediction, hand) {
-    const { launch, tOcc } = current;
-    const error = predictionError(launch.bounce, prediction);
+    const { shot, occ, mode, placement } = current;
+    const error = predictionError(shot.bounce, prediction);
     current.trial = {
       index: trials.length + 1,
-      launch: {
-        x0: r3(launch.x0), y0: r3(launch.y0), z0: r3(launch.z0),
-        vx: r3(launch.vx), vy: r3(launch.vy), vz: r3(launch.vz),
-      },
-      speedKmh: r1(launch.speedKmh),
-      flightTime: r3(launch.flightTime),
-      occlusionTime: tOcc == null ? null : r3(tOcc),
-      bounce: { x: r3(launch.bounce.x), z: r3(launch.bounce.z) },
+      shotType: shot.shotType,
+      spinRpm: Math.round(shot.spinRpm),
+      speedKmh: r1(shot.speedKmh),
+      elevationDeg: r1(shot.elevationDeg),
+      contact: { x: r3(shot.contact.x), y: r3(shot.contact.y), z: r3(shot.contact.z) },
+      opponent: { x: r3(placement.x), z: r3(placement.z) },
+      velocity: shot.velocity.map(r3),
+      netClearance: shot.net ? r3(shot.net.clearance) : null,
+      flightTime: r3(shot.flightTime),
+      bounce: { x: r3(shot.bounce.x), z: r3(shot.bounce.z) },
+      bounceOut: shot.bounceOut ? {
+        speedKmh: r1(shot.bounceOut.speedKmh),
+        angleDeg: r1(shot.bounceOut.angleDeg),
+        gripped: shot.bounceOut.gripped,
+      } : null,
+      occlusionMode: mode,
+      occlusionTime: occ == null ? null : r3(occ),
       prediction: { x: r3(prediction.x), z: r3(prediction.z) },
       errorCm: r1(error.errorCm),
       depthCm: r1(error.depthCm),
@@ -85,17 +170,22 @@ export function createSeries({ settings, rng = Math.random }) {
     return {
       type: 'completed',
       session: {
-        drillKey: 'bounce_prediction',
+        drillKey: OPPONENT_DRILL_KEY,
         startedAt,
         completedAt: new Date().toISOString(),
-        settings: { ...settings, drillVersion: BOUNCE_DRILL_VERSION },
+        settings: {
+          ...settings,
+          occlusion: { mode: occlusionMode() },
+          shotWeights: normalizeShotWeights(settings.shotWeights),
+          drillVersion: OPPONENT_DRILL_VERSION,
+        },
         summary,
         trials: [...trials],
       },
     };
   }
 
-  // Il lancio in corso senza risposta viene scartato.
+  // Il colpo in corso senza risposta viene scartato.
   function interrupt(now) {
     if (state === 'ready' || state === 'summary') return null;
     if (!trials.length) {
@@ -110,8 +200,7 @@ export function createSeries({ settings, rng = Math.random }) {
   // prediction: { x, z } sul piano del campo, oppure null se il raggio non lo colpisce.
   function trigger(now, prediction = null, hand = '') {
     advance(now);
-    // In aim nessun cooldown: l'ultimo grilletto è di almeno un lancio prima,
-    // e una risposta rapida subito dopo l'occlusione deve essere accettata.
+    // In aim nessun cooldown: una risposta rapida subito dopo l'occlusione va accettata.
     if (state !== 'aim' && now - stateSince < TRIGGER_COOLDOWN) return null;
 
     if (state === 'ready') {
@@ -138,47 +227,82 @@ export function createSeries({ settings, rng = Math.random }) {
     return null;
   }
 
-  // Transizioni temporali (countdown → flight → aim). Chiamata sia dal loop di
-  // rendering sia dal grilletto, così lo stato non dipende dal frame rate.
-  let pendingEvents = [];
+  // Transizioni temporali (windup → flight → aim), chiamate sia dal loop di
+  // rendering sia dal grilletto: lo stato non dipende dal frame rate.
   function advance(now) {
-    if (state === 'countdown' && now >= current.tLaunch) {
-      setState('flight', current.tLaunch);
-      pendingEvents.push('launched');
+    if (!current || !['windup', 'flight', 'aim'].includes(state)) return;
+    const t = now - current.tImpact;
+    if (!current.impactFired && t >= 0) {
+      current.impactFired = true;
+      pendingEvents.push('impact');
     }
-    if (state === 'flight') {
-      const { launch, tOcc, tLaunch } = current;
-      const t = now - tLaunch;
-      if (tOcc != null && t >= tOcc) {
-        current.aimStart = tLaunch + tOcc;
-        setState('aim', current.aimStart);
-      } else if (tOcc == null && t >= launch.flightTime + UNOCCLUDED_TAIL) {
-        current.aimStart = tLaunch + launch.flightTime;
-        setState('aim', now);
-      }
+    if (state === 'aim') return;
+    if (state === 'windup' && t >= 0) setState('flight', current.tImpact);
+
+    const { occ, shot } = current;
+    if (occ != null && t >= occ) {
+      current.aimStart = current.tImpact + occ;
+      setState('aim', current.aimStart);
+    } else if (occ == null && t >= shot.flightTime + OCCLUSION.unoccludedTailS) {
+      current.aimStart = current.tImpact + shot.flightTime;
+      setState('aim', now);
     }
   }
 
-  // Avanza il tempo e restituisce cosa mostrare.
+  function opponentFrame(visible, clipTime) {
+    return {
+      visible,
+      shotType: current.shotType,
+      placement: current.placement,
+      clipTime,
+    };
+  }
+
+  function idleFrame(events) {
+    return {
+      state,
+      events,
+      ball: { visible: false, position: null },
+      opponent: { visible: true, shotType: SHOT_TYPES[0], placement: IDLE_PLACEMENT, clipTime: 0 },
+    };
+  }
+
+  // Avanza il tempo e restituisce cosa mostrare: palla e posa dell'avversario.
   function update(now) {
     advance(now);
     const events = pendingEvents;
     pendingEvents = [];
+    if (!current) return idleFrame(events);
 
-    if (state === 'flight') {
-      const t = now - current.tLaunch;
-      return { state, events, ballVisible: true, ball: positionAfterBounce(current.launch, t) };
+    const { shot, occ, mode, clip } = current;
+    const hides = hidesOpponent(mode);
+
+    if (state === 'windup' || state === 'flight' || state === 'aim') {
+      const t = now - current.tImpact;
+      const occluded = occ != null && t >= occ;
+      const ballVisible = t >= 0 && !occluded && t <= shot.trajectory.endTime;
+      return {
+        state,
+        events,
+        ball: { visible: ballVisible, position: ballVisible ? positionAt(shot.trajectory, t) : null },
+        opponent: opponentFrame(!(hides && occluded), clip.impactTime + t),
+      };
     }
 
     if (state === 'feedback') {
-      const { launch, tOcc } = current;
-      const t = (tOcc ?? 0) + (now - stateSince);
-      if (t <= launch.flightTime + REPLAY_TAIL) {
-        return { state, events, ballVisible: true, ball: positionAfterBounce(launch, t) };
-      }
+      // Replay: nei modi che oscurano l'avversario si rivede anche il gesto.
+      const replayStart = hides ? -REPLAY_GESTURE_LEAD : Math.max(0, occ ?? 0);
+      const t = replayStart + (now - stateSince);
+      const ballVisible = t >= 0 && t <= shot.flightTime + REPLAY_TAIL;
+      return {
+        state,
+        events,
+        ball: { visible: ballVisible, position: ballVisible ? positionAt(shot.trajectory, t) : null },
+        opponent: opponentFrame(true, clip.impactTime + t),
+      };
     }
 
-    return { state, events, ballVisible: false, ball: null };
+    return idleFrame(events);
   }
 
   return {

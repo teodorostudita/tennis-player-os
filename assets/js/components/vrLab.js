@@ -5,10 +5,10 @@ import {
   flushPendingVrSessions,
   loadVrSessions,
   pendingVrSessionCount,
-} from '../cloud/vrTrainingCloud.js?v=1.3.0';
+} from '../cloud/vrTrainingCloud.js?v=1.3.7';
 import { showInAppAlert, showInAppConfirm } from '../ui/inAppMessages.js?v=1.2.6';
-
-const DIFFICULTY_LABELS = { easy: 'Facile', medium: 'Medio', hard: 'Difficile' };
+import { DIFFICULTIES, SHOTS, SHOT_TYPES } from '../vr/physicsConfig.js?v=1.3.7';
+import { OCCLUSION_MODES } from '../vr/occlusion.js?v=1.3.7';
 
 function escapeHtml(value = '') {
   return String(value)
@@ -27,11 +27,12 @@ function vrUrl(athleteId) {
 }
 
 function occlusionText(occlusion) {
-  if (!occlusion || occlusion.mode === 'none') return 'Nessuna';
-  const offset = Number(occlusion.offsetM || 0);
-  if (Math.abs(offset) < 0.01) return 'Alla rete';
-  const meters = Math.abs(offset).toFixed(1).replace('.', ',');
-  return offset > 0 ? `${meters} m dopo` : `${meters} m prima`;
+  return OCCLUSION_MODES[occlusion?.mode]?.short || '—';
+}
+
+function shotErrorText(summary, type) {
+  const stats = summary?.byShotType?.[type];
+  return stats ? `${Math.round(stats.meanErrorCm)} cm <small>(${stats.count})</small>` : '—';
 }
 
 function signed(cm, positive, negative) {
@@ -83,6 +84,7 @@ function historyMarkup(sessions, canDelete) {
           <th class="hide-mobile">Occlusione</th>
           <th class="hide-mobile">Difficoltà</th>
           <th>Medio</th>
+          ${SHOT_TYPES.map(type => `<th class="hide-mobile">${escapeHtml(SHOTS[type].label)}</th>`).join('')}
           <th class="hide-mobile">Mediano</th>
           <th class="hide-mobile">Tendenza</th>
           ${canDelete ? '<th></th>' : ''}
@@ -94,8 +96,9 @@ function historyMarkup(sessions, canDelete) {
             <td class="num">${escapeHtml(formatDate(s.completed_at))}</td>
             <td class="num">${s.trial_count}${s.summary?.interrupted ? ` <small title="Serie interrotta">/${s.summary.plannedTrialCount ?? ''} interrotta</small>` : ''}</td>
             <td class="hide-mobile">${escapeHtml(occlusionText(s.settings?.occlusion))}</td>
-            <td class="hide-mobile">${escapeHtml(DIFFICULTY_LABELS[s.settings?.difficulty] || '—')}</td>
+            <td class="hide-mobile">${escapeHtml(DIFFICULTIES[s.settings?.difficulty]?.label || '—')}</td>
             <td class="num"><strong>${s.mean_error_cm == null ? '—' : `${Math.round(s.mean_error_cm)} cm`}</strong></td>
+            ${SHOT_TYPES.map(type => `<td class="num hide-mobile">${shotErrorText(s.summary, type)}</td>`).join('')}
             <td class="num hide-mobile">${s.median_error_cm == null ? '—' : `${Math.round(s.median_error_cm)} cm`}</td>
             <td class="hide-mobile">${escapeHtml(signed(s.summary?.meanDepthBiasCm, 'cm lungo', 'cm corto'))} · ${escapeHtml(signed(s.summary?.meanLateralBiasCm, 'cm dx', 'cm sx'))}</td>
             ${canDelete ? `<td><button type="button" data-vr-delete="${escapeHtml(s.id)}" aria-label="Elimina sessione">✕</button></td>` : ''}
@@ -116,8 +119,8 @@ export function renderVrLab({ main, title, store }) {
   main.innerHTML = `
     <div class="section-head">
       <div>
-        <h3>VR Lab · Bounce prediction</h3>
-        <p>La palla parte dal fondo campo avversario e scompare durante il volo: l’atleta indica con il controller dove rimbalzerà nel suo campo.</p>
+        <h3>VR Lab · Lettura del colpo</h3>
+        <p>Un avversario animato gioca dal fondo campo un dritto in topspin, slice o piatto. Con l’occlusione prima o all’impatto l’atleta legge solo il gesto e indica con il controller dove rimbalzerà la palla nel suo campo.</p>
       </div>
     </div>
 
@@ -142,7 +145,7 @@ export function renderVrLab({ main, title, store }) {
       </article>
 
       <article class="panel">
-        <div class="panel-header"><h3>Storico</h3><p>Errore medio tra punto indicato e rimbalzo reale.</p></div>
+        <div class="panel-header"><h3>Storico</h3><p>Errore medio tra punto indicato e rimbalzo reale, anche per tipo di colpo.</p></div>
         <div class="panel-body" id="vr-lab-history"><p class="vr-muted">Caricamento…</p></div>
       </article>
     </section>

@@ -5,7 +5,9 @@ import { APP_VERSION } from '../version.js?v=1.2.4';
 // Se il salvataggio fallisce (rete assente sul visore), la sessione resta in coda
 // locale e viene ritentata al successivo salvataggio o all'apertura del modulo.
 
-export const BOUNCE_DRILL_KEY = 'bounce_prediction';
+// Esercizio attuale: lettura del dritto dell'avversario animato. Le serie della
+// vecchia lanciapalle (`bounce_prediction`) restano nel database.
+export const OPPONENT_DRILL_KEY = 'opponent_read';
 
 const TABLE = 'vr_training_sessions';
 const PENDING_KEY = 'tennisPlayerOS.vr.pendingSessions.v1';
@@ -31,7 +33,7 @@ function toRow(session, userId) {
     id: session.id,
     athlete_id: session.athleteId,
     recorded_by: userId,
-    drill_key: session.drillKey || BOUNCE_DRILL_KEY,
+    drill_key: session.drillKey || OPPONENT_DRILL_KEY,
     started_at: session.startedAt,
     completed_at: session.completedAt,
     trial_count: session.trials.length,
@@ -113,7 +115,7 @@ export async function saveVrSession(session) {
   }
 }
 
-export async function loadVrSessions(athleteId, { drillKey = BOUNCE_DRILL_KEY, limit = 50 } = {}) {
+export async function loadVrSessions(athleteId, { drillKey = OPPONENT_DRILL_KEY, limit = 50 } = {}) {
   const { data, error } = await supabase
     .from(TABLE)
     .select('id, recorded_by, drill_key, started_at, completed_at, trial_count, mean_error_cm, median_error_cm, settings, summary, device')

@@ -4,21 +4,25 @@ import { requireAuthenticatedSession } from '../cloud/auth.js?v=1.2.6';
 import { loadCurrentAccountAccess } from '../cloud/accountAccess.js?v=1.2.6';
 import { canReadModule, canWriteModule, loadCurrentAccess } from '../cloud/access.js?v=1.2.24';
 import { getSelectedAthleteId, loadAccessibleAthletes } from '../cloud/athlete.js?v=1.2.6';
-import { flushPendingVrSessions, saveVrDiagnostics, saveVrSession } from '../cloud/vrTrainingCloud.js?v=1.3.0';
-import { DIFFICULTIES } from './ballPhysics.js?v=1.3.0';
+import { flushPendingVrSessions, saveVrDiagnostics, saveVrSession } from '../cloud/vrTrainingCloud.js?v=1.3.7';
+import { moduleTitle } from '../data/schema.js?v=1.2.6';
+import { DIFFICULTIES, SHOTS, SHOT_TYPES } from './physicsConfig.js?v=1.3.7';
+import { DEFAULT_OCCLUSION_MODE, OCCLUSION_MODES, normalizeOcclusionMode } from './occlusion.js?v=1.3.7';
+import { normalizeShotWeights } from './series.js?v=1.3.7';
 import {
   createBounceTrainer,
   describeDepth,
   describeLateral,
   isImmersiveVrSupported,
-} from './bounceTrainer.js?v=1.3.0';
+} from './bounceTrainer.js?v=1.3.7';
 
-const SETTINGS_KEY = 'tennisPlayerOS.vr.bounceSettings.v1';
+const SETTINGS_KEY = 'tennisPlayerOS.vr.opponentSettings.v1';
 const DIAGNOSTICS_KEY = 'tennisPlayerOS.vr.lastDiagnostics.v1';
 const DEFAULT_SETTINGS = {
   trialCount: 10,
   difficulty: 'medium',
-  occlusion: { mode: 'distance', offsetM: 0 },
+  occlusion: { mode: DEFAULT_OCCLUSION_MODE },
+  shotWeights: normalizeShotWeights({}),
   ballShadow: false,
 };
 
@@ -40,10 +44,8 @@ function loadSettings() {
     return {
       trialCount: [10, 15, 20].includes(saved.trialCount) ? saved.trialCount : DEFAULT_SETTINGS.trialCount,
       difficulty: DIFFICULTIES[saved.difficulty] ? saved.difficulty : DEFAULT_SETTINGS.difficulty,
-      occlusion: {
-        mode: saved.occlusion?.mode === 'none' ? 'none' : 'distance',
-        offsetM: Math.min(8, Math.max(-6, Number(saved.occlusion?.offsetM) || 0)),
-      },
+      occlusion: { mode: normalizeOcclusionMode(saved.occlusion?.mode) },
+      shotWeights: normalizeShotWeights(saved.shotWeights),
       ballShadow: Boolean(saved.ballShadow),
     };
   } catch (_) {
@@ -78,10 +80,11 @@ function storeSettings(settings) {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
 }
 
-function offsetLabel(offsetM) {
-  if (Math.abs(offsetM) < 0.01) return 'alla rete';
-  const meters = Math.abs(offsetM).toFixed(1).replace('.', ',');
-  return offsetM > 0 ? `${meters} m dopo la rete` : `${meters} m prima della rete`;
+function weightsLabel(weights) {
+  const total = SHOT_TYPES.reduce((sum, type) => sum + weights[type], 0);
+  return SHOT_TYPES
+    .map(type => `${SHOTS[type].label} ${Math.round((weights[type] / total) * 100)}%`)
+    .join(' · ');
 }
 
 function athleteDisplayName(athlete) {
@@ -115,6 +118,18 @@ function resolveAthlete(athletes) {
     || (athletes.length === 1 ? athletes[0] : null);
 }
 
+function byShotTypeMarkup(byShotType = {}) {
+  const types = SHOT_TYPES.filter(type => byShotType[type]);
+  if (!types.length) return '';
+  return `
+    <div class="vr-stats">
+      ${types.map(type => `
+        <div><span>${escapeHtml(SHOTS[type].label)} · ${byShotType[type].count}</span><strong>${Math.round(byShotType[type].meanErrorCm)} cm</strong></div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function renderSummary(host, summary, saveText = '') {
   if (!summary) {
     host.innerHTML = '<p class="vr-muted">Nessuna serie completata in questa sessione.</p>';
@@ -125,8 +140,9 @@ function renderSummary(host, summary, saveText = '') {
       <div><span>Errore medio</span><strong>${Math.round(summary.meanErrorCm)} cm</strong></div>
       <div><span>Mediano</span><strong>${Math.round(summary.medianErrorCm)} cm</strong></div>
       <div><span>Migliore</span><strong>${Math.round(summary.bestErrorCm)} cm</strong></div>
-      <div><span>Lanci</span><strong>${summary.trialCount}</strong></div>
+      <div><span>Colpi</span><strong>${summary.trialCount}</strong></div>
     </div>
+    ${byShotTypeMarkup(summary.byShotType)}
     <p class="vr-muted">Tendenza: ${escapeHtml(describeDepth(summary.meanDepthBiasCm))} · ${escapeHtml(describeLateral(summary.meanLateralBiasCm))}</p>
     ${saveText ? `<p class="vr-save">${escapeHtml(saveText)}</p>` : ''}
   `;
@@ -173,7 +189,7 @@ async function renderPage(athlete) {
     <header class="vr-topbar">
       <a class="vr-back" href="./index.html#/vr">← App</a>
       <div>
-        <div class="vr-kicker">13. VR Lab · Bounce prediction</div>
+        <div class="vr-kicker">${escapeHtml(moduleTitle('vr'))} · Lettura del colpo</div>
         <h1>${escapeHtml(athleteDisplayName(athlete))}</h1>
       </div>
     </header>
@@ -189,7 +205,7 @@ async function renderPage(athlete) {
       <section class="vr-card">
         <h2>Serie</h2>
         <form id="vr-settings" class="vr-form">
-          <label>Lanci
+          <label>Colpi
             <select name="trialCount">
               ${[10, 15, 20].map(n => `<option value="${n}" ${settings.trialCount === n ? 'selected' : ''}>${n}</option>`).join('')}
             </select>
@@ -197,22 +213,23 @@ async function renderPage(athlete) {
           <label>Difficoltà (velocità)
             <select name="difficulty">
               ${Object.entries(DIFFICULTIES).map(([key, preset]) => `
-                <option value="${key}" ${settings.difficulty === key ? 'selected' : ''}>
-                  ${preset.label} · ${preset.speedKmh[0]}–${preset.speedKmh[1]} km/h
-                </option>`).join('')}
+                <option value="${key}" ${settings.difficulty === key ? 'selected' : ''}>${preset.label}</option>`).join('')}
             </select>
           </label>
-          <label>Occlusione
+          <label>Punto di scomparsa
             <select name="occlusionMode">
-              <option value="distance" ${settings.occlusion.mode === 'distance' ? 'selected' : ''}>La palla scompare</option>
-              <option value="none" ${settings.occlusion.mode === 'none' ? 'selected' : ''}>Nessuna (familiarizzazione)</option>
+              ${Object.entries(OCCLUSION_MODES).map(([key, mode]) => `
+                <option value="${key}" ${settings.occlusion.mode === key ? 'selected' : ''}>${escapeHtml(mode.label)}</option>`).join('')}
             </select>
           </label>
-          <label class="vr-range" ${settings.occlusion.mode === 'none' ? 'hidden' : ''}>
-            Punto di scomparsa: <strong id="vr-offset-label">${offsetLabel(settings.occlusion.offsetM)}</strong>
-            <input type="range" name="offsetM" min="-6" max="8" step="0.5" value="${settings.occlusion.offsetM}" />
-            <span class="vr-range-scale"><span>6 m prima</span><span>rete</span><span>8 m dopo</span></span>
-          </label>
+          <fieldset class="vr-weights">
+            <legend>Frequenza dei colpi (pesi)</legend>
+            ${SHOT_TYPES.map(type => `
+              <label>${escapeHtml(SHOTS[type].label)}
+                <input type="number" name="weight_${type}" min="0" max="100" step="5" inputmode="numeric" value="${settings.shotWeights[type]}" />
+              </label>`).join('')}
+            <p class="vr-muted" id="vr-weights-label">${escapeHtml(weightsLabel(settings.shotWeights))}</p>
+          </fieldset>
           <label class="vr-check">
             <input type="checkbox" name="ballShadow" ${settings.ballShadow ? 'checked' : ''} />
             Ombra della palla sotto la verticale
@@ -226,7 +243,8 @@ async function renderPage(athlete) {
           <button id="vr-restart" class="vr-button" type="button">Ricomincia la serie</button>
         </div>
         <p class="vr-muted">Mettiti in piedi guardando verso la rete prima di entrare in VR: nel campo virtuale ti troverai 2 m dietro il centro della linea di fondo.</p>
-        <p class="vr-muted"><strong>In VR:</strong> grilletto = lancia / conferma il punto · grip tenuto premuto = interrompi la serie · grip nel riepilogo = esci.
+        <p class="vr-muted">Nei modi «150 ms prima» e «all’impatto» spariscono avversario e palla: il rimbalzo si predice solo dal gesto. Il tipo di colpo compare nel feedback.</p>
+        <p class="vr-muted"><strong>In VR:</strong> grilletto = avvia il colpo / conferma il punto · grip tenuto premuto = interrompi la serie · grip nel riepilogo = esci.
           Per uscire in qualsiasi momento: premi il <strong>tasto Meta</strong> e scegli <strong>Esci</strong>.</p>
       </section>
 
@@ -291,18 +309,17 @@ async function renderPage(athlete) {
     return {
       trialCount: Number(data.get('trialCount')),
       difficulty: String(data.get('difficulty')),
-      occlusion: {
-        mode: data.get('occlusionMode') === 'none' ? 'none' : 'distance',
-        offsetM: Number(data.get('offsetM') ?? 0),
-      },
+      occlusion: { mode: normalizeOcclusionMode(String(data.get('occlusionMode'))) },
+      shotWeights: normalizeShotWeights(Object.fromEntries(
+        SHOT_TYPES.map(type => [type, Math.min(100, Number(data.get(`weight_${type}`)) || 0)]),
+      )),
       ballShadow: data.get('ballShadow') === 'on',
     };
   }
 
   form.addEventListener('input', () => {
     const next = readForm();
-    root.querySelector('.vr-range').hidden = next.occlusion.mode === 'none';
-    root.querySelector('#vr-offset-label').textContent = offsetLabel(next.occlusion.offsetM);
+    root.querySelector('#vr-weights-label').textContent = weightsLabel(next.shotWeights);
     storeSettings(next);
     trainer.restart(next);
   });
