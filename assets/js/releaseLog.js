@@ -1,5 +1,14 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.8',
+    date: '2026-10-21',
+    title: 'VR Lab: suono dell’impatto e aerodinamica più fedele',
+    details: [
+      'Suono della palla colpita dall’avversario, uguale per ogni tipo di colpo, che arriva dalla sua posizione con il ritardo reale dovuto alla distanza.',
+      'La resistenza dell’aria ora dipende dalla rotazione (formule di Štěpánek): una palla con molto effetto frena di più, come nelle misure sperimentali.',
+    ],
+  },
+  {
     version: '1.3.7',
     date: '2026-10-21',
     title: 'VR Lab: lettura del colpo con avversario animato',

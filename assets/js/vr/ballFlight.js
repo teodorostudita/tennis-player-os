@@ -24,6 +24,15 @@ function between(rng, [min, max]) {
   return min + (max - min) * rng();
 }
 
+// Coefficienti di resistenza e portanza (Štěpánek) per spin ratio S = r·ω / v.
+export function aeroCoefficients(spinRatio) {
+  if (!(spinRatio > 1e-6)) return { drag: AIR.dragNoSpin, lift: 0 };
+  return {
+    drag: AIR.dragNoSpin + (1 / (AIR.dragSpinA + AIR.dragSpinB * spinRatio ** -2.5)) ** 0.4,
+    lift: 1 / (AIR.liftA + AIR.liftB / spinRatio),
+  };
+}
+
 // Accelerazione: gravità + resistenza dell'aria + Magnus.
 function acceleration(v, w, out) {
   out[0] = 0;
@@ -32,15 +41,14 @@ function acceleration(v, w, out) {
   const speed = Math.hypot(v[0], v[1], v[2]);
   if (speed < 1e-6) return out;
 
-  const drag = K_AIR * AIR.dragCoefficient * speed;
+  const wMag = Math.hypot(w[0], w[1], w[2]);
+  const { drag: cd, lift } = aeroCoefficients((BALL.radius * wMag) / speed);
+  const drag = K_AIR * cd * speed;
   out[0] -= drag * v[0];
   out[1] -= drag * v[1];
   out[2] -= drag * v[2];
 
-  const wMag = Math.hypot(w[0], w[1], w[2]);
-  if (wMag < 1e-6) return out;
-  const spinRatio = (BALL.radius * wMag) / speed;
-  const lift = 1 / (AIR.liftA + AIR.liftB / spinRatio);
+  if (!lift) return out;
   const cx = w[1] * v[2] - w[2] * v[1];
   const cy = w[2] * v[0] - w[0] * v[2];
   const cz = w[0] * v[1] - w[1] * v[0];
@@ -241,9 +249,14 @@ function firstBounceDistance(state) {
 
 // Elevazione che porta il primo rimbalzo a `distance` metri dal contatto
 // (bisezione: la distanza cresce con l'elevazione negli angoli da tennis).
-function solveElevation(params, distance) {
-  let lo = -12;
-  let hi = 30;
+// Con `range` restituisce null se la distanza non è raggiungibile entro quei
+// gradi: il tentativo viene scartato con due sole simulazioni.
+function solveElevation(params, distance, range = [-12, 30]) {
+  let [lo, hi] = range;
+  if (range.feasibleOnly) {
+    if (firstBounceDistance(launchState({ ...params, elevationDeg: lo })).distance > distance) return null;
+    if (firstBounceDistance(launchState({ ...params, elevationDeg: hi })).distance < distance) return null;
+  }
   for (let i = 0; i < 16; i += 1) {
     const mid = (lo + hi) / 2;
     const { distance: d } = firstBounceDistance(launchState({ ...params, elevationDeg: mid }));
@@ -315,7 +328,9 @@ export function generateShot({ shotType, contact, aim, difficulty = 'medium', rn
     const bounceZ = between(rng, TARGET.bounceZ);
     const distance = ((bounceZ - contact.z) / dz) * len;
     if (!(distance > 0)) continue;
-    const elevationDeg = solveElevation(params, distance);
+    const range = Object.assign([...shotSpec.elevationDeg], { feasibleOnly: true });
+    const elevationDeg = solveElevation(params, distance, range);
+    if (elevationDeg == null) continue;
     const { sim } = firstBounceDistance(launchState({ ...params, elevationDeg }));
     if (isValid(sim, elevationDeg, shotSpec)) return buildShot(shotType, params, elevationDeg, sim);
   }

@@ -10,13 +10,28 @@ export const BALL = Object.freeze({
   inertiaFactor: 2 / 3, // I = k·m·r² (sfera cava a parete sottile)
 });
 
+// Coefficienti aerodinamici di Štěpánek (1988), con S = r·ω / v (spin ratio):
+//   resistenza  CD = dragNoSpin + (1 / (dragSpinA + dragSpinB · S^−2,5))^0,4
+//   portanza    CL = 1 / (liftA + liftB / S)
+// Una palla che ruota frena di più: CD ≈ 0,51 senza rotazione, ≈ 0,65–0,70
+// con un topspin forte (coerente con le misure in galleria del vento).
 export const AIR = Object.freeze({
   density: 1.21, // kg/m³, 20 °C al livello del mare
-  dragCoefficient: 0.55,
-  // Portanza Magnus: CL = 1 / (liftA + liftB / S), con S = r·ω / v (spin ratio).
-  liftA: 2.0,
-  liftB: 1.0,
+  dragNoSpin: 0.508,
+  dragSpinA: 22.503,
+  dragSpinB: 4.196,
+  liftA: 2.022,
+  liftB: 0.981,
   spinDecayPerS: 0.03, // frazione di rotazione persa al secondo in volo
+});
+
+// Suono dell'impatto racchetta-palla: identico per ogni tipo di colpo, arriva
+// con il ritardo reale dovuto alla distanza (circa 75 ms da fondo campo).
+export const SOUND = Object.freeze({
+  speedOfSound: 343, // m/s
+  volume: 1.4,
+  refDistance: 10, // m, attenuazione con la distanza (modello inverse)
+  rolloff: 0.5,
 });
 
 // Rimbalzo: restituzione verticale dipendente dalla velocità d'impatto e

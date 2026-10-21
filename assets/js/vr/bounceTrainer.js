@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { COURT, rayToGround } from './ballPhysics.js?v=1.3.7';
 import { positionAt } from './ballFlight.js?v=1.3.7';
-import { SHOTS } from './physicsConfig.js?v=1.3.7';
+import { SHOTS, SOUND } from './physicsConfig.js?v=1.3.7';
 import { OCCLUSION_MODES, normalizeOcclusionMode } from './occlusion.js?v=1.3.7';
 import { buildScene, setPath } from './court.js?v=1.3.7';
 import { createPanel } from './hud.js?v=1.3.7';
@@ -50,35 +50,92 @@ export function describeByShotType(byShotType = {}) {
     .join(' · ');
 }
 
+// Suono "pock" della palla sulle corde, sintetizzato una volta sola: clic
+// iniziale + risonanza delle corde (~1,45 kHz) + corpo della palla (~560 Hz).
+// Rumore pseudo-casuale con seme fisso: il suono è identico a ogni colpo.
+function impactBuffer(ctx) {
+  const rate = ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, Math.round(rate * 0.12), rate);
+  const data = buffer.getChannelData(0);
+  let seed = 12345;
+  const noise = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed / 2147483647) * 2 - 1;
+  };
+  let peak = 0;
+  for (let i = 0; i < data.length; i += 1) {
+    const t = i / rate;
+    data[i] = 0.55 * noise() * Math.exp(-t / 0.004)
+      + 0.5 * Math.sin(2 * Math.PI * 1450 * t) * Math.exp(-t / 0.018)
+      + 0.45 * Math.sin(2 * Math.PI * 560 * t) * Math.exp(-t / 0.035)
+      + 0.2 * Math.sin(2 * Math.PI * 2900 * t) * Math.exp(-t / 0.008);
+    peak = Math.max(peak, Math.abs(data[i]));
+  }
+  for (let i = 0; i < data.length; i += 1) data[i] *= 0.95 / peak;
+  return buffer;
+}
+
 function createAudio() {
   let ctx = null;
+  let buffer = null;
+  const forward = new THREE.Vector3();
+  const up = new THREE.Vector3();
+  const position = new THREE.Vector3();
   return {
     unlock() {
       try {
         ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
         if (ctx.state === 'suspended') void ctx.resume();
+        buffer = buffer || impactBuffer(ctx);
       } catch (_) { ctx = null; }
     },
-    // Solo l'impatto della racchetta, identico per ogni tipo di colpo:
-    // il suono del rimbalzo rivelerebbe la risposta.
-    pop() {
-      if (!ctx) return;
-      const duration = 0.07;
-      const buffer = ctx.createBuffer(1, Math.round(ctx.sampleRate * duration), ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i += 1) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 3);
+    get state() { return ctx ? ctx.state : 'assente'; },
+    // L'ascoltatore segue la testa: il suono arriva dalla posizione dell'avversario.
+    updateListener(camera) {
+      if (!ctx || ctx.state !== 'running') return;
+      const listener = ctx.listener;
+      const e = camera.matrixWorld.elements;
+      position.setFromMatrixPosition(camera.matrixWorld);
+      forward.set(-e[8], -e[9], -e[10]).normalize();
+      up.set(e[4], e[5], e[6]).normalize();
+      if (listener.positionX) {
+        const t = ctx.currentTime;
+        listener.positionX.setValueAtTime(position.x, t);
+        listener.positionY.setValueAtTime(position.y, t);
+        listener.positionZ.setValueAtTime(position.z, t);
+        listener.forwardX.setValueAtTime(forward.x, t);
+        listener.forwardY.setValueAtTime(forward.y, t);
+        listener.forwardZ.setValueAtTime(forward.z, t);
+        listener.upX.setValueAtTime(up.x, t);
+        listener.upY.setValueAtTime(up.y, t);
+        listener.upZ.setValueAtTime(up.z, t);
+      } else {
+        listener.setPosition(position.x, position.y, position.z);
+        listener.setOrientation(forward.x, forward.y, forward.z, up.x, up.y, up.z);
       }
+    },
+    // Solo l'impatto della racchetta, identico per ogni tipo di colpo: il suono
+    // del rimbalzo rivelerebbe la risposta. delayS = distanza / velocità del suono.
+    impact(at, delayS = 0) {
+      if (!ctx || !buffer) return;
       const source = ctx.createBufferSource();
       source.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 1100;
-      filter.Q.value = 0.9;
+      const panner = ctx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = SOUND.refDistance;
+      panner.rolloffFactor = SOUND.rolloff;
+      if (panner.positionX) {
+        panner.positionX.value = at.x;
+        panner.positionY.value = at.y;
+        panner.positionZ.value = at.z;
+      } else {
+        panner.setPosition(at.x, at.y, at.z);
+      }
       const gain = ctx.createGain();
-      gain.gain.value = 0.5;
-      source.connect(filter).connect(gain).connect(ctx.destination);
-      source.start();
+      gain.gain.value = SOUND.volume;
+      source.connect(panner).connect(gain).connect(ctx.destination);
+      source.start(ctx.currentTime + Math.max(0, delayS));
     },
   };
 }
@@ -149,6 +206,8 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
       if (activeController === controller) activeController = controllers.find(c => c !== controller) || null;
     });
     controller.addEventListener('selectstart', () => {
+      // Il grilletto è un gesto dell'utente: riattiva l'audio se il visore l'ha sospeso.
+      audio.unlock();
       activeController = controller;
       handleTrigger(groundHitFromController(controller), controller.userData.hand);
     });
@@ -421,10 +480,25 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
     }
   }
 
+  let audioLogged = false;
+  function playImpact() {
+    const contact = series.current?.shot?.contact;
+    if (!contact) return;
+    camera.getWorldPosition(listenerPosition);
+    const distance = listenerPosition.distanceTo(contactVector.set(contact.x, contact.y, contact.z));
+    audio.impact(contact, distance / SOUND.speedOfSound);
+    if (!audioLogged && renderer.xr.isPresenting) {
+      audioLogged = true;
+      logEvent(`audio all'impatto: ${audio.state}`);
+    }
+  }
+  const listenerPosition = new THREE.Vector3();
+  const contactVector = new THREE.Vector3();
+
   function drawFrame() {
     checkGripHold();
     const frame = series.update(now());
-    if (frame.events.includes('impact')) audio.pop();
+    if (frame.events.includes('impact')) playImpact();
 
     opponent.setVisible(frame.opponent.visible);
     if (frame.opponent.visible) opponent.pose(frame.opponent);
@@ -444,6 +518,7 @@ export function createBounceTrainer({ host, settings, onSeriesComplete, onEnd, o
 
     updateHud(frame.state);
     renderer.render(scene, camera);
+    audio.updateListener(camera);
   }
 
   renderer.setAnimationLoop(tick);
