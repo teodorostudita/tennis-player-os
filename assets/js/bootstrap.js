@@ -344,62 +344,77 @@ if (session) {
         showCalendarVerificationResult(result);
       } else {
         let cloudPlanner = store.getState().planner;
+        let equipmentLoadResult = null;
+
+        // The module loaders write disjoint store slices through store.update,
+        // so they run in parallel: startup waits for the slowest request
+        // instead of the sum of all of them. Makeups live inside the planner
+        // and must follow the calendar load, which replaces it.
+        const startupLoads = [];
 
         if (canReadModule('calendar')) {
-          cloudPlanner = await loadCalendarIntoLocalStore({
-            store,
-            athleteId: cloudAthlete.id,
-          });
-          await loadCalendarMakeupsIntoStore({
-            store,
-            athleteId: cloudAthlete.id,
-          });
-          cloudPlanner = store.getState().planner;
+          startupLoads.push((async () => {
+            await loadCalendarIntoLocalStore({
+              store,
+              athleteId: cloudAthlete.id,
+            });
+            await loadCalendarMakeupsIntoStore({
+              store,
+              athleteId: cloudAthlete.id,
+            });
+            cloudPlanner = store.getState().planner;
+          })());
         }
 
         if (canReadModule('training')) {
-          await loadTrainingIntoLocalStore({
+          startupLoads.push(loadTrainingIntoLocalStore({
             store,
             athleteId: cloudAthlete.id,
             allowWrite: canWriteModule('training'),
-          });
+          }));
         }
 
-        let equipmentLoadResult = null;
-
         if (canReadModule('equipment')) {
-          equipmentLoadResult = await loadEquipmentIntoLocalStore({
+          startupLoads.push(loadEquipmentIntoLocalStore({
             store,
             athleteId: cloudAthlete.id,
             allowWrite: canWriteModule('equipment'),
-          });
+          }).then(result => { equipmentLoadResult = result; }));
         }
 
         if (canReadModule('nutrition')) {
-          await loadRecoveryDailyIntoStore({
+          startupLoads.push(loadRecoveryDailyIntoStore({
             store,
             athleteId: cloudAthlete.id,
             allowWrite: canWriteModule('nutrition'),
-          });
+          }));
         }
 
         // Contextual Homes aggregate the data they need before the first render.
         // Health supports contextual homes; Economics must be loaded for
         // every permitted user before the app is rendered.
         if (['parent', 'trainer'].includes(getCurrentUserType()) && canReadModule('health')) {
-          await loadHealthModule({
+          startupLoads.push(loadHealthModule({
             store,
             athleteId: cloudAthlete.id,
-          });
+          }));
         }
         if (canReadModule('economics')) {
-          await loadEconomicsIntoLocalStore({
+          startupLoads.push(loadEconomicsIntoLocalStore({
             store,
             athleteId: cloudAthlete.id,
             allowWrite: canWriteModule('economics'),
-          });
+          }));
         }
 
+        // app.js renders as soon as it is evaluated, so it is only fetched
+        // (not executed) while the data requests run. Same ?v= as this file.
+        const preload = document.createElement('link');
+        preload.rel = 'modulepreload';
+        preload.href = new URL(`./app.js${new URL(import.meta.url).search}`, import.meta.url).href;
+        document.head.append(preload);
+
+        await Promise.all(startupLoads);
         await import('./app.js?v=1.2.25');
         clearStartupRetry();
         mountAuthControls(session.user);

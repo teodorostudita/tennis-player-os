@@ -94,6 +94,7 @@ let cloudState = {
   loaded: false,
   stop: null,
   error: '',
+  pending: null,
 };
 
 let enhancementQueued = false;
@@ -256,7 +257,16 @@ async function waitForAccess() {
   return getCurrentAccess();
 }
 
-async function ensureCloud() {
+// hashchange and tpos:route-rendered can both trigger an enhancement during
+// the same navigation: share the in-flight load instead of starting two syncs.
+function ensureCloud() {
+  if (!cloudState.pending) {
+    cloudState.pending = loadCloud().finally(() => { cloudState.pending = null; });
+  }
+  return cloudState.pending;
+}
+
+async function loadCloud() {
   const access = await waitForAccess();
   const athleteId = String(access.athleteId || '');
 
@@ -1946,6 +1956,10 @@ function queueEnhancement() {
 }
 
 window.addEventListener('hashchange', queueEnhancement);
+// app.js renders the generic module placeholder for 'competition' on every
+// navigation; its hashchange listener can run after this one (iOS/WebKit
+// ordering, slow startup). Re-mount once the base route DOM is in place.
+window.addEventListener('tpos:route-rendered', queueEnhancement);
 window.setInterval(checkCompanionMailbox, 500);
 
 applyModuleMetadata();

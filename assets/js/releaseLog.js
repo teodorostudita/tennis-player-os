@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.9',
+    date: '2026-10-23',
+    title: 'Avvio più rapido e Match sempre caricato',
+    details: [
+      'L’app scarica i propri file una sola volta per versione e li riusa alle aperture successive: avvio molto più rapido, soprattutto su iPhone.',
+      'I dati dei moduli vengono caricati in parallelo all’apertura invece che uno dopo l’altro.',
+      'Match non resta più bloccato sulla vecchia pagina provvisoria del modulo.',
+    ],
+  },
+  {
     version: '1.3.8',
     date: '2026-10-21',
     title: 'VR Lab: suono dell’impatto e aerodinamica più fedele',
