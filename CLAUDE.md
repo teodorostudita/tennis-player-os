@@ -20,10 +20,12 @@ dei messaggi all'utente: italiano.
    server `tpos-local` (`.claude/launch.json`, porta 8080). Attenzione: anche
    in locale l'app usa il Supabase di produzione con dati reali → solo
    navigazione, nessun salvataggio di prova senza permesso.
-5. **Commit locale** — Claude registra il lavoro con un commit descrittivo.
-   Claude **non fa push e non pubblica**.
-6. **Pubblicazione** — Teodoro lancia `Pubblica Tennis Player OS.command`.
-   Lo script confronta la cartella con `origin/main`, quindi rileva sia i commit
+5. **Commit e pubblicazione** — Claude registra il lavoro con un commit
+   descrittivo, fa push su `main` e verifica che la GitHub Action finisca e che
+   `tennis.polidorionline.it` serva la nuova `APP_VERSION`. Le migration nuove
+   le applica via MCP Supabase (file locale rinominato con la versione remota).
+6. **Script di pubblicazione** — `Pubblica Tennis Player OS.command` resta
+   disponibile per Teodoro (serve anche per Edge Functions e FTP del sito). Lo script confronta la cartella con `origin/main`, quindi rileva sia i commit
    locali sia le modifiche non registrate: applica le nuove migration, pubblica
    le Edge Functions cambiate, fa push (→ GitHub Pages) e carica via FTP solo i
    file del sito marketing modificati.
