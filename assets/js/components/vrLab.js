@@ -19,8 +19,8 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
-function vrUrl(athleteId) {
-  const url = new URL('./vr.html', location.href);
+function vrUrl(athleteId, page = './vr.html') {
+  const url = new URL(page, location.href);
   url.hash = '';
   if (athleteId) url.searchParams.set('athlete', athleteId);
   return url.toString();
@@ -112,6 +112,7 @@ function historyMarkup(sessions, canDelete) {
 export function renderVrLab({ main, title, store }) {
   const athleteId = store.getState().athlete?.id || '';
   const url = vrUrl(athleteId);
+  const heightUrl = vrUrl(athleteId, './vr-altezza.html');
   const canLaunch = canWriteModule('vr');
   const canDelete = Boolean(getCurrentAccess().isAdmin);
   title.textContent = moduleTitle('vr');
@@ -141,6 +142,16 @@ export function renderVrLab({ main, title, store }) {
             <button class="button button-ghost" type="button" data-vr-copy>Copia</button>
           </div>
           <p class="vr-muted" id="vr-lab-pending" hidden></p>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header"><h3>Altezza</h3><p>Prestazione sotto paura · esposizione al vuoto</p></div>
+        <div class="panel-body vr-lab-launch">
+          <p class="vr-muted">Trave d’acciaio tra due grattacieli, allineata a un’asse reale sul pavimento. Si comincia da seduti e a quota bassa; il grip riporta sempre a terra.</p>
+          ${canLaunch
+            ? `<a class="button button-primary" href="${escapeHtml(heightUrl)}">Apri Altezza →</a>`
+            : '<p class="vr-notice">Serve il permesso di scrittura sul modulo.</p>'}
         </div>
       </article>
 

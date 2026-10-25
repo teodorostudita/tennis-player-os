@@ -1,5 +1,16 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.10',
+    date: '2026-10-25',
+    title: 'VR Lab: nuova esperienza «Altezza» (prima fase)',
+    details: [
+      'Seconda esperienza del VR Lab per allenarsi sotto la paura del vuoto: una trave d’acciaio tra due grattacieli, con quattro quote da 4 a 200 m e ringhiere facoltative.',
+      'La trave virtuale si allinea a un’asse vera sul pavimento: basta appoggiare il controller alle due estremità. Larghezza e spessore dell’asse si impostano nel menu.',
+      'Modalità da seduti per le prime esposizioni.',
+      'Sicurezza: checklist obbligatoria prima di entrare, grip per tornare subito a terra in un ambiente neutro, pausa automatica se la testa scende di colpo o si esce dall’area dell’asse.',
+    ],
+  },
+  {
     version: '1.3.9',
     date: '2026-10-23',
     title: 'Avvio più rapido e Match sempre caricato',
