@@ -312,3 +312,24 @@
   border-radius: 10px;
   padding: 10px;
 }
+
+/* Altezza: checklist di sicurezza, caselle grandi per il puntatore del Meta Quest. */
+.vr-safety .vr-check {
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.vr-safety .vr-check input {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+}
+
+.vr-safety-missing .vr-check:has(input:not(:checked)) {
+  border-color: #c0392b;
+  background: #fdf0ee;
+}

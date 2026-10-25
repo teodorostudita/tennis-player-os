@@ -193,16 +193,17 @@ async function renderPage(athlete) {
 
       <section class="vr-card">
         <h2>Prima di entrare</h2>
-        <form id="vr-height-safety" class="vr-form">
+        <form id="vr-height-safety" class="vr-form vr-safety">
           <label class="vr-check"><input type="checkbox" required /> Area libera di almeno 2 m × (lunghezza dell’asse + 2 m), confine Guardian attivo</label>
           <label class="vr-check"><input type="checkbox" required /> Una persona presente accanto, pronta a sostenermi</label>
           <label class="vr-check"><input type="checkbox" required /> Asse stabile e piatto sul pavimento, niente ostacoli, scarpe chiuse o piedi nudi</label>
         </form>
         <div class="vr-actions">
           ${vrSupported
-            ? '<button id="vr-enter" class="vr-button vr-button-primary" type="button" disabled>Entra in VR</button>'
+            ? '<button id="vr-enter" class="vr-button vr-button-primary" type="button">Entra in VR</button>'
             : `<p class="vr-notice">WebXR immersivo non disponibile su questo browser. Apri questa pagina dal <strong>Meta Quest Browser</strong> con lo stesso account: <code>${escapeHtml(location.origin + location.pathname)}</code></p>`}
         </div>
+        <p class="vr-notice" id="vr-safety-hint" hidden></p>
         <p class="vr-muted"><strong>In VR:</strong> grilletto = avanti · <strong>grip (tasto laterale) in qualsiasi momento = torna subito a terra</strong> in un ambiente neutro.
           Se la testa scende di colpo o esci dall’area dell’asse, la scena si oscura e va in pausa.
           Per uscire: tasto <strong>Meta</strong> → <strong>Esci</strong>.</p>
@@ -264,12 +265,28 @@ async function renderPage(athlete) {
   });
 
   // La checklist non viene ricordata: va confermata a ogni apertura della pagina.
+  // Il pulsante resta cliccabile e, se manca una conferma, spiega cosa manca.
+  const safetyHint = root.querySelector('#vr-safety-hint');
+  function missingChecks() {
+    return [...safetyForm.querySelectorAll('input[type="checkbox"]')].filter(input => !input.checked);
+  }
   safetyForm.addEventListener('change', () => {
-    if (enterButton) enterButton.disabled = !safetyForm.checkValidity();
+    if (!missingChecks().length) {
+      safetyHint.hidden = true;
+      safetyForm.classList.remove('vr-safety-missing');
+    }
   });
 
   enterButton?.addEventListener('click', async event => {
     const button = event.currentTarget;
+    const missing = missingChecks();
+    if (missing.length) {
+      safetyHint.hidden = false;
+      safetyHint.textContent = `Prima di entrare spunta tutte le voci di sicurezza qui sopra (ne mancano ${missing.length} su 3).`;
+      safetyForm.classList.add('vr-safety-missing');
+      safetyForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     button.disabled = true;
     try {
       trainer.configure(readForm());
@@ -278,7 +295,7 @@ async function renderPage(athlete) {
       console.error('WebXR session failed:', error);
       button.insertAdjacentHTML('afterend', `<p class="vr-notice">Impossibile avviare la sessione VR: ${escapeHtml(error?.message || error)}</p>`);
     } finally {
-      button.disabled = !safetyForm.checkValidity();
+      button.disabled = false;
     }
   });
 }

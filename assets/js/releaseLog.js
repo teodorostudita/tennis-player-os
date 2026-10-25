@@ -1,5 +1,14 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.11',
+    date: '2026-10-25',
+    title: 'VR Lab · Altezza: pulsante «Entra in VR» più chiaro',
+    details: [
+      'Il pulsante «Entra in VR» è sempre attivo: se manca una conferma di sicurezza dice quante ne mancano e le evidenzia.',
+      'Caselle della checklist più grandi, facili da toccare con il puntatore del Meta Quest.',
+    ],
+  },
+  {
     version: '1.3.10',
     date: '2026-10-25',
     title: 'VR Lab: nuova esperienza «Altezza» (prima fase)',

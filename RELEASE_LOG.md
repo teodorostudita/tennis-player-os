@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.3.11 — VR Lab · Altezza: pulsante «Entra in VR» più chiaro
+- Segnalazione: in `vr-altezza.html` il pulsante «Entra in VR» restava grigio senza spiegazione. Causa: era `disabled` finché le tre voci della checklist di sicurezza (card «Prima di entrare») non erano tutte spuntate, e nulla lo diceva.
+- Ora il pulsante è sempre cliccabile: con voci mancanti non entra in VR, mostra «ne mancano N su 3», evidenzia in rosso le voci non spuntate (`.vr-safety-missing`, `:has()`) e scorre fino alla checklist. La checklist resta obbligatoria e non viene ricordata tra un'apertura e l'altra.
+- Caselle da 26 px con riquadro cliccabile su tutta la riga (`.vr-safety` in `vr.css`).
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.10 — VR Lab: esperienza «Altezza», fase F1 (trave, calibrazione, sicurezza)
 - **Nuova pagina `vr-altezza.html`**, aperta dal modulo 13 (pannello «Altezza» in `vrLab.js`). Codice in `assets/js/vr/height/`, separato dalla lettura del colpo: `vr.html`, `vrPage.js` e `bounceTrainer.js` non sono toccati. Riusa `hud.js` (pannelli nel mondo 3D), il controllo accessi del modulo `vr` e `saveVrDiagnostics` (stessa tabella `vr_client_diagnostics`, con `payload.experience = 'height'`).
 - **Scena** (`heightScene.js`): segnaposto procedurali sostituibili in F2. Trave a doppia T con ala superiore larga quanto l'asse reale, bulloni in `InstancedMesh`, due grattacieli distanti almeno 18 m (la trave virtuale prosegue oltre la fine dell'asse reale, segnata da una striscia gialla e nera), città lontana in un'unica `InstancedMesh` da 520 palazzi, cielo a gradiente, nebbia lineare 60–1900 m. Texture generate su canvas (facciate, acciaio, cemento, pianta della città) con UV in metri reali. Materiali Lambert/Basic, nessuna ombra, circa 15 draw call. Quote: 4, 25, 80, 200 m; ringhiere facoltative.
