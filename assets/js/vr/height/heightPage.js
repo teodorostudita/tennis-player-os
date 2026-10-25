@@ -6,7 +6,7 @@ import { canReadModule, canWriteModule, loadCurrentAccess } from '../../cloud/ac
 import { getSelectedAthleteId, loadAccessibleAthletes } from '../../cloud/athlete.js?v=1.2.6';
 import { saveVrDiagnostics } from '../../cloud/vrTrainingCloud.js?v=1.3.7';
 import { moduleTitle } from '../../data/schema.js?v=1.2.6';
-import { ALTITUDES, createHeightTrainer, isImmersiveVrSupported } from './heightTrainer.js?v=1.3.10';
+import { ALTITUDES, createHeightTrainer, isImmersiveVrSupported } from './heightTrainer.js?v=1.3.12';
 
 const SETTINGS_KEY = 'tennisPlayerOS.vr.heightSettings.v1';
 const DIAGNOSTICS_KEY = 'tennisPlayerOS.vr.heightDiagnostics.v1';
@@ -194,7 +194,7 @@ async function renderPage(athlete) {
       <section class="vr-card">
         <h2>Prima di entrare</h2>
         <form id="vr-height-safety" class="vr-form vr-safety">
-          <label class="vr-check"><input type="checkbox" required /> Area libera di almeno 2 m × (lunghezza dell’asse + 2 m), confine Guardian attivo</label>
+          <label class="vr-check"><input type="checkbox" required /> Confine Guardian tracciato (modalità «spazio di gioco», non fisso) e asse al centro, con almeno 1 m libero ai lati e alle estremità</label>
           <label class="vr-check"><input type="checkbox" required /> Una persona presente accanto, pronta a sostenermi</label>
           <label class="vr-check"><input type="checkbox" required /> Asse stabile e piatto sul pavimento, niente ostacoli, scarpe chiuse o piedi nudi</label>
         </form>
@@ -207,8 +207,13 @@ async function renderPage(athlete) {
         <p class="vr-muted"><strong>In VR:</strong> grilletto = avanti · <strong>grip (tasto laterale) in qualsiasi momento = torna subito a terra</strong> in un ambiente neutro.
           Se la testa scende di colpo o esci dall’area dell’asse, la scena si oscura e va in pausa.
           Per uscire: tasto <strong>Meta</strong> → <strong>Esci</strong>.</p>
-        <p class="vr-muted"><strong>Calibrazione in piedi:</strong> appoggia la punta del controller (la sfera gialla) sul pavimento al centro dell’estremità da cui parti, grilletto; poi all’estremità opposta, grilletto. La trave virtuale coincide con l’asse.
-          <strong>Da seduti:</strong> guarda avanti e premi il grilletto.</p>
+        <p class="vr-muted"><strong>Calibrazione in piedi:</strong></p>
+        <ol class="vr-muted vr-steps">
+          <li>Appoggia a terra un controller al centro di ciascuna estremità dell’asse e lasciali fermi guardandoli: ognuno si registra da solo in circa un secondo (anello che si riempie, disco blu, vibrazione).</li>
+          <li>Se un disco diventa rosso, quell’estremità è troppo vicina al confine Guardian (in arancione a terra): sposta l’asse verso il centro e rimetti giù i controller.</li>
+          <li>Riprendi i controller, sali in piedi su un’estremità (sarà la partenza), guarda lungo l’asse e premi il grilletto: la trave virtuale coincide con l’asse e si sale in quota.</li>
+        </ol>
+        <p class="vr-muted"><strong>Da seduti:</strong> sedia ad almeno 60 cm dal confine Guardian, guarda avanti e premi il grilletto.</p>
       </section>
 
       <section class="vr-card" id="vr-diagnostics" hidden>

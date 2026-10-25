@@ -1,23 +1,29 @@
 // VR Lab · Altezza — rendering, calibrazione, sicurezza e anteprima desktop.
 //
 // Stati in VR:
-//   intro → (in piedi) calibStart → calibEnd | (seduti) calibSeated
+//   intro → (in piedi) calibPlace → calibConfirm | (seduti) calibSeated
 //         → ready → exposed ⇄ ground / paused
+// Calibrazione in piedi: i due controller appoggiati a terra, uno per estremità
+// dell'asse, si registrano da soli quando restano fermi; poi la persona li
+// riprende, sale su un'estremità (che diventa la partenza) e preme il grilletto.
 // Tutto ciò che non è "exposed" si svolge nell'ambiente neutro (pavimento
-// chiaro, contorno blu dell'asse reale). La camera segue solo la testa: nessun
-// movimento artificiale.
+// chiaro, contorno blu dell'asse, confine Guardian in arancione). La camera
+// segue solo la testa: nessun movimento artificiale.
 import * as THREE from 'three';
-import { createPanel } from '../hud.js?v=1.3.10';
-import { buildHeightScene } from './heightScene.js?v=1.3.10';
+import { createPanel } from '../hud.js?v=1.3.12';
+import { buildHeightScene } from './heightScene.js?v=1.3.12';
 import {
   SEATED_BEAM_LENGTH_M,
+  SEATED_BOUNDARY_MIN_M,
   SEATED_EDGE_Z,
   calibrateSeated,
   calibrateStanding,
+  checkPlankInsideBoundary,
   isAtStart,
   safeArea,
-} from './calibration.js?v=1.3.10';
-import { createSafetyMonitor } from './safety.js?v=1.3.10';
+  signedDistanceToPolygon,
+} from './calibration.js?v=1.3.12';
+import { createSafetyMonitor } from './safety.js?v=1.3.12';
 
 export const ALTITUDES = Object.freeze({
   low: { label: 'Bassa · 4 m', meters: 4 },
@@ -34,13 +40,22 @@ const FADE_IN_S = 0.7;
 // Dopo un'uscita d'emergenza il grip resta inattivo per un attimo: chi lo preme
 // più volte di fila non deve finire per sbaglio nella ricalibrazione.
 const GRIP_COOLDOWN_S = 1.5;
+// Registrazione automatica: controller a terra (origine del raggio sotto questa
+// quota) e fermo entro FLOOR_STILL_M per FLOOR_HOLD_S.
+const FLOOR_MAX_Y = 0.15;
+const FLOOR_STILL_M = 0.02;
+const FLOOR_HOLD_S = 1.2;
+// Per confermare, la testa deve essere entro questa distanza da un'estremità.
+const START_RADIUS_M = 0.5;
 const PREFERRED_HZ = 90;
 const FALLBACK_HZ = 72;
 // Secondi consecutivi sotto questa soglia (a 90 Hz) prima di scendere a 72 Hz.
 const LOW_FPS_THRESHOLD = 82;
 const LOW_FPS_SECONDS = 4;
 
-const NEUTRAL_STATES = new Set(['intro', 'calibStart', 'calibEnd', 'calibSeated', 'ready', 'ground', 'paused']);
+const NEUTRAL_STATES = new Set(['intro', 'calibPlace', 'calibConfirm', 'calibSeated', 'ready', 'ground', 'paused']);
+const BLUE = 0x1f6fd1;
+const RED = 0xd23b2a;
 
 export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -73,22 +88,39 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
   panel.mesh.material.fog = false;
   scene.add(panel.mesh);
 
-  // Cursore sul pavimento sotto la punta del controller e segno dell'estremità
-  // già registrata: figli del rig, cioè in coordinate reali.
-  const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x1f6fd1, fog: false });
-  const cursor = new THREE.Mesh(new THREE.RingGeometry(0.04, 0.06, 24).rotateX(-Math.PI / 2), markerMaterial);
-  const startMarker = new THREE.Mesh(new THREE.CircleGeometry(0.05, 20).rotateX(-Math.PI / 2), markerMaterial);
-  cursor.visible = startMarker.visible = false;
-  rig.add(cursor, startMarker);
+  // Per ogni controller: anello che si riempie sotto di lui mentre è fermo a
+  // terra e disco dell'estremità registrata. Figli del rig: coordinate reali.
+  const slots = [0, 1].map(() => {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.07, 0.09, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x9aa3ad, fog: false }),
+    );
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(0.09, 32).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: BLUE, fog: false }),
+    );
+    ring.visible = disc.visible = false;
+    rig.add(ring, disc);
+    return { ring, disc, point: null, anchor: null, since: 0 };
+  });
+
+  // Confine Guardian (bounded-floor) in coordinate reali, se il visore lo fornisce.
+  const boundaryMaterial = new THREE.LineBasicMaterial({ color: 0xf08a24, fog: false });
+  const boundaryLine = new THREE.LineLoop(new THREE.BufferGeometry(), boundaryMaterial);
+  boundaryLine.visible = false;
+  rig.add(boundaryLine);
+  let boundedSpace = null;
+  let boundary = null; // [{ x, z }] in local-floor
+  let boundaryStale = false;
 
   const safety = createSafetyMonitor();
   let state = 'intro';
   let stateSince = 0;
   let calibration = null; // { frame, length, seated }
-  let pendingStart = null;
   let lastMessage = '';
   let lastPanelKey = '';
   let eyeHeight = 0;
+  let lastLength = 0; // lunghezza dell'asse appena misurata (pannello di conferma)
 
   // --- Utilità ------------------------------------------------------------------
   function now() {
@@ -101,7 +133,13 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     return { x: headWorld.x, y: headWorld.y, z: headWorld.z };
   }
 
+  function say(message) {
+    lastMessage = message;
+    lastPanelKey = '';
+  }
+
   const forward = new THREE.Vector3();
+  const toPanel = new THREE.Vector3();
   function placePanelInFront(distance = 1.6) {
     camera.getWorldPosition(headWorld);
     camera.getWorldDirection(forward);
@@ -111,6 +149,17 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     panel.mesh.position.copy(headWorld).addScaledVector(forward, distance);
     panel.mesh.position.y = Math.max(1.0, headWorld.y - 0.1);
     panel.mesh.lookAt(headWorld.x, panel.mesh.position.y, headWorld.z);
+  }
+  // Durante la calibrazione la persona si muove: se il pannello esce dalla vista
+  // (oltre ~70° dallo sguardo) gli si rimette davanti.
+  function keepPanelInView() {
+    camera.getWorldPosition(headWorld);
+    camera.getWorldDirection(forward);
+    forward.y = 0;
+    toPanel.copy(panel.mesh.position).sub(headWorld);
+    toPanel.y = 0;
+    if (forward.lengthSq() < 1e-4 || toPanel.lengthSq() < 1e-4) return;
+    if (forward.normalize().dot(toPanel.normalize()) < 0.35) placePanelInFront();
   }
 
   function isSeated() {
@@ -134,6 +183,42 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     rig.position.set(cal.frame.offset.x, 0, cal.frame.offset.z);
     rig.updateMatrixWorld(true);
     world.setLayout(layoutFor(cal));
+  }
+
+  // --- Confine Guardian ------------------------------------------------------------
+  const boundsMatrix = new THREE.Matrix4();
+  const boundsPoint = new THREE.Vector3();
+  function updateBoundary(frame) {
+    if (!boundedSpace || !boundaryStale || !frame) return;
+    const localSpace = renderer.xr.getReferenceSpace();
+    const pose = localSpace && frame.getPose(boundedSpace, localSpace);
+    if (!pose) return;
+    boundaryStale = false;
+    boundsMatrix.fromArray(pose.transform.matrix);
+    boundary = [...boundedSpace.boundsGeometry].map(p => {
+      boundsPoint.set(p.x, 0, p.z).applyMatrix4(boundsMatrix);
+      return { x: boundsPoint.x, z: boundsPoint.z };
+    });
+    boundaryLine.geometry.dispose();
+    boundaryLine.geometry = new THREE.BufferGeometry().setFromPoints(boundary.map(p => new THREE.Vector3(p.x, 0.012, p.z)));
+    boundaryLine.visible = NEUTRAL_STATES.has(state);
+    logEvent(`confine Guardian: ${boundary.length} punti`);
+  }
+
+  async function readBoundary(session) {
+    boundedSpace = null;
+    boundary = null;
+    boundaryLine.visible = false;
+    try {
+      const space = await session.requestReferenceSpace('bounded-floor');
+      if (!space.boundsGeometry || space.boundsGeometry.length < 3) throw new Error('confine vuoto');
+      boundedSpace = space;
+      boundaryStale = true;
+      space.addEventListener?.('reset', () => { boundaryStale = true; });
+      renderer.xr.getReferenceSpace()?.addEventListener?.('reset', () => { boundaryStale = true; });
+    } catch (error) {
+      logEvent(`confine Guardian non disponibile: ${error?.message || error}`);
+    }
   }
 
   // --- Dissolvenze --------------------------------------------------------------
@@ -164,10 +249,11 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
   function setState(next, message = '') {
     state = next;
     stateSince = now();
-    lastMessage = message;
-    lastPanelKey = '';
-    world.setWorld(NEUTRAL_STATES.has(next) ? 'neutral' : 'height');
-    if (NEUTRAL_STATES.has(next)) placePanelInFront();
+    say(message);
+    const neutral = NEUTRAL_STATES.has(next);
+    world.setWorld(neutral ? 'neutral' : 'height');
+    boundaryLine.visible = neutral && Boolean(boundary);
+    if (neutral) placePanelInFront();
     logEvent(`stato: ${next}${message ? ` (${message})` : ''}`);
   }
 
@@ -176,10 +262,123 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     fadeThrough(() => setState(reason ? 'paused' : 'ground', reason || ''), { emergency: true });
   }
 
+  function resetSlots() {
+    for (const slot of slots) {
+      slot.point = null;
+      slot.anchor = null;
+      slot.disc.visible = false;
+      slot.disc.material.color.setHex(BLUE);
+    }
+  }
+
   function startCalibration() {
-    pendingStart = null;
-    startMarker.visible = false;
-    setState(isSeated() ? 'calibSeated' : 'calibStart');
+    resetSlots();
+    setState(isSeated() ? 'calibSeated' : 'calibPlace');
+  }
+
+  function haptic(controller, intensity = 0.7, ms = 120) {
+    try { controller.userData.source?.gamepad?.hapticActuators?.[0]?.pulse?.(intensity, ms); } catch (_) {}
+  }
+
+  // Registra l'estremità sotto il controller i; con due estremità controlla
+  // lunghezza e confine Guardian.
+  function captureEnd(index) {
+    const controller = controllers[index];
+    const slot = slots[index];
+    const other = slots[1 - index];
+    const point = { x: controller.position.x, z: controller.position.z };
+    if (other.point && Math.hypot(point.x - other.point.x, point.z - other.point.z) < 1.0) {
+      say('Questa estremità è già registrata: porta il controller all’altra estremità.');
+      slot.anchor = null;
+      return;
+    }
+    slot.point = point;
+    slot.disc.position.set(point.x, 0.006, point.z);
+    slot.disc.visible = true;
+    haptic(controller);
+    logEvent(`estremità registrata (${controller.userData.hand || index})`);
+    if (!other.point) {
+      say('');
+      return;
+    }
+    const measured = calibrateStanding(slots[0].point, slots[1].point);
+    if (!measured.ok) {
+      resetSlots();
+      say(measured.error);
+      return;
+    }
+    const inside = checkPlankInsideBoundary(slots[0].point, slots[1].point, boundary);
+    if (!inside.ok) {
+      logEvent('asse troppo vicina al confine Guardian');
+      // Restano visibili solo i dischi rossi; al primo controller rimesso a terra si riparte.
+      slots.forEach((s, end) => {
+        s.point = null;
+        s.anchor = null;
+        if (inside.badEnds.includes(end)) s.disc.material.color.setHex(RED);
+        else s.disc.visible = false;
+      });
+      say(inside.error);
+      return;
+    }
+    lastLength = measured.length;
+    setState('calibConfirm');
+  }
+
+  function updatePlacement(t) {
+    for (let i = 0; i < 2; i += 1) {
+      const controller = controllers[i];
+      const slot = slots[i];
+      const p = controller.position;
+      const onFloor = controller.visible && !slot.point && p.y < FLOOR_MAX_Y;
+      if (!onFloor) {
+        slot.anchor = null;
+        slot.ring.visible = false;
+        continue;
+      }
+      // Un nuovo tentativo cancella i dischi rossi del tentativo precedente.
+      if (!slots[0].point && !slots[1].point) {
+        for (const s of slots) if (s.disc.material.color.getHex() === RED) s.disc.visible = false;
+      }
+      if (!slot.anchor || Math.hypot(p.x - slot.anchor.x, p.z - slot.anchor.z, p.y - slot.anchor.y) > FLOOR_STILL_M) {
+        slot.anchor = { x: p.x, y: p.y, z: p.z };
+        slot.since = t;
+      }
+      const progress = Math.min(1, (t - slot.since) / FLOOR_HOLD_S);
+      slot.ring.visible = true;
+      slot.ring.position.set(p.x, 0.008, p.z);
+      slot.ring.scale.setScalar(0.4 + 0.6 * progress);
+      slot.ring.material.color.setHex(progress > 0.05 ? BLUE : 0x9aa3ad);
+      if (progress >= 1) {
+        slot.ring.visible = false;
+        captureEnd(i);
+      }
+    }
+  }
+
+  // In piedi su un'estremità: quella diventa la partenza, poi si sale in quota.
+  function confirmStanding() {
+    const head = { x: camera.position.x, z: camera.position.z };
+    const ends = slots.map(s => s.point);
+    if (!ends[0] || !ends[1]) {
+      startCalibration();
+      return;
+    }
+    const distances = ends.map(e => Math.hypot(head.x - e.x, head.z - e.z));
+    const startIndex = distances[0] <= distances[1] ? 0 : 1;
+    if (distances[startIndex] > START_RADIUS_M) {
+      say('Sali in piedi su un’estremità dell’asse (uno dei dischi blu), poi premi il grilletto.');
+      return;
+    }
+    const result = calibrateStanding(ends[startIndex], ends[1 - startIndex]);
+    if (!result.ok) {
+      startCalibration();
+      say(result.error);
+      return;
+    }
+    applyCalibration({ ...result, seated: false });
+    for (const s of slots) s.disc.visible = false;
+    logEvent(`calibrazione in piedi: asse ${result.length.toFixed(2)} m`);
+    tryExpose();
   }
 
   function tryExpose() {
@@ -189,16 +388,14 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     }
     const head = headInBeamFrame();
     if (!isAtStart({ seated: calibration.seated }, head)) {
-      lastMessage = calibration.seated
+      say(calibration.seated
         ? 'Resta seduto nella posizione della calibrazione.'
-        : 'Mettiti sull’inizio dell’asse, sopra il contorno blu.';
-      lastPanelKey = '';
+        : 'Mettiti sull’inizio dell’asse, dentro il contorno blu.');
       return;
     }
     const minEye = calibration.seated ? 0.8 : 1.2;
     if (head.y < minEye) {
-      lastMessage = calibration.seated ? 'Siediti con la schiena dritta.' : 'Alzati in piedi, con lo sguardo avanti.';
-      lastPanelKey = '';
+      say(calibration.seated ? 'Siediti con la schiena dritta.' : 'Alzati in piedi, con lo sguardo avanti.');
       return;
     }
     eyeHeight = head.y;
@@ -211,41 +408,31 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
 
   function handleTrigger(controller) {
     if (fade.phase !== 'idle') return;
-    const point = controller ? { x: controller.position.x, z: controller.position.z } : null;
     switch (state) {
       case 'intro':
         startCalibration();
         break;
-      case 'calibStart':
-        if (!point) return;
-        pendingStart = point;
-        startMarker.position.set(point.x, 0.006, point.z);
-        startMarker.visible = true;
-        setState('calibEnd');
-        break;
-      case 'calibEnd': {
-        if (!point || !pendingStart) return;
-        const result = calibrateStanding(pendingStart, point);
-        if (!result.ok) {
-          lastMessage = result.error;
-          lastPanelKey = '';
-          return;
-        }
-        startMarker.visible = false;
-        applyCalibration({ ...result, seated: false });
-        logEvent(`calibrazione in piedi: asse ${result.length.toFixed(2)} m`);
-        setState('ready');
+      case 'calibPlace': {
+        // Alternativa alla registrazione automatica: grilletto con la punta a terra.
+        const index = controllers.indexOf(controller);
+        if (index >= 0 && !slots[index].point && controller.position.y < FLOOR_MAX_Y + 0.05) captureEnd(index);
         break;
       }
+      case 'calibConfirm':
+        confirmStanding();
+        break;
       case 'calibSeated': {
         camera.getWorldDirection(forward);
         // Direzione e testa in coordinate reali (locali al rig).
-        const yaw = rig.rotation.y;
-        const realForward = forward.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -yaw);
-        const result = calibrateSeated({ x: camera.position.x, z: camera.position.z }, { x: realForward.x, z: realForward.z });
+        const realForward = forward.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -rig.rotation.y);
+        const head = { x: camera.position.x, z: camera.position.z };
+        if (boundary && signedDistanceToPolygon(head, boundary) < SEATED_BOUNDARY_MIN_M) {
+          say(`Sedia troppo vicina al confine Guardian: spostala di almeno ${Math.ceil((SEATED_BOUNDARY_MIN_M - signedDistanceToPolygon(head, boundary)) * 100)} cm verso il centro.`);
+          return;
+        }
+        const result = calibrateSeated(head, { x: realForward.x, z: realForward.z });
         if (!result.ok) {
-          lastMessage = result.error;
-          lastPanelKey = '';
+          say(result.error);
           return;
         }
         applyCalibration({ ...result, seated: true });
@@ -276,32 +463,37 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
   }
 
   // --- Pannello -----------------------------------------------------------------
-  const WHITE = '#ffffff';
   const MUTED = '#b9c6d8';
   const ACCENT = '#ffe14d';
   function panelLines() {
-    const note = lastMessage ? [{ text: lastMessage, size: 0.8, color: ACCENT }] : [];
+    const note = lastMessage ? [{ text: lastMessage, size: 0.7, color: ACCENT }] : [];
     switch (state) {
       case 'intro':
         return [
           { text: 'Altezza · sicurezza', size: 1.2, weight: 700 },
           { text: 'Spazio libero, una persona presente, nessun ostacolo.', size: 0.75, color: MUTED },
           { text: 'Grip (tasto laterale) in qualsiasi momento = torna a terra.', size: 0.75, color: MUTED },
+          boundary
+            ? { text: 'In arancione a terra: il tuo confine Guardian.', size: 0.75, color: MUTED }
+            : { text: 'Confine Guardian non letto: verifica a occhio che l’asse ci stia dentro.', size: 0.7, color: ACCENT },
           { text: 'Grilletto: inizia la calibrazione', size: 0.9, color: ACCENT },
         ];
-      case 'calibStart':
+      case 'calibPlace': {
+        const done = slots.filter(s => s.point).length;
         return [
-          { text: 'Calibrazione 1/2', size: 1.2, weight: 700 },
-          { text: 'Appoggia la punta del controller sul pavimento', size: 0.8 },
-          { text: 'al centro dell’estremità da cui PARTI e premi il grilletto.', size: 0.8 },
+          { text: `Calibrazione · estremità ${done}/2`, size: 1.1, weight: 700 },
+          { text: 'Appoggia a terra un controller al centro di ciascuna', size: 0.75 },
+          { text: 'estremità dell’asse e lascialo fermo, guardandolo.', size: 0.75 },
+          { text: 'Si registra da solo: anello pieno, disco blu, vibrazione.', size: 0.7, color: MUTED },
           ...note,
         ];
-      case 'calibEnd':
+      }
+      case 'calibConfirm':
         return [
-          { text: 'Calibrazione 2/2', size: 1.2, weight: 700 },
-          { text: 'Ora la punta del controller al centro', size: 0.8 },
-          { text: 'dell’estremità OPPOSTA dell’asse, poi grilletto.', size: 0.8 },
-          { text: 'Grip = ricomincia', size: 0.7, color: MUTED },
+          { text: `Asse registrata · ${lastLength.toFixed(2).replace('.', ',')} m`, size: 1.1, weight: 700 },
+          { text: 'Riprendi i due controller e sali in piedi su', size: 0.75 },
+          { text: 'un’estremità (sarà la partenza), sguardo lungo l’asse.', size: 0.75 },
+          { text: 'Grilletto: sali in quota · Grip: ricomincia', size: 0.85, color: ACCENT },
           ...note,
         ];
       case 'calibSeated':
@@ -318,7 +510,7 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
         const where = calibration?.seated ? 'Resta seduto, schiena dritta, sguardo avanti.' : 'In piedi sull’inizio dell’asse, sguardo avanti.';
         return [
           { text: title, size: 1.2, weight: 700 },
-          ...(state === 'paused' && lastMessage ? [] : note),
+          ...note,
           { text: where, size: 0.8 },
           { text: `Grilletto: sali in quota (${ALTITUDES[settings.altitude]?.label || ''})`, size: 0.85, color: ACCENT },
           { text: 'Grip: ricalibra · tasto Meta → Esci per finire', size: 0.7, color: MUTED },
@@ -333,7 +525,8 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     const visible = NEUTRAL_STATES.has(state);
     panel.mesh.visible = visible;
     if (!visible) return;
-    const key = `${state}|${lastMessage}`;
+    const done = slots.filter(s => s.point).length;
+    const key = `${state}|${lastMessage}|${done}|${Boolean(boundary)}`;
     if (key === lastPanelKey) return;
     lastPanelKey = key;
     panel.draw(panelLines());
@@ -347,7 +540,11 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     const controller = renderer.xr.getController(i);
     controller.addEventListener('selectstart', () => handleTrigger(controller));
     controller.addEventListener('squeezestart', handleGrip);
-    controller.addEventListener('connected', event => { controller.userData.hand = event.data?.handedness || ''; });
+    controller.addEventListener('connected', event => {
+      controller.userData.hand = event.data?.handedness || '';
+      controller.userData.source = event.data || null;
+    });
+    controller.addEventListener('disconnected', () => { controller.userData.source = null; });
     rig.add(controller);
     controllers.push(controller);
 
@@ -360,13 +557,6 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     // Punta gialla sull'origine del raggio: è il punto usato per la calibrazione.
     const tip = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), controllerTipMaterial);
     controller.add(tip);
-  }
-
-  function updateCursor() {
-    const calibrating = state === 'calibStart' || state === 'calibEnd';
-    const active = controllers.find(c => c.visible);
-    cursor.visible = calibrating && Boolean(active);
-    if (cursor.visible) cursor.position.set(active.position.x, 0.006, active.position.z);
   }
 
   // --- Anteprima desktop --------------------------------------------------------
@@ -385,6 +575,8 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     look.pitch = -0.35;
     look.crouch = false;
     const seated = isSeated();
+    resetSlots();
+    boundaryLine.visible = false;
     // Asse simulato: parte sotto i piedi e prosegue verso -z.
     applyCalibration({
       seated,
@@ -488,35 +680,40 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
 
   // --- Ciclo dei frame ------------------------------------------------------------
   let lastTime = now();
-  function drawFrame() {
+  function drawFrame(frame) {
     const t = now();
     const dt = Math.min(0.1, t - lastTime);
     lastTime = t;
 
+    updateBoundary(frame);
     if (state === 'exposed' && fade.phase === 'idle') {
       const alarm = safety.check(t, headInBeamFrame());
       if (alarm) {
         logEvent(`pausa: ${alarm.detail}`);
         goToGround(alarm.reason === 'drop'
           ? 'Testa scesa di colpo: va tutto bene? Rialzati con calma.'
-          : 'Sei uscito dall’area calibrata. Torna sull’asse.');
+          : 'Sei uscito dall’area dell’asse. Torna sull’asse.');
       }
     }
+    if (state === 'calibPlace' && fade.phase === 'idle') updatePlacement(t);
+    else for (const slot of slots) slot.ring.visible = false;
     // Appena entrati in uno stato a terra la posa della testa può essere ancora
     // quella iniziale (0, 0, 0): il pannello segue lo sguardo per mezzo secondo.
-    if (NEUTRAL_STATES.has(state) && t - stateSince < 0.5) placePanelInFront();
+    if (NEUTRAL_STATES.has(state)) {
+      if (t - stateSince < 0.5) placePanelInFront();
+      else keepPanelInView();
+    }
     updateFade(dt);
-    updateCursor();
     updatePanel();
     renderer.render(scene, camera);
   }
 
   // Un errore in un singolo frame non deve fermare il loop (vedi lettura del colpo).
-  function tick() {
+  function tick(time, frame) {
     diagnostics.frames += 1;
     if (renderer.xr.isPresenting) diagnostics.xrFrames += 1;
     try {
-      drawFrame();
+      drawFrame(frame);
     } catch (error) {
       const message = `${error?.name || 'Error'}: ${error?.message || error}`;
       if (!diagnostics.errors.includes(message) && diagnostics.errors.length < 8) {
@@ -562,6 +759,8 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
       clearInterval(diagnosticsTimer);
       emitDiagnostics();
       diagnostics.durationS = Math.round((now() - diagnostics.sessionStart) * 10) / 10;
+      boundedSpace = null;
+      boundary = null;
       resetDesktop();
       onResize();
       onEnd?.({ diagnostics: structuredClone(diagnostics) });
@@ -570,10 +769,12 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     // In VR si riparte sempre dall'introduzione: la calibrazione vale per una sessione.
     calibration = null;
     safety.disarm();
+    resetSlots();
     rig.position.set(0, 0, 0);
     rig.rotation.set(0, 0, 0);
     camera.rotation.set(0, 0, 0);
     await renderer.xr.setSession(session);
+    await readBoundary(session);
     setState('intro');
 
     const rates = session.supportedFrameRates ? [...session.supportedFrameRates] : [];

@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.12',
+    date: '2026-10-25',
+    title: 'VR Lab · Altezza: calibrazione più semplice e legata al confine Guardian',
+    details: [
+      'Calibrazione in piedi più intuitiva: si appoggiano a terra i due controller, uno per estremità dell’asse, e si registrano da soli quando restano fermi (anello, disco blu, vibrazione). Poi si riprendono, si sale su un’estremità e si preme il grilletto.',
+      'Il confine Guardian compare a terra in arancione: se l’asse è troppo vicina al confine la calibrazione viene rifiutata e l’estremità da spostare diventa rossa.',
+      'Area di sicurezza più stretta attorno all’asse: la pausa scatta a 75 cm di lato.',
+    ],
+  },
+  {
     version: '1.3.11',
     date: '2026-10-25',
     title: 'VR Lab · Altezza: pulsante «Entra in VR» più chiaro',

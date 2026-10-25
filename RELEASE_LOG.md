@@ -1,5 +1,13 @@
 # Tennis Player OS — Release Log
 
+## v1.3.12 — VR Lab · Altezza: calibrazione semplificata e vincolata al confine Guardian
+- Segnalazione dopo la prima prova sul Quest: l'asse finiva facilmente fuori dal confine Guardian e la procedura «punta del controller a terra + grilletto, due volte» non era chiara (sembrava di dover posare i controller e poi premere qualcosa).
+- **Nuova procedura in piedi** (`heightTrainer.js`, stati `calibPlace` → `calibConfirm`): i due controller appoggiati a terra (origine del raggio sotto 15 cm) e fermi entro 2 cm per 1,2 s si registrano da soli: anello che si riempie, disco blu, impulso aptico. Una seconda registrazione a meno di 1 m dalla prima è rifiutata. Resta possibile anche il grilletto con la punta a terra. Poi la persona riprende i controller, sale su un'estremità e preme il grilletto: l'estremità più vicina alla testa (entro 50 cm) diventa la partenza e si sale in quota subito, senza il passaggio «Pronto». Il pannello segue lo sguardo se esce oltre ~70° durante la calibrazione.
+- **Confine Guardian**: dopo `setSession` si richiede il reference space `bounded-floor`; `boundsGeometry` viene portato in coordinate local-floor con `frame.getPose(bounded, local)` (ricalcolato all'evento `reset`) e disegnato in arancione nell'ambiente neutro. `checkPlankInsideBoundary` (`calibration.js`) verifica che l'asse con l'area di sicurezza attorno (±75 cm di lato, 50 cm oltre le estremità) stia dentro il confine con almeno 25 cm di margine; altrimenti la calibrazione è rifiutata, le estremità da spostare diventano rosse e il pannello dice di quanti centimetri spostarla. Da seduti: testa ad almeno 60 cm dal confine. Se il confine non è disponibile (es. confine fisso) lo dice il pannello iniziale e la diagnostica.
+- **Area di pausa** in piedi ristretta da ±1 m a ±75 cm di lato e da 1,5 m a 50 cm dietro la partenza (`AREA` in `calibration.js`).
+- Istruzioni della pagina riscritte come passi numerati; checklist: confine Guardian «spazio di gioco» e asse al centro con 1 m libero.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.11 — VR Lab · Altezza: pulsante «Entra in VR» più chiaro
 - Segnalazione: in `vr-altezza.html` il pulsante «Entra in VR» restava grigio senza spiegazione. Causa: era `disabled` finché le tre voci della checklist di sicurezza (card «Prima di entrare») non erano tutte spuntate, e nulla lo diceva.
 - Ora il pulsante è sempre cliccabile: con voci mancanti non entra in VR, mostra «ne mancano N su 3», evidenzia in rosso le voci non spuntate (`.vr-safety-missing`, `:has()`) e scorre fino alla checklist. La checklist resta obbligatoria e non viene ricordata tra un'apertura e l'altra.
