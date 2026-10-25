@@ -6,7 +6,7 @@ import { canReadModule, canWriteModule, loadCurrentAccess } from '../../cloud/ac
 import { getSelectedAthleteId, loadAccessibleAthletes } from '../../cloud/athlete.js?v=1.2.6';
 import { saveVrDiagnostics } from '../../cloud/vrTrainingCloud.js?v=1.3.7';
 import { moduleTitle } from '../../data/schema.js?v=1.2.6';
-import { ALTITUDES, createHeightTrainer, isImmersiveVrSupported } from './heightTrainer.js?v=1.3.12';
+import { ALTITUDES, createHeightTrainer, isImmersiveVrSupported } from './heightTrainer.js?v=1.3.14';
 
 const SETTINGS_KEY = 'tennisPlayerOS.vr.heightSettings.v1';
 const DIAGNOSTICS_KEY = 'tennisPlayerOS.vr.heightDiagnostics.v1';
@@ -210,7 +210,7 @@ async function renderPage(athlete) {
         <p class="vr-muted"><strong>Calibrazione in piedi:</strong></p>
         <ol class="vr-muted vr-steps">
           <li>Appoggia a terra un controller al centro di ciascuna estremità dell’asse e lasciali fermi guardandoli: ognuno si registra da solo in circa un secondo (anello che si riempie, disco blu, vibrazione).</li>
-          <li>Se un disco diventa rosso, quell’estremità è troppo vicina al confine Guardian (in arancione a terra): sposta l’asse verso il centro e rimetti giù i controller.</li>
+          <li>Per correggere un’estremità basta sollevare il suo controller e riappoggiarlo. Un disco rosso è solo un avviso: quell’estremità risulta vicina al confine Guardian (in arancione a terra), controlla a occhio.</li>
           <li>Riprendi i controller, sali in piedi su un’estremità (sarà la partenza), guarda lungo l’asse e premi il grilletto: la trave virtuale coincide con l’asse e si sale in quota.</li>
         </ol>
         <p class="vr-muted"><strong>Da seduti:</strong> sedia ad almeno 60 cm dal confine Guardian, guarda avanti e premi il grilletto.</p>

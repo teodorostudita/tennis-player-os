@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.14',
+    date: '2026-10-25',
+    title: 'VR Lab · Altezza: calibrazione che si completa sempre',
+    details: [
+      'Il confine Guardian non blocca più la calibrazione: se un’estremità risulta vicina al confine diventa rossa e compare un avviso, ma si può salire in quota.',
+      'Niente più registrazioni a ripetizione: un controller si registra di nuovo solo dopo essere stato sollevato.',
+      'Un’estremità sbagliata si corregge sollevando il suo controller e riappoggiandolo, anche dopo che l’asse è stata registrata.',
+    ],
+  },
+  {
     version: '1.3.13',
     date: '2026-10-25',
     title: 'VR Lab · Altezza: pausa più sensibile',

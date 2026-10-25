@@ -13,10 +13,9 @@ export const MAX_PLANK_LENGTH_M = 12;
 export const SEATED_EDGE_Z = -0.45;
 export const SEATED_BEAM_LENGTH_M = 6;
 
-// Area di sicurezza attorno all'asse (in piedi): oltre si va in pausa. La stessa
-// area, allargata del margine, deve stare dentro il confine Guardian.
+// Area di sicurezza attorno all'asse (in piedi): oltre si va in pausa.
 export const AREA = Object.freeze({ lateralM: 0.25, behindStartM: 0.5, beyondEndM: 0.4 });
-export const BOUNDARY_MARGIN_M = 0.25;
+export const BOUNDARY_MARGIN_M = 0.3;
 export const SEATED_BOUNDARY_MIN_M = 0.6;
 
 // Rotazione attorno a y (stessa convenzione di three: x' = x cos + z sin,
@@ -77,32 +76,18 @@ export function signedDistanceToPolygon(p, polygon) {
   return pointInPolygon(p, polygon) ? min : -min;
 }
 
-// L'asse a → b con l'area di sicurezza attorno (simmetrica: la partenza si
-// sceglie dopo) deve stare dentro il confine con almeno BOUNDARY_MARGIN_M.
-// Restituisce { ok } oppure { ok: false, error, badEnds: [0|1, ...] }.
+// Solo un avviso, mai un blocco: sul Quest `boundsGeometry` è il rettangolo
+// inscritto nel Guardian, spesso molto più piccolo dell'area tracciata.
+// Restituisce { ok, clearancesM: [a, b], badEnds, warning }.
 export function checkPlankInsideBoundary(a, b, polygon) {
-  if (!polygon || polygon.length < 3) return { ok: true };
-  const length = Math.hypot(b.x - a.x, b.z - a.z);
-  const frame = frameFrom(a, { x: b.x - a.x, z: b.z - a.z }, 0);
-  const behind = Math.max(AREA.behindStartM, AREA.beyondEndM);
-  let shortfall = 0;
-  const badEnds = new Set();
-  for (const x of [-AREA.lateralM, 0, AREA.lateralM]) {
-    for (const [z, end] of [[behind, 0], [-length - behind, 1]]) {
-      const d = signedDistanceToPolygon(fromBeamFrame(frame, { x, z }), polygon);
-      if (d < BOUNDARY_MARGIN_M) {
-        shortfall = Math.max(shortfall, BOUNDARY_MARGIN_M - d);
-        badEnds.add(end);
-      }
-    }
-  }
-  if (!badEnds.size) return { ok: true };
-  const which = badEnds.size === 2 ? 'Entrambe le estremità sono troppo vicine' : 'L’estremità segnata in rosso è troppo vicina';
-  return {
-    ok: false,
-    badEnds: [...badEnds],
-    error: `${which} al confine Guardian: sposta l’asse di almeno ${Math.ceil(shortfall * 100)} cm verso il centro dell’area.`,
-  };
+  if (!polygon || polygon.length < 3) return { ok: true, clearancesM: [], badEnds: [] };
+  const clearancesM = [a, b].map(p => signedDistanceToPolygon(p, polygon));
+  const badEnds = [0, 1].filter(end => clearancesM[end] < BOUNDARY_MARGIN_M);
+  if (!badEnds.length) return { ok: true, clearancesM, badEnds };
+  const worst = Math.min(...badEnds.map(end => clearancesM[end]));
+  const where = worst < 0 ? 'fuori dal confine Guardian' : `a ${Math.round(worst * 100)} cm dal confine Guardian`;
+  const which = badEnds.length === 2 ? 'Le estremità risultano' : 'L’estremità in rosso risulta';
+  return { ok: false, clearancesM, badEnds, warning: `${which} ${where}: controlla a occhio prima di salire.` };
 }
 
 // Calibrazione in piedi: controller appoggiati al centro delle due estremità

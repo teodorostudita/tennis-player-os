@@ -1,5 +1,12 @@
 # Tennis Player OS — Release Log
 
+## v1.3.14 — VR Lab · Altezza: calibrazione tollerante
+- Segnalazione: calibrazione mai completata; il primo controller diventava blu, il secondo restava in un ciclo infinito o diventava rosso. La diagnostica (`vr_client_diagnostics`, 4 sessioni v1.3.12–1.3.13) mostra «asse troppo vicina al confine Guardian» a **ogni** tentativo, seguito da nuove registrazioni di entrambi i controller ogni 1,2 s.
+- Cause: (1) il controllo era troppo severo per il confine fornito dal Quest (`boundsGeometry` di 4 punti: il rettangolo inscritto nel Guardian, più piccolo dell'area tracciata) e richiedeva tutta l'area di sicurezza + 25 cm dentro il rettangolo; (2) dopo il rifiuto i controller ancora fermi a terra venivano ri-registrati subito, all'infinito.
+- `checkPlankInsideBoundary` ora misura solo le due estremità e restituisce un **avviso** (margine 30 cm), mai un blocco: estremità rosse e messaggio nel pannello di conferma, ma si può salire. In diagnostica: distanza di ciascuna estremità dal confine, punti del confine in coordinate local-floor e coordinate delle estremità registrate, per verificare la trasformazione `bounded-floor` → `local-floor`.
+- Registrazione «armata» solo dopo che il controller è stato sollevato oltre 30 cm (`LIFT_Y`): dopo ogni registrazione o rifiuto serve sollevarlo. Un controller già registrato, sollevato e riappoggiato, sposta la sua estremità, anche nella fase di conferma.
+- Testi in VR e in pagina aggiornati. Nessuna migration, nessuna Edge Function.
+
 ## v1.3.13 — VR Lab · Altezza: area di pausa laterale a 25 cm
 - Richiesta dopo la prova sul Quest: con ±75 cm la pausa per uscita dall'area era troppo difficile da far scattare. `AREA.lateralM` (`calibration.js`) passa a 0,25 m: la testa (proxy dei piedi) oltre 25 cm dall'asse dell'asse reale → dissolvenza e pausa. Davanti e dietro invariati (40 cm oltre la fine, 50 cm dietro la partenza).
 - La zona di partenza (`isAtStart`) usa lo stesso limite laterale (prima 50 cm), così non si può salire in quota già fuori dall'area.

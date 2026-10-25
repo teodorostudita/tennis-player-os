@@ -10,8 +10,8 @@
 // chiaro, contorno blu dell'asse, confine Guardian in arancione). La camera
 // segue solo la testa: nessun movimento artificiale.
 import * as THREE from 'three';
-import { createPanel } from '../hud.js?v=1.3.12';
-import { buildHeightScene } from './heightScene.js?v=1.3.12';
+import { createPanel } from '../hud.js?v=1.3.14';
+import { buildHeightScene } from './heightScene.js?v=1.3.14';
 import {
   SEATED_BEAM_LENGTH_M,
   SEATED_BOUNDARY_MIN_M,
@@ -22,8 +22,8 @@ import {
   isAtStart,
   safeArea,
   signedDistanceToPolygon,
-} from './calibration.js?v=1.3.12';
-import { createSafetyMonitor } from './safety.js?v=1.3.12';
+} from './calibration.js?v=1.3.14';
+import { createSafetyMonitor } from './safety.js?v=1.3.14';
 
 export const ALTITUDES = Object.freeze({
   low: { label: 'Bassa · 4 m', meters: 4 },
@@ -45,6 +45,9 @@ const GRIP_COOLDOWN_S = 1.5;
 const FLOOR_MAX_Y = 0.15;
 const FLOOR_STILL_M = 0.02;
 const FLOOR_HOLD_S = 1.2;
+// Dopo una registrazione (o un rifiuto) il controller va sollevato oltre questa
+// quota prima di poter registrare di nuovo: niente ripetizioni a raffica.
+const LIFT_Y = 0.3;
 // Per confermare, la testa deve essere entro questa distanza da un'estremità.
 const START_RADIUS_M = 0.5;
 const PREFERRED_HZ = 90;
@@ -101,7 +104,7 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     );
     ring.visible = disc.visible = false;
     rig.add(ring, disc);
-    return { ring, disc, point: null, anchor: null, since: 0 };
+    return { ring, disc, point: null, anchor: null, since: 0, armed: false };
   });
 
   // Confine Guardian (bounded-floor) in coordinate reali, se il visore lo fornisce.
@@ -266,6 +269,7 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     for (const slot of slots) {
       slot.point = null;
       slot.anchor = null;
+      slot.armed = false;
       slot.disc.visible = false;
       slot.disc.material.color.setHex(BLUE);
     }
@@ -280,23 +284,25 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     try { controller.userData.source?.gamepad?.hapticActuators?.[0]?.pulse?.(intensity, ms); } catch (_) {}
   }
 
-  // Registra l'estremità sotto il controller i; con due estremità controlla
-  // lunghezza e confine Guardian.
+  // Registra (o sposta) l'estremità sotto il controller i; con due estremità
+  // controlla la lunghezza e avvisa se il confine Guardian è vicino.
   function captureEnd(index) {
     const controller = controllers[index];
     const slot = slots[index];
     const other = slots[1 - index];
     const point = { x: controller.position.x, z: controller.position.z };
+    slot.armed = false;
+    slot.anchor = null;
     if (other.point && Math.hypot(point.x - other.point.x, point.z - other.point.z) < 1.0) {
-      say('Questa estremità è già registrata: porta il controller all’altra estremità.');
-      slot.anchor = null;
+      say('Questa estremità è già registrata: solleva il controller e appoggialo all’altra estremità.');
       return;
     }
     slot.point = point;
     slot.disc.position.set(point.x, 0.006, point.z);
     slot.disc.visible = true;
+    for (const s of slots) s.disc.material.color.setHex(BLUE);
     haptic(controller);
-    logEvent(`estremità registrata (${controller.userData.hand || index})`);
+    logEvent(`estremità registrata (${controller.userData.hand || index}) x ${point.x.toFixed(2)} z ${point.z.toFixed(2)}`);
     if (!other.point) {
       say('');
       return;
@@ -304,24 +310,16 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
     const measured = calibrateStanding(slots[0].point, slots[1].point);
     if (!measured.ok) {
       resetSlots();
-      say(measured.error);
+      say(`${measured.error} Solleva i controller e riprova.`);
       return;
     }
     const inside = checkPlankInsideBoundary(slots[0].point, slots[1].point, boundary);
-    if (!inside.ok) {
-      logEvent('asse troppo vicina al confine Guardian');
-      // Restano visibili solo i dischi rossi; al primo controller rimesso a terra si riparte.
-      slots.forEach((s, end) => {
-        s.point = null;
-        s.anchor = null;
-        if (inside.badEnds.includes(end)) s.disc.material.color.setHex(RED);
-        else s.disc.visible = false;
-      });
-      say(inside.error);
-      return;
+    if (boundary) {
+      logEvent(`confine: distanza estremità ${inside.clearancesM.map(d => `${Math.round(d * 100)} cm`).join(' / ')}; punti ${boundary.map(p => `(${p.x.toFixed(2)}, ${p.z.toFixed(2)})`).join(' ')}`);
     }
+    for (const end of inside.badEnds) slots[end].disc.material.color.setHex(RED);
     lastLength = measured.length;
-    setState('calibConfirm');
+    setState('calibConfirm', inside.ok ? '' : inside.warning);
   }
 
   function updatePlacement(t) {
@@ -329,15 +327,13 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
       const controller = controllers[i];
       const slot = slots[i];
       const p = controller.position;
-      const onFloor = controller.visible && !slot.point && p.y < FLOOR_MAX_Y;
+      if (controller.visible && p.y > LIFT_Y) slot.armed = true;
+      // Un controller già registrato, sollevato e riappoggiato, sposta la sua estremità.
+      const onFloor = controller.visible && slot.armed && p.y < FLOOR_MAX_Y;
       if (!onFloor) {
         slot.anchor = null;
         slot.ring.visible = false;
         continue;
-      }
-      // Un nuovo tentativo cancella i dischi rossi del tentativo precedente.
-      if (!slots[0].point && !slots[1].point) {
-        for (const s of slots) if (s.disc.material.color.getHex() === RED) s.disc.visible = false;
       }
       if (!slot.anchor || Math.hypot(p.x - slot.anchor.x, p.z - slot.anchor.z, p.y - slot.anchor.y) > FLOOR_STILL_M) {
         slot.anchor = { x: p.x, y: p.y, z: p.z };
@@ -415,7 +411,7 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
       case 'calibPlace': {
         // Alternativa alla registrazione automatica: grilletto con la punta a terra.
         const index = controllers.indexOf(controller);
-        if (index >= 0 && !slots[index].point && controller.position.y < FLOOR_MAX_Y + 0.05) captureEnd(index);
+        if (index >= 0 && controller.position.y < FLOOR_MAX_Y + 0.05) captureEnd(index);
         break;
       }
       case 'calibConfirm':
@@ -485,6 +481,7 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
           { text: 'Appoggia a terra un controller al centro di ciascuna', size: 0.75 },
           { text: 'estremità dell’asse e lascialo fermo, guardandolo.', size: 0.75 },
           { text: 'Si registra da solo: anello pieno, disco blu, vibrazione.', size: 0.7, color: MUTED },
+          { text: 'Per riprovare basta sollevarlo e riappoggiarlo.', size: 0.65, color: MUTED },
           ...note,
         ];
       }
@@ -494,6 +491,7 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
           { text: 'Riprendi i due controller e sali in piedi su', size: 0.75 },
           { text: 'un’estremità (sarà la partenza), sguardo lungo l’asse.', size: 0.75 },
           { text: 'Grilletto: sali in quota · Grip: ricomincia', size: 0.85, color: ACCENT },
+          { text: 'Per correggere un’estremità: riappoggia lì il suo controller.', size: 0.65, color: MUTED },
           ...note,
         ];
       case 'calibSeated':
@@ -695,7 +693,7 @@ export function createHeightTrainer({ host, settings, onDiagnostics, onEnd }) {
           : 'Sei uscito dall’area dell’asse. Torna sull’asse.');
       }
     }
-    if (state === 'calibPlace' && fade.phase === 'idle') updatePlacement(t);
+    if ((state === 'calibPlace' || state === 'calibConfirm') && fade.phase === 'idle') updatePlacement(t);
     else for (const slot of slots) slot.ring.visible = false;
     // Appena entrati in uno stato a terra la posa della testa può essere ancora
     // quella iniziale (0, 0, 0): il pannello segue lo sguardo per mezzo secondo.
