@@ -1,5 +1,13 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.13',
+    date: '2026-10-25',
+    title: 'VR Lab · Altezza: pausa più sensibile',
+    details: [
+      'La pausa di sicurezza scatta quando la testa si sposta di 25 cm di lato rispetto all’asse (prima 75 cm).',
+    ],
+  },
+  {
     version: '1.3.12',
     date: '2026-10-25',
     title: 'VR Lab · Altezza: calibrazione più semplice e legata al confine Guardian',

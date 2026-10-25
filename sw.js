@@ -1,9 +1,9 @@
-// Tennis Player OS — service worker v1.3.12
+// Tennis Player OS — service worker v1.3.13
 // Navigations are network-fresh (offline.html as fallback). In production every
 // JS/CSS URL carries ?v=APP_VERSION (rewritten by the GitHub Action), so a
 // versioned asset never changes: it is served cache-first and downloaded only
 // once per release. Unversioned assets and local development stay network-fresh.
-const CACHE_NAME = 'tpos-pwa-v1.3.12';
+const CACHE_NAME = 'tpos-pwa-v1.3.13';
 const ASSET_CACHE = 'tpos-assets';
 const OFFLINE_URL = './offline.html';
 const IS_LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(self.location.hostname)

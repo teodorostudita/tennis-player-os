@@ -15,7 +15,7 @@ export const SEATED_BEAM_LENGTH_M = 6;
 
 // Area di sicurezza attorno all'asse (in piedi): oltre si va in pausa. La stessa
 // area, allargata del margine, deve stare dentro il confine Guardian.
-export const AREA = Object.freeze({ lateralM: 0.75, behindStartM: 0.5, beyondEndM: 0.4 });
+export const AREA = Object.freeze({ lateralM: 0.25, behindStartM: 0.5, beyondEndM: 0.4 });
 export const BOUNDARY_MARGIN_M = 0.25;
 export const SEATED_BOUNDARY_MIN_M = 0.6;
 
@@ -140,5 +140,5 @@ export function safeArea({ seated, length }) {
 // Zona di partenza: la conferma "pronto" vale solo qui.
 export function isAtStart({ seated }, head) {
   if (seated) return Math.hypot(head.x, head.z) < 0.35;
-  return Math.abs(head.x) < 0.5 && head.z > -0.6 && head.z < AREA.behindStartM;
+  return Math.abs(head.x) < AREA.lateralM && head.z > -0.6 && head.z < AREA.behindStartM;
 }

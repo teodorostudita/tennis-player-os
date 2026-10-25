@@ -1,5 +1,11 @@
 # Tennis Player OS — Release Log
 
+## v1.3.13 — VR Lab · Altezza: area di pausa laterale a 25 cm
+- Richiesta dopo la prova sul Quest: con ±75 cm la pausa per uscita dall'area era troppo difficile da far scattare. `AREA.lateralM` (`calibration.js`) passa a 0,25 m: la testa (proxy dei piedi) oltre 25 cm dall'asse dell'asse reale → dissolvenza e pausa. Davanti e dietro invariati (40 cm oltre la fine, 50 cm dietro la partenza).
+- La zona di partenza (`isAtStart`) usa lo stesso limite laterale (prima 50 cm), così non si può salire in quota già fuori dall'area.
+- Effetto collaterale: il controllo del confine Guardian usa la stessa area, quindi ora richiede 25 + 25 cm di margine ai lati dell'asse invece di 75 + 25.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.12 — VR Lab · Altezza: calibrazione semplificata e vincolata al confine Guardian
 - Segnalazione dopo la prima prova sul Quest: l'asse finiva facilmente fuori dal confine Guardian e la procedura «punta del controller a terra + grilletto, due volte» non era chiara (sembrava di dover posare i controller e poi premere qualcosa).
 - **Nuova procedura in piedi** (`heightTrainer.js`, stati `calibPlace` → `calibConfirm`): i due controller appoggiati a terra (origine del raggio sotto 15 cm) e fermi entro 2 cm per 1,2 s si registrano da soli: anello che si riempie, disco blu, impulso aptico. Una seconda registrazione a meno di 1 m dalla prima è rifiutata. Resta possibile anche il grilletto con la punta a terra. Poi la persona riprende i controller, sale su un'estremità e preme il grilletto: l'estremità più vicina alla testa (entro 50 cm) diventa la partenza e si sale in quota subito, senza il passaggio «Pronto». Il pannello segue lo sguardo se esce oltre ~70° durante la calibrazione.
