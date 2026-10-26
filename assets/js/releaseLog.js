@@ -1,5 +1,15 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.15',
+    date: '2026-10-26',
+    title: 'Calendar: protezione contro la cancellazione dei dati',
+    details: [
+      'Il calendario cancellato per errore il 25 ottobre è stato ripristinato.',
+      'Se il calendario sul dispositivo risulta vuoto, o una modifica eliminerebbe più di metà degli impegni, il salvataggio viene bloccato e i dati nel cloud restano intatti: basta ricaricare l’app.',
+      'Avvio dell’app più sicuro: i dati vengono caricati una sola volta per pagina.',
+    ],
+  },
+  {
     version: '1.3.14',
     date: '2026-10-25',
     title: 'VR Lab · Altezza: calibrazione che si completa sempre',

@@ -249,8 +249,16 @@ class Store {
       }
     }
 
+    // The calendar is never persisted locally, so the cache always holds an
+    // empty planner. Keep the one already in memory for this athlete, or the
+    // running calendar sync would read every event as deleted.
+    const runningPlanner = this.state?.athlete?.id === athleteId
+      ? this.state.planner
+      : null;
+
     this.provider.setKey(targetKey);
     this.state = this.load();
+    if (runningPlanner) this.state.planner = runningPlanner;
     this.emit();
   }
 

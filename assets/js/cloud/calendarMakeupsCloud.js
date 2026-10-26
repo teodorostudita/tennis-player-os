@@ -163,6 +163,15 @@ function diffRows(previousItems = [], nextItems = []) {
   return { changed, removed };
 }
 
+function plannerLooksEmpty(planner = {}) {
+  return !(
+    planner?.events?.length
+    || planner?.recurringSeries?.length
+    || planner?.people?.length
+    || planner?.tournaments?.length
+  );
+}
+
 function applyRemote(store, items, source = 'cloud') {
   const normalized = normalizeMakeups(items);
   const current = normalizeMakeups(store.getState().planner?.makeups || []);
@@ -207,6 +216,15 @@ export function startCalendarMakeupsCloudSync({
 
     try {
       const { changed, removed } = diffRows(baseline, target);
+
+      // With no calendar in memory the planner was replaced by an empty local
+      // cache, not edited: removing recoveries now would wipe them from the
+      // cloud. The baseline stays, so a reload restores the stored list.
+      if (removed.length && plannerLooksEmpty(store.getState().planner)) {
+        console.error('Calendar recoveries cloud sync blocked: the local calendar is empty.');
+        return;
+      }
+
       await upsertRows(athleteId, changed);
       await deleteRows(athleteId, removed);
       baseline = normalizeMakeups(target);

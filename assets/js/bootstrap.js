@@ -276,7 +276,15 @@ function escapeAttr(value = '') {
   return escapeHtml(value);
 }
 
-const session = await requireAuthenticatedSession();
+// Modules import bootstrap.js with different ?v= suffixes. Only the deploy
+// rewrites them all to APP_VERSION: anywhere else each URL is a separate module
+// instance, and a second startup would reload the local cache (with an empty
+// calendar) under the running app. Only the first instance boots; the others
+// must not wait for it, since app.js is imported from inside the first one.
+const isFirstBootstrap = !globalThis.__tposBootstrapStarted;
+globalThis.__tposBootstrapStarted = true;
+
+const session = isFirstBootstrap ? await requireAuthenticatedSession() : null;
 
 if (session) {
   try {

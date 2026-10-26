@@ -947,6 +947,50 @@ async function syncPlannerDiff(
   }
 }
 
+const MASS_DELETION_MIN_ITEMS = 25;
+
+function compactItemCount(compact) {
+  return compact.people.length
+    + compact.recurringSeries.length
+    + compact.materializedEvents.length
+    + compact.tournaments.length
+    + compact.exceptions.length;
+}
+
+// A sync that would wipe the cloud calendar is refused: an empty local planner
+// over a non-empty baseline, or more than half of the stored items removed at
+// once. Both happen when the in-memory planner is replaced by an empty local
+// cache (on 25/10/2026 a duplicated startup deleted the whole calendar this
+// way), never through normal editing.
+function massDeletionReason(previousPlanner, nextPlanner) {
+  const previous = compactPlanner(previousPlanner);
+  const next = compactPlanner(nextPlanner);
+  const previousCount = compactItemCount(previous);
+
+  if (!previousCount) return '';
+
+  if (!compactItemCount(next)) {
+    return 'il calendario locale risulta vuoto';
+  }
+
+  const removed = [
+    'people',
+    'recurringSeries',
+    'materializedEvents',
+    'tournaments',
+    'exceptions',
+  ].reduce(
+    (total, key) => total + changedAndRemoved(previous[key], next[key]).removed.length,
+    0
+  );
+
+  if (removed >= MASS_DELETION_MIN_ITEMS && removed > previousCount / 2) {
+    return `verrebbero eliminati ${removed} elementi su ${previousCount}`;
+  }
+
+  return '';
+}
+
 function reportStatus(status, message = '') {
   try {
     statusHandler({ status, message });
@@ -974,6 +1018,19 @@ async function runSyncLoop() {
     while (syncPending) {
       const target = syncPending;
       syncPending = null;
+
+      const blockedReason = massDeletionReason(syncBaseline, target);
+
+      if (blockedReason) {
+        // The baseline stays as it is: the cloud is left untouched and a
+        // reload brings the stored calendar back.
+        console.error(`Calendar cloud sync blocked: ${blockedReason}.`);
+        reportStatus(
+          'error',
+          `Salvataggio Calendar bloccato per sicurezza: ${blockedReason}. Ricarica l’app.`
+        );
+        continue;
+      }
 
       reportStatus('syncing');
 

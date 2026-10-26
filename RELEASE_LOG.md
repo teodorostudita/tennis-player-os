@@ -1,5 +1,15 @@
 # Tennis Player OS — Release Log
 
+## v1.3.15 — Calendar: protezione contro la cancellazione di massa
+- Incidente del 25/10/2026, 20:00:55: l'anteprima locale (`localhost:8080`, browser integrato di Claude, Supabase di produzione) ha cancellato dal cloud l'intero calendario dell'atleta `1e067b41…`. In totale 3 persone, 93 serie, 184 eventi, 5 tornei, 2.116 eccezioni e 1 recupero. Il 26/10 i dati sono stati ripristinati da una copia nella cache di Chrome del 21/10 (risposte REST di Supabase), verificata contro gli ID cancellati nei log.
+- Catena: (1) in locale i `?v=` non sono riscritti e `bootstrap.js` veniva caricato con quattro URL diversi (`1.2.25`, `1.2.4`, `1.2.6`), quindi l'avvio girava più volte nella stessa pagina; (2) il secondo avvio chiamava `store.selectAthleteStorage()`, che ricaricava lo stato da localStorage, dove il calendario non viene mai salvato: planner vuoto; (3) la sync di `calendarCloud.js` (e di `calendarMakeupsCloud.js`) ha confrontato il planner vuoto con la baseline cloud e ha cancellato tutto.
+- `calendarCloud.js`: `massDeletionReason` blocca la sync se il planner locale è vuoto su una baseline piena, o se verrebbero eliminati più di metà degli elementi (almeno 25). Il cloud resta intatto, la baseline non cambia, lo stato Calendar mostra l'errore e un ricaricamento riporta i dati.
+- `calendarMakeupsCloud.js`: nessuna cancellazione di recuperi se in memoria non c'è alcun calendario.
+- `store.js`: `selectAthleteStorage` conserva il planner già in memoria per lo stesso atleta.
+- `bootstrap.js`: avvio eseguito solo dalla prima istanza del modulo (`globalThis.__tposBootstrapStarted`).
+- `server.py`: riscrive al volo tutti i `?v=` relativi di JS e HTML con `APP_VERSION`, con le stesse regole della GitHub Action: in locale ogni modulo (anche `store.js`) è caricato una sola volta, come in produzione.
+- Nessuna migration, nessuna Edge Function.
+
 ## v1.3.14 — VR Lab · Altezza: calibrazione tollerante
 - Segnalazione: calibrazione mai completata; il primo controller diventava blu, il secondo restava in un ciclo infinito o diventava rosso. La diagnostica (`vr_client_diagnostics`, 4 sessioni v1.3.12–1.3.13) mostra «asse troppo vicina al confine Guardian» a **ogni** tentativo, seguito da nuove registrazioni di entrambi i controller ogni 1,2 s.
 - Cause: (1) il controllo era troppo severo per il confine fornito dal Quest (`boundsGeometry` di 4 punti: il rettangolo inscritto nel Guardian, più piccolo dell'area tracciata) e richiedeva tutta l'area di sicurezza + 25 cm dentro il rettangolo; (2) dopo il rifiuto i controller ancora fermi a terra venivano ri-registrati subito, all'infinito.
