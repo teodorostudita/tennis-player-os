@@ -1,5 +1,14 @@
 export const RELEASE_LOG = [
   {
+    version: '1.3.16',
+    date: '2026-10-30',
+    title: 'Cestino di sicurezza per Calendar e moduli',
+    details: [
+      'Ogni impegno del calendario o dato di un modulo che viene cancellato o modificato resta conservato per 30 giorni in un cestino nel cloud.',
+      'Se qualcosa va perso per errore, si può recuperare anche senza backup.',
+    ],
+  },
+  {
     version: '1.3.15',
     date: '2026-10-26',
     title: 'Calendar: protezione contro la cancellazione dei dati',

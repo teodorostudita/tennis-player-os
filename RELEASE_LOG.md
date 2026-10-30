@@ -1,5 +1,14 @@
 # Tennis Player OS — Release Log
 
+## v1.3.16 — Cestino lato server per Calendar e moduli
+- Dopo l'incidente del 25/10 (v1.3.15) e senza backup accessibili sul piano Free: migration `20261030162454_data_trash.sql`, nuova e non distruttiva.
+- Tabella `public.data_trash` (`table_name`, `operation`, `athlete_id`, `row_data` jsonb, `changed_by`, `changed_at`). RLS attiva senza policy e nessun privilegio per `anon` e `authenticated`: la leggono solo il service role e l'SQL della dashboard.
+- Trigger `<tabella>_data_trash` (AFTER UPDATE OR DELETE, funzione `keep_in_data_trash`, security definer) su `calendar_people`, `calendar_recurring_series`, `calendar_events`, `calendar_tournaments`, `calendar_series_exceptions`, `calendar_makeups`, `calendar_settings` e `athlete_module_state`. Copia la riga precedente a ogni cancellazione e a ogni modifica di contenuto; i salvataggi che cambiano solo `updated_at`, `updated_by` o `revision` vengono ignorati.
+- Conservazione 30 giorni: pulizia occasionale dentro il trigger (1% delle scritture), perché `pg_cron` non è attivo.
+- Provato in una transazione annullata: cancellando i 184 eventi finiscono 184 righe nel cestino, un salvataggio identico non aggiunge nulla, svuotare un modulo aggiunge 1 riga, e il ripristino dal cestino riporta i 184 eventi.
+- Ripristino: `insert into <tabella> select (jsonb_populate_record(null::<tabella>, row_data)).* from data_trash where …`, oppure `update … set payload = row_data->'payload'` per i moduli.
+- Nessuna modifica al codice dell'app, nessuna Edge Function.
+
 ## v1.3.15 — Calendar: protezione contro la cancellazione di massa
 - Incidente del 25/10/2026, 20:00:55: l'anteprima locale (`localhost:8080`, browser integrato di Claude, Supabase di produzione) ha cancellato dal cloud l'intero calendario dell'atleta `1e067b41…`. In totale 3 persone, 93 serie, 184 eventi, 5 tornei, 2.116 eccezioni e 1 recupero. Il 26/10 i dati sono stati ripristinati da una copia nella cache di Chrome del 21/10 (risposte REST di Supabase), verificata contro gli ID cancellati nei log.
 - Catena: (1) in locale i `?v=` non sono riscritti e `bootstrap.js` veniva caricato con quattro URL diversi (`1.2.25`, `1.2.4`, `1.2.6`), quindi l'avvio girava più volte nella stessa pagina; (2) il secondo avvio chiamava `store.selectAthleteStorage()`, che ricaricava lo stato da localStorage, dove il calendario non viene mai salvato: planner vuoto; (3) la sync di `calendarCloud.js` (e di `calendarMakeupsCloud.js`) ha confrontato il planner vuoto con la baseline cloud e ha cancellato tutto.
